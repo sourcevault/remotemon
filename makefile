@@ -14,10 +14,11 @@ compile:
 	lsc -co dist src
 	lsc -c test
 	yaml2json src/package.yaml > package.json
+	yaml2json test/opts.yaml > test/opts.json
 	node ${file}
 
 w.compile:
-	nodemon  --exec "make compile || exit 1" ${SRC_FILES}
+	nodemon  --exec "make compile || exit 1" ${SRC_FILES} ${TEST_FILES}
 
 .ONESHELL:
 SHELL = /bin/bash
@@ -37,3 +38,4 @@ testy:
 
 w.testy:
 	nodemon --exec "make testy" ${TEST_FILES} ${SRC_FILES}
+

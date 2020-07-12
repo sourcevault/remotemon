@@ -1,0 +1,27 @@
+remote: pi@10.10.10.79
+chokidar:
+  watch:
+    - "*.ls"
+  flags:
+    - awaitWriteFinish:
+      - stabilityThreshold: 2000
+      - pollInterval: 100
+ssh:
+  cmd: node ~/test/main.js
+rsync:
+  flags:
+    - inplace
+    - whole-file
+    - no-perms
+    - no-compress
+    - archive
+    - verbose
+    - rsh: ssh
+    - rsync-path: sudo rsync
+  exclude:
+    - .gitignore
+    - '*.ls'
+    - .git
+    - .opts
+  src: .
+  des: ~/test

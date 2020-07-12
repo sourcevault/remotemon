@@ -22,6 +22,8 @@ dependencies:
   js-yaml: "*"
   chokidar: "*"
   is-my-json-valid: "*"
+  valleydate: "0.0.3"
+  optionator: "*"
 keywords:
   - "remote"
   - "ssh"

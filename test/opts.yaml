@@ -1,0 +1,20 @@
+chokidar:
+  paths: "./"
+  options:
+    - persistent: true
+    - ignored: "*.txt"
+    - ignoreInitial: false
+    - followSymlinks: true
+    - cwd: '.'
+    - disableGlobbing: false
+    - usePolling: false
+    - interval: 100
+    - binaryInterval: 300
+    - alwaysStat: false
+    - depth: 99
+    - ignorePermissionErrors: false
+    - atomic: true
+    - awaitWriteFinish:
+      - stabilityThreshold: 2000
+      - pollInterval: 100
+
