@@ -1,56 +1,33 @@
 {
-  "chokidar": {
-    "paths": "./",
-    "options": [
-      {
-        "persistent": true
-      },
-      {
-        "ignored": "*.txt"
-      },
-      {
-        "ignoreInitial": false
-      },
-      {
-        "followSymlinks": true
-      },
-      {
-        "cwd": "."
-      },
-      {
-        "disableGlobbing": false
-      },
-      {
-        "usePolling": false
-      },
-      {
-        "interval": 100
-      },
-      {
-        "binaryInterval": 300
-      },
-      {
-        "alwaysStat": false
-      },
-      {
-        "depth": 99
-      },
-      {
-        "ignorePermissionErrors": false
-      },
-      {
-        "atomic": true
-      },
-      {
-        "awaitWriteFinish": [
-          {
-            "stabilityThreshold": 2000
-          },
-          {
-            "pollInterval": 100
-          }
-        ]
-      }
-    ]
+  "watch": ".",
+  "localbuild": "make",
+  "remotetask": "",
+  "remotehost": "pi@192.142.1.1",
+  "rsync": {
+    "src": ".",
+    "des": "~/test",
+    "flags": [
+      "inplace",
+      "whole-file",
+      "no-perms",
+      "no-compress",
+      "archive",
+      "verbose",
+      "checksum",
+      "recursive",
+      [
+        "hello",
+        "world"
+      ]
+    ],
+    "exclude": [
+      ".gitignore",
+      "*.ls",
+      ".git",
+      ".opts"
+    ],
+    "rsh": "ssh",
+    "rsync-path": "sudo rsync",
+    "backup-dir": null
   }
 }

@@ -1,0 +1,9 @@
+[*]
+	charset = utf-8
+	end_of_line = lf
+	tab_width = 2
+	indent_style = space
+
+[makefile]
+  tab_width = 2
+  indent_style = tab

@@ -1,0 +1,154 @@
+remotehost: pi@192.168.43.50
+remotefold: ~/test
+
+watch: &watch
+  - ./watch/file1.txt
+
+localbuild:
+  - ls
+
+remotetask:
+  - ls
+  - echo "bat"
+
+chokidar:
+  awaitWriteFinish: true
+rsync:
+  src: ./watch
+  des:
+    - "hello"
+  flags: &flags
+    - recursive
+    # - verbose
+    # - quiet
+    # - no-motd
+
+    # - exclude:
+    #   - .gitignore
+    #   - "*.ls"
+    #   - .git
+    #   - .opts
+
+    # - checksum
+#     - archive
+#     - relative
+#     - no-OPTION
+#     - no-implied-dirs
+#     - backup
+#     - update
+#     - inplace
+#     - append
+#     - append-verify
+#     - dirs
+#     - links
+#     - copy-links
+#     - copy-unsafe-links
+#     - safe-links
+#     - copy-dirlinks
+#     - keep-dirlinks
+#     - hard-links
+#     - perms
+#     - executability
+#     - chmod:
+#     - acls
+#     - xattrs
+#     - owner
+#     - group
+#     - devices
+#     - specials
+#     - devices
+#     - specials
+#     - times
+#     - omit-dir-times
+#     - super
+#     - fake-super
+#     - sparse
+#     - dry-run
+#     - whole-file
+#     - one-file-system
+#     - block-size:
+#     - rsh: ssh
+#     - rsync-path: sudo rsync
+#     - existing
+#     - ignore-existing
+#     - remove-soucre-files
+#     - del
+#     - delete
+#     - delete-before
+	# - delete-during
+	# - delete-delay
+	# - delete-after
+	# - delete-excluded
+	# - ignore-errors
+	# - force
+	# - max-delete: 1
+	# - max-size: 1
+	# - max-size: 1
+	# - partial
+	# - partial-dir:
+	# - delay-updates
+	# - prune-empty-dirs
+	# - numeric-ids
+	# - timeout: 1
+	# - contimeout: 1
+	# - ignore-times
+	# - size-only
+	# - modify-window: 1
+	# - temp-dir: ""
+	# - fuzzy: 1
+	# - compare-dest:
+	# - copy-dest:
+	# - link-dest:
+	# - compress
+	# - compress-level: 1
+	# - skip-compress:
+	# - cvs-exclude
+	# - filter:
+	# - F
+	 # - exclude:
+	 #    - .gitignore
+	 #   - "*.ls"
+	 #   - .git
+	 #   - .opts
+	# - exclude-from:
+	# - include:
+	# - include-from:
+	# - files-from:
+	# - from0
+	# - protect-args
+	# - address:
+	# - port:
+	# - sockopts:
+	# - blocking-io
+	# - stats
+	# - 8-bit-output
+	# - human-readable
+	# - progress
+	# - P
+	# - itemize-changes
+	# - out-format:
+	# - log-file:
+	# - log-file-format:
+	# - password-file:
+	# - list-only
+	# - bwlimit:
+	# - write-batch:
+	# - only-write-batch:
+	# - read-batch:
+	# - protocol:
+	# - iconv:
+	# - checksum-seed:
+
+test1:
+  initialize: true
+  watch:
+    - ./watch/file1.txt
+
+  localbuild:
+    - ls
+
+test2:
+  initialize: false
+  watch:
+    - ./watch/file2.txt
+

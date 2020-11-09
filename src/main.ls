@@ -1,31 +1,23 @@
-{z,read-json,read-yaml,R,read-json} = require "./common"
+reg = require "./registry"
 
-print = require "./print"
+{com,print,data,exec} = reg
 
-z print
+#---------------------------------------------------
 
-# init = !->
+{l,z,j,R} = com
 
-# init = R.tryCatch do
-#   (filename) ->
-#     z read-json ""
-#   ->
-
-#     z "error"
+{read-json,read-yaml,be,j} = com
 
 
-#   try
+main = (user-data) !->
 
-#     user_file_content =
 
-#   catch E
-
-#     l do
-#       c.er "[#{module_name}] unable to read yaml config file #{yaml_filename}."
+  # z user-data
 
 
 
-#   read-yaml ""
 
 
-# module.exports = init
+
+
+reg.exec = main

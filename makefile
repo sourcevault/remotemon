@@ -1,8 +1,8 @@
 SRC_NAME = $(shell ls src)
 
-TEST_NAME = $(shell ls test | grep ".ls")
+TEST_NAME = $(shell ls test | grep ".\(ls\|yaml\)")
 
-SRC_FILES = ${SRC_NAME:%=--watch src/%}
+SRC_FILES = ${SRC_NAME:%=--watch src/%} --watch makefile
 
 TEST_FILES = ${TEST_NAME:%=--watch test/%}
 
@@ -10,12 +10,17 @@ MAKEFLAGS += --no-print-directory
 
 file = test/test.js
 
-compile:
-	lsc -co dist src
-	lsc -c test
+pkg:
 	yaml2json src/package.yaml > package.json
+
+compile:
+	lsc -cbo dist src
+	lsc -cb test
+	make pkg
 	yaml2json test/opts.yaml > test/opts.json
-	node ${file}
+	yaml2json test/opts1.yaml > test/opts1.json
+	yaml2json test/opts_all.yaml > test/opts_all.json
+	node ${file} test1 --config .remotemon.yaml --verbose
 
 w.compile:
 	nodemon  --exec "make compile || exit 1" ${SRC_FILES} ${TEST_FILES}
@@ -30,12 +35,14 @@ travis:
 		node $$i
 	done
 
+
 testy:
 	@lsc -co dist src
 	@lsc -c test/*.ls
-	yaml2json src/package.yaml > package.json
+	make pkg
 	make travis
 
 w.testy:
 	nodemon --exec "make testy" ${TEST_FILES} ${SRC_FILES}
 
+nothing:

@@ -1,8 +1,9 @@
-remotemon = require \../dist/main
+reg = require "../dist/registry"
 
-{z,read-json,read-yaml} = require \../dist/common
+require "../dist/cmdline" # [...load types.js...]
 
-remotemon "./test/opts.yaml"
+{com,pkg} = reg
 
+{z,l} =  com
 
-
+pkg!

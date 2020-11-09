@@ -1,0 +1,227 @@
+{
+  "watch": ".",
+  "localbuild": "make",
+  "remotetask": "",
+  "remotehost": "pi@192.142.1.1",
+  "chokidar": {
+    "awaitWriteFinish": {
+      "stabilityThreshold": 2000,
+      "pollInterval": 100
+    },
+    "persistent": null,
+    "ignoreInitial": null,
+    "followSymlinks": null,
+    "disableGlobbing": null,
+    "usePolling": null,
+    "alwaysStat": null,
+    "ignorePermissionErrors": null,
+    "atomic": null,
+    "interval": null,
+    "binaryInterval": null,
+    "depth": null,
+    "ignored": "",
+    "cwd": ""
+  },
+  "rsync": {
+    "src": ".",
+    "des": "~/test",
+    "flags": [
+      "verbose",
+      "quiet",
+      "no-motd",
+      "checksum",
+      "archive",
+      "relative",
+      "no-OPTION",
+      "recursive",
+      "no-implied-dirs",
+      "backup",
+      {
+        "backup-dir": null
+      },
+      {
+        "suffix": null
+      },
+      "update",
+      "inplace",
+      "append",
+      "append-verify",
+      "dirs",
+      "links",
+      "copy-links",
+      "copy-unsafe-links",
+      "safe-links",
+      "copy-dirlinks",
+      "keep-dirlinks",
+      "hard-links",
+      "perms",
+      "executability",
+      {
+        "chmod": null
+      },
+      "acls",
+      "xattrs",
+      "owner",
+      "group",
+      "devices",
+      "specials",
+      "devices",
+      "specials",
+      "times",
+      "omit-dir-times",
+      "super",
+      "fake-super",
+      "sparse",
+      "dry-run",
+      "whole-file",
+      "one-file-system",
+      {
+        "block-size": null
+      },
+      {
+        "rsh": "ssh"
+      },
+      {
+        "rsync-path": "sudo rsync"
+      },
+      "existing",
+      "ignore-existing",
+      "remove-soucre-files",
+      "del",
+      "delete",
+      "delete-before",
+      "delete-during",
+      "delete-delay",
+      "delete-after",
+      "delete-excluded",
+      "ignore-errors",
+      "force",
+      {
+        "max-delete": 1
+      },
+      {
+        "max-size": 1
+      },
+      {
+        "max-size": 1
+      },
+      "partial",
+      {
+        "partial-dir": null
+      },
+      "delay-updates",
+      "prune-empty-dirs",
+      "numeric-ids",
+      {
+        "timeout": 1
+      },
+      {
+        "contimeout": 1
+      },
+      "ignore-times",
+      "size-only",
+      {
+        "modify-window": 1
+      },
+      {
+        "temp-dir": ""
+      },
+      {
+        "fuzzy": 1
+      },
+      {
+        "compare-dest": null
+      },
+      {
+        "copy-dest": null
+      },
+      {
+        "link-dest": null
+      },
+      "compress",
+      {
+        "compress-level": 1
+      },
+      {
+        "skip-compress": null
+      },
+      "cvs-exclude",
+      {
+        "filter": null
+      },
+      "F",
+      {
+        "exclude": [
+          ".gitignore",
+          "*.ls",
+          ".git",
+          ".opts"
+        ]
+      },
+      {
+        "exclude-from": null
+      },
+      {
+        "include": null
+      },
+      {
+        "include-from": null
+      },
+      {
+        "files-from": null
+      },
+      "from0",
+      "protect-args",
+      {
+        "address": null
+      },
+      {
+        "port": null
+      },
+      {
+        "sockopts": null
+      },
+      "blocking-io",
+      "stats",
+      "8-bit-output",
+      "human-readable",
+      "progress",
+      "P",
+      "itemize-changes",
+      {
+        "out-format": null
+      },
+      {
+        "log-file": null
+      },
+      {
+        "log-file-format": null
+      },
+      {
+        "password-file": null
+      },
+      "list-only",
+      {
+        "bwlimit": null
+      },
+      {
+        "write-batch": null
+      },
+      {
+        "only-write-batch": null
+      },
+      {
+        "read-batch": null
+      },
+      {
+        "protocol": null
+      },
+      {
+        "iconv": null
+      },
+      {
+        "checksum-seed": null
+      }
+    ]
+  }
+}
