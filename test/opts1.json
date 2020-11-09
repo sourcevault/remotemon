@@ -1,0 +1,41 @@
+{
+  "remotehost": "pi@192.168.43.50",
+  "remotefold": "~/test",
+  "watch": [
+    "./watch/file1.txt"
+  ],
+  "localbuild": [
+    "ls"
+  ],
+  "remotetask": [
+    "ls",
+    "echo \"bat\""
+  ],
+  "chokidar": {
+    "awaitWriteFinish": true
+  },
+  "rsync": {
+    "src": "./watch",
+    "des": [
+      "hello"
+    ],
+    "flags": [
+      "recursive"
+    ]
+  },
+  "test1": {
+    "initialize": true,
+    "watch": [
+      "./watch/file1.txt"
+    ],
+    "localbuild": [
+      "ls"
+    ]
+  },
+  "test2": {
+    "initialize": false,
+    "watch": [
+      "./watch/file2.txt"
+    ]
+  }
+}
