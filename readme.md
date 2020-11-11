@@ -1,8 +1,8 @@
+![](https://raw.githubusercontent.com/sourcevault/remotemon/dev/rm_when_ready.jpg)
+
 ![](https://raw.githubusercontent.com/sourcevault/remotemon/dev/logo.jpg)
 
 [![Build Status](https://travis-ci.org/sourcevault/remotemon.svg?branch=dev)](https://travis-ci.org/sourcevault/remotemon)
-
-![](https://raw.githubusercontent.com/sourcevault/remotemon/dev/rm_when_ready.jpg)
 
 ```
 npm install remotemon
