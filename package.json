@@ -1,0 +1,34 @@
+{
+  "name": "remotemon",
+  "author": "sourcevault",
+  "email": "joykrishnamondal@gmail.com",
+  "homepage": "https://github.com/sourcevault/remotemon#readme.md",
+  "license": "BSD-3-Clause",
+  "description": "remote monitoring",
+  "repository": "https://github.com/sourcevault/remotemon.git",
+  "version": "0.0.1",
+  "main": "dist/main.js",
+  "scripts": {
+    "test": "make travis"
+  },
+  "dependencies": {
+    "ramda": "0.26.1",
+    "hoplon": "*",
+    "valleydate": "*",
+    "optionator": "*",
+    "pretty-error": "2.1.1",
+    "@aitodotai/json-stringify-pretty-compact": "*",
+    "cli-color": "2.0.0",
+    "chokidar": "*",
+    "js-yaml": "*",
+    "flyd": "*"
+  },
+  "keywords": [
+    "remote",
+    "ssh",
+    "monitoring",
+    "raspberry-pi",
+    "rsync",
+    "chokidar"
+  ]
+}
