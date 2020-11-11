@@ -35,7 +35,6 @@ travis:
 		node $$i
 	done
 
-
 testy:
 	@lsc -co dist src
 	@lsc -c test/*.ls
