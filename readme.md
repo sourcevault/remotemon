@@ -91,6 +91,52 @@ sourcevault ~ code/app:(dev*) remotemon --config ./custom_config.yaml
       remotefold: ~/test1
     ```
 
+
+- **Creating named builds**
+
+  Named builds can be created at top-level as long as the name does not clash with selected keywords ( `remotehost`,`remotefold`,`localbuild`,`remotetask`,`chokidar`,`initialize`,`watch` and `rsync`.
+
+
+  ```yaml
+  mybuild1:
+    remotehost: pi@192.168.43.50
+    remotefold: ~/test
+    localbuild: make pi1
+    remotetask: make mybuild1
+  mybuild2:
+    remotehost: pi@192.168.43.51
+    remotefold: ~/build
+    localbuild: make pi2
+    remotetask: make mybuild2
+  ```
+
+  values not provided in a build are merged with default provided at top-level , in case defaults don't exist at top level then valves are extracted from module's internal defaults.
+
+  ```yaml
+  rsync:
+    flags:
+      - recursive
+      - exclude:
+        - .gitignore
+        - .ls
+        - .git
+        - .opts
+  mybuild1:
+    remotehost: pi@192.168.43.50
+    remotefold: ~/test
+    localbuild: make pi1
+    remotetask: make mybuild1
+  mybuild2:
+    remotehost: pi@192.168.43.51
+    remotefold: ~/build
+    localbuild: make pi2
+    remotetask: make mybuild2
+  ```
+
+In the above config file for example, `mybuild1` and `mybuild2` get their rsync values from the common `rsync` field.
+
+Since rsync's default `src` and `des` are not provided by user in our config file, they are derived from `remotemon`'s internal defaults.
+
 - **All Configuration Options**
 
   - `remotehost` - `{username}@{ipaddress}` / ssh name of remote client.
@@ -232,51 +278,6 @@ sourcevault ~ code/app:(dev*) remotemon --config ./custom_config.yaml
       - `protocol:`
       - `iconv:`
       - `checksum-seed:`
-
-- **Creating named builds**
-
-  Named builds can be created at top-level as long as the name does not class with selected keywords ( `remotehost`,`remotefold`,`localbuild`,`remotetask`,`chokidar` and `rsync`.
-
-
-  ```yaml
-  mybuild1:
-    remotehost: pi@192.168.43.50
-    remotefold: ~/test
-    localbuild: make pi1
-    remotetask: make mybuild1
-  mybuild2:
-    remotehost: pi@192.168.43.51
-    remotefold: ~/build
-    localbuild: make pi2
-    remotetask: make mybuild2
-  ```
-
-  values not provided in a build are merged with default provided at top-level , in case defaults don't exist at top level then valves are extracted from module's internal defaults.
-
-  ```yaml
-  rsync:
-    flags:
-      - recursive
-      - exclude:
-        - .gitignore
-        - .ls
-        - .git
-        - .opts
-  mybuild1:
-    remotehost: pi@192.168.43.50
-    remotefold: ~/test
-    localbuild: make pi1
-    remotetask: make mybuild1
-  mybuild2:
-    remotehost: pi@192.168.43.51
-    remotefold: ~/build
-    localbuild: make pi2
-    remotetask: make mybuild2
-  ```
-
-In the above config file for example, `mybuild1` and `mybuild2` get their rsync values from the common `rsync` field.
-
-Since rsync's default `src` and `des` are not provided by user in our config file, they are derived from `remotemon`'s internal defaults.
 
 #### LICENCE
 
