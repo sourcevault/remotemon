@@ -4,36 +4,38 @@
 
 [![Build Status](https://travis-ci.org/sourcevault/remotemon.svg?branch=dev)](https://travis-ci.org/sourcevault/remotemon)
 
+**Install**
+```js
+npm install -g remotemon
 ```
-npm install remotemon
-// github               much install |
-npm install sourcevault/remotemon#dist
-```
+
+`remotemon` is a watch/build module for building/copying/executing code on remote machines and monitoring the result.
+
+It's main application use-case is developing scripts for single-board computers like the raspberry pi.
 
 #### How to Use
 
-`remotemon` works purely through a single `YAML` configration file ( similar to makefiles ), by default it assumes a file named `.remotemon.yaml` as it's configration file.
+`remotemon` operates using `YAML` configuration files ( similar to makefiles ), by default it assumes a file named `.remotemon.yaml` as the configuration file to use.
 
-It looks for  `.remotemon.yaml` in working directory and one folder up ( only ).
+It searches for  `.remotemon.yaml` in working directory and one folder up ( only ).
 
-Running `remotemon` without any arguments makes remotemon execute default routine present in configuration file :
-
-```zsh
-sourcevault ~ code/app:(dev*) remotemon
-```
-
-`remotemon` accepts arguments which are name(s) of build routines we want to use specified through our configuration `.yaml` file.
+Running `remotemon` without any arguments makes remotemon execute default routine present in provided configuration file :
 
 ```zsh
-sourcevault ~ code/app:(dev*) remotemon test1
+~/app:(dev*) remotemon
 ```
 
-`remotemon` also accepts configuration file with a different name than `.remotemon.yaml`, using  `--config` flag :
+`remotemon` accepts arguments which are name(s) of build routines to use, specified through our configuration `.yaml` file.
 
 ```zsh
-sourcevault ~ code/app:(dev*) remotemon --config ./custom_config.yaml
+~/app:(dev*) remotemon test1
 ```
 
+`remotemon` accepts configuration file with different names than `.remotemon.yaml`, using  `--config` flag :
+
+```zsh
+~/app:(dev*) remotemon --config ./custom_config.yaml
+```
 
 #### Creating Configuration `YAML` File
 
@@ -94,7 +96,7 @@ sourcevault ~ code/app:(dev*) remotemon --config ./custom_config.yaml
 
 - **Creating named builds**
 
-  Named builds can be created at top-level as long as the name does not clash with selected keywords ( `remotehost`,`remotefold`,`localbuild`,`remotetask`,`chokidar`,`initialize`,`watch` and `rsync`.
+  Named builds can be created at top-level as long as the name does not clash with selected keywords ( `remotehost`,`remotefold`,`localbuild`,`remotetask`,`chokidar`,`initialize`,`watch` and `rsync` ).
 
 
   ```yaml
@@ -110,7 +112,7 @@ sourcevault ~ code/app:(dev*) remotemon --config ./custom_config.yaml
     remotetask: make mybuild2
   ```
 
-  values not provided in a build are merged with default provided at top-level , in case defaults don't exist at top level then valves are extracted from module's internal defaults.
+  values not provided in a build are merged with default provided at top-level , in case defaults don't exist at top level then values are extracted from module's internal defaults.
 
   ```yaml
   rsync:
