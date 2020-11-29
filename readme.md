@@ -42,7 +42,7 @@ Running `remotemon` without any arguments makes remotemon execute default routin
 - **Quick Example**
 
   - ```yaml
-    remotehost: pi@192.168.43.50  # required ( remotemon won't run without it ).
+    remotehost: pi@191.110.32.10  # required ( remotemon won't run without it ).
     remotefold: ~/test            # required
     localbuild: make local
     remotetask: make remote
