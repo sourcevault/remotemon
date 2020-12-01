@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
-var reg, com, print, metadata, validator, l, z, j, R, fs, lit, c, readJson, readYaml, be, optionator, hop, exec, cmd_options, cmdparser, opt, filename, x$, data;
+var reg, com, print, metadata, validator, l, z, j, R, fs, lit, readJson, readYaml, be, optionator, hop, exec, cmd_options, cmdparser, opt, filename, x$, data;
 reg = require("./registry");
 require("./print");
 require("./data");
 require("./core");
 require("./validator");
 com = reg.com, print = reg.print, metadata = reg.metadata, validator = reg.validator;
-l = com.l, z = com.z, j = com.j, R = com.R, fs = com.fs, lit = com.lit, c = com.c;
+l = com.l, z = com.z, j = com.j, R = com.R, fs = com.fs, lit = com.lit;
 readJson = com.readJson, readYaml = com.readYaml, be = com.be, j = com.j, optionator = com.optionator, hop = com.hop, exec = com.exec;
 cmd_options = {
   prepend: "Usage: remotemon [ command name ]",

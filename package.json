@@ -23,7 +23,9 @@
     "@aitodotai/json-stringify-pretty-compact": "*",
     "cli-color": "2.0.0",
     "chokidar": "*",
-    "js-yaml": "*"
+    "js-yaml": "*",
+    "flyd": "*",
+    "co": "*"
   },
   "keywords": [
     "remote",
