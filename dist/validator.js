@@ -153,7 +153,7 @@ ME.opt.object = be.obj.and(function(ob){
     return ob;
   }
 });
-ME.chokidar = ME.maybe.obj.on(data.chokidar.bools, ME.maybe.bool).on(['ignored', 'cwd'], ME.maybe.str).on('awaitWriteFinish', ME.maybe.obj.on(['stabilityThreshold', 'pollInterval'], ME.maybe.num).or(be.bool)).on(['interval', 'binaryInterval', 'depth'], ME.maybe.num);
+ME.chokidar = be.obj.on(data.chokidar.bools, ME.maybe.bool).on(['ignored', 'cwd'], ME.maybe.str).on('awaitWriteFinish', ME.maybe.obj.on(['stabilityThreshold', 'pollInterval'], ME.maybe.num).or(be.bool)).on(['interval', 'binaryInterval', 'depth'], ME.maybe.num);
 ME.opt.main = be.arr.map(ME.opt.string.or(ME.opt.object.cont(function(ob){
   var key, I;
   key = Object.keys(ob)[0];
@@ -202,12 +202,12 @@ ME.rsync = be.obj.on('src', ME.strlist.undef).on('des', ME.maybe.str).on('opt', 
 })).or(unu);
 ME.user = be.obj.or(be.undefnull.cont(function(){
   return {};
-})).and(be.restricted(data.selected_keys.arr)).on('initialize', ME.maybe.bool).on('watch', ME.strlist.undef).on('remotetask', ME.strlist.undef).on('localbuild', ME.strlist.undef).on('postscript', ME.strlist.undef).on('chokidar', ME.chokidar).on('rsync', ME.rsync);
-ME.main = be.required(['remotehost', 'remotefold']).on(['remotehost', 'remotefold'], be.str).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.strlist.dot).on('localbuild', ME.strlist.empty).on('postscript', ME.strlist.empty).on('remotetask', ME.strlist.empty).on('chokidar', ME.chokidar).on('rsync', be.obj.alt(be.undefnull.cont(function(){
+})).and(be.restricted(data.selected_keys.arr)).on('initialize', ME.maybe.bool).on('watch', ME.strlist.undef).on('remotetask', ME.strlist.undef).on('localbuild', ME.strlist.undef).on('postscript', ME.strlist.undef).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync);
+ME.main = be.required(['remotehost', 'remotefold']).on(['remotehost', 'remotefold'], be.str).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.strlist.dot).on('localbuild', ME.strlist.empty).on('postscript', ME.strlist.empty).on('remotetask', ME.strlist.empty).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).on('rsync', be.obj.alt(be.undefnull.cont(function(){
   return {};
 })).on('src', ME.strlist(["."])).on('des', be.str.or(be.undefnull.cont(function(){
   return arguments[3].origin.remotefold;
-}))).on('opt', be.arr.or(be.undefnull.cont(data.rsyncOpt)).and(ME.opt.main)).or(be.bool.cont(function(raw){
+}))).on('opt', be.arr.or(be.undefnull.cont(data.def.rsync)).and(ME.opt.main)).or(be.bool.cont(function(raw){
   var def;
   if (raw === true) {
     def = {

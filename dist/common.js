@@ -1,6 +1,6 @@
-var fs, co, flyd, R, yaml, hop, chokidar, cc, be, optionator, prettyError, child_process, jspc, l, z, spawn, noop, j, join, joinType, CUSTOM_SCHEMA, readYaml, readJson, pe, showStack, lit, x$, c, main;
+var fs, most, flyd, R, yaml, hop, chokidar, cc, be, optionator, mostCreate, prettyError, child_process, jspc, l, z, spawn, exec, noop, j, join, joinType, CUSTOM_SCHEMA, readYaml, readJson, pe, showStack, lit, x$, c, main;
 fs = require("fs");
-co = require("co");
+most = require("most");
 flyd = require("flyd");
 R = require("ramda");
 yaml = require('js-yaml');
@@ -9,16 +9,21 @@ chokidar = require("chokidar");
 cc = require("cli-color");
 be = require("valleydate");
 optionator = require("optionator");
+mostCreate = require("@most/create");
+mostCreate = mostCreate.create;
 prettyError = require("pretty-error");
 child_process = require("child_process");
 jspc = require("@aitodotai/json-stringify-pretty-compact");
 l = console.log;
 z = l;
-spawn = function(txt){
-  return child_process.spawn(txt, {
+spawn = function(cmd){
+  return child_process.spawnSync(cmd, {
     shell: true,
     stdio: "inherit"
   });
+};
+exec = function(cmd){
+  return child_process.execSync(cmd).toString();
 };
 noop = function(){};
 j = function(x){
@@ -128,20 +133,21 @@ main = {
   R: R,
   l: l,
   c: c,
-  co: co,
   be: be,
   fs: fs,
   lit: lit,
   hop: hop,
   noop: noop,
   yaml: yaml,
-  flyd: flyd,
+  exec: exec,
+  most: most,
   spawn: spawn,
   chokidar: chokidar,
   readYaml: readYaml,
   readJson: readJson,
   optionator: optionator,
   showStack: showStack,
+  mostCreate: mostCreate,
   prettyError: prettyError,
   child_process: child_process
 };

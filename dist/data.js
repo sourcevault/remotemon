@@ -3,6 +3,7 @@ reg = require("./registry");
 com = reg.com, print = reg.print, packageJ = reg.packageJ, data = reg.data;
 l = com.l, z = com.z, j = com.j, R = com.R;
 data.chokidar = {};
+data.def = {};
 data.chokidar.bools = ['persistent', 'ignoreInitial', 'followSymlinks', 'disableGlobbing', 'usePolling', 'alwaysStat', 'ignorePermissionErrors', 'atomic'];
 data.opt = {};
 data.opt.objectProps = new Set(['chmod', 'block-size', 'rsh', 'rsync-path', 'max-delete', 'max-size', 'max-size', 'partial-dir', 'timeout', 'contimeout', 'modify-window', 'temp-dir', 'fuzzy', 'compare-dest', 'copy-dest', 'link-dest', 'compress-level', 'skip-compress', 'filter', 'exclude', 'exclude-from', 'include', 'include-from', 'files-from', 'address', 'port', 'sockopts', 'out-format', 'log-file', 'log-file-format', 'password-file', 'bwlimit', 'write-batch', 'only-write-batch', 'read-batch', 'protocol', 'iconv', 'checksum-seed']);
@@ -11,5 +12,8 @@ data.opt.bool = new Set(['verbose', 'quiet', 'no-motd', 'checksum', 'archive', '
 x$ = data.selected_keys = {};
 x$.arr = ['watch', 'remotehost', 'localbuild', 'remotetask', 'chokidar', 'rsync', 'remotefold', 'initialize', 'postscript'];
 data.selected_keys.set = new Set(data.selected_keys.arr);
-data.rsyncOpt = ["recursive", "quiet"];
+data.def.rsync = ["recursive", "quiet"];
+data.def.chokidar = {
+  awaitWriteFinish: true
+};
 module.exports = data;
