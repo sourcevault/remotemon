@@ -61,14 +61,14 @@ create_proc = function(data, logger){
       txt = ref$[i$];
       logger.part(txt);
       shell = spawn(txt);
-      (yield wait(30));
+      (yield wait(0));
     }
     if (data.rsync) {
       rcmd = createRsyncCmd(data);
       disp = [data.rsync.src.join(" "), "->", data.rsync.des].join(" ");
-      logger.full(true, " ..attempting rsync.. ", disp, rcmd);
+      logger.full(true, " .. attempting rsync.. ", disp, rcmd);
       shell = spawn(rcmd);
-      (yield wait(30));
+      (yield wait(0));
     }
     disp = data.remotehost + " " + data.remotefold;
     logger.full(data.remotetask.length, " remotetask ", disp);
@@ -77,14 +77,14 @@ create_proc = function(data, logger){
       cmd = "ssh -tt -o LogLevel=QUIET " + data.remotehost + " \"" + ("cd " + data.remotefold + ";") + I + "\"";
       logger.part(cmd);
       shell = spawn(cmd);
-      (yield wait(30));
+      (yield wait(0));
     }
     logger.full(data.postscript.length, " postscript ");
     for (i$ = 0, len$ = (ref$ = data.postscript).length; i$ < len$; ++i$) {
       cmd = ref$[i$];
       logger.part(cmd);
       shell = spawn(cmd);
-      (yield wait(30));
+      (yield wait(0));
     }
     return logger.full(true, " done, ..returning to watch.. ");
   };
@@ -101,7 +101,7 @@ main = function(data, buildname, verbose){
   });
   proc = create_proc(data, logger);
   return $.map(function(){
-    return most.from(proc());
+    return most.generate(proc);
   }).switchLatest().drain();
 };
 entry = hop.wh(function(data){
