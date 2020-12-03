@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var reg, com, print, metadata, validator, l, z, j, R, fs, lit, readJson, readYaml, be, optionator, hop, exec, cmd_options, cmdparser, opt, filename, x$, data;
+var reg, com, print, metadata, validator, l, z, j, R, fs, lit, readJson, readYaml, be, optionator, hop, exec, cmd_options, cmdparser, opt, str, filename, x$, data;
 reg = require("./registry");
 require("./print");
 require("./data");
@@ -28,19 +28,30 @@ cmd_options = {
       alias: 'v',
       type: 'Boolean',
       description: 'verbose messages'
+    }, {
+      option: 'version',
+      alias: 'V',
+      type: 'Boolean',
+      description: 'displays version number'
     }
   ]
 };
 cmdparser = optionator(cmd_options);
-print.showHeader();
 if (!metadata.name) {
   return false;
 }
 opt = cmdparser.parseArgv(process.argv);
 if (opt.help) {
-  cmdparser.generateHelp();
+  l(cmdparser.generateHelp());
+  str = "\nBy default remotemon will look for .remotemon.yaml in current directory and one level up (only).\n\nusing --config <filename>.yaml option will direct remotemon to use <filename>.yaml as config file.\n\nExamples:\n\n> remotemon --config custom.yaml\n> remotemon --config custom.yaml -verbose\n";
+  l(str);
   return false;
 }
+if (opt.version) {
+  print.showHeader();
+  return false;
+}
+print.showHeader();
 filename = opt.config;
 filename = validator.findfile(filename);
 if (!filename) {
