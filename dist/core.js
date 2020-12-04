@@ -38,7 +38,7 @@ create_logger.prototype.full = function(show, procname, buildtxt, verbose){
   }
   module_name = metadata.name;
   buildname = this.buildname;
-  lit(["[" + module_name + "][" + procname + "]", buildname + " ", buildtxt], [c.ok, c.warn, c.grey]);
+  lit(["[" + module_name + "]", buildname + "", "[" + procname + "] ", buildtxt], [c.ok, c.warn1, c.ok, c.grey]);
   if (this.verbose && verbose) {
     return l("> " + verbose);
   }

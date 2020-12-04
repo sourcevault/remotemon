@@ -126,6 +126,7 @@ x$.er1 = cc.xterm(3);
 x$.er2 = cc.xterm(13);
 x$.er3 = cc.xterm(1);
 x$.warn = cc.xterm(11);
+x$.warn1 = cc.xterm(17);
 x$.grey = cc.xterm(8);
 main = {
   j: j,
@@ -133,6 +134,7 @@ main = {
   R: R,
   l: l,
   c: c,
+  cc: cc,
   be: be,
   fs: fs,
   lit: lit,
