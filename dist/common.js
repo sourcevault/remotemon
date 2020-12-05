@@ -1,7 +1,6 @@
-var fs, most, flyd, R, yaml, hop, chokidar, cc, be, optionator, mostCreate, prettyError, child_process, jspc, l, z, spawn, exec, noop, j, join, joinType, CUSTOM_SCHEMA, readYaml, readJson, pe, showStack, lit, x$, c, main;
+var fs, most, R, yaml, hop, chokidar, cc, be, optionator, mostCreate, prettyError, child_process, jspc, l, z, spawn, exec, noop, j, join, joinType, CUSTOM_SCHEMA, readYaml, readJson, pe, showStack, lit, x$, c, main;
 fs = require("fs");
 most = require("most");
-flyd = require("flyd");
 R = require("ramda");
 yaml = require('js-yaml');
 hop = require("hoplon");

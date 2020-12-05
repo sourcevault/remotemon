@@ -63,6 +63,9 @@ print.reqError = function(props, path, filename){
   lit(["  mandatory value " + c.er1("." + last) + " not present.\n\n", "  all mandatory value(s) :\n"], [c.grey, c.grey]);
   return l(c.er1("  ." + props.join(" .")));
 };
+print.cmdError = function(cmdname){
+  return lit(["[" + metadata.name + "][ cmdFailure ] ", cmdname], [c.er2, c.warn]);
+};
 print.resError = function(props, path, filename){
   var key;
   show_name(filename);
@@ -86,6 +89,9 @@ print_wrap = function(f){
 };
 for (I in print) {
   key = print[I];
+  if (I === 'cmdError') {
+    continue;
+  }
   print[I] = print_wrap(key);
 }
 print.showHeader = function(){

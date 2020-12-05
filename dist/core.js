@@ -1,4 +1,4 @@
-var reg, com, print, data, metadata, readJson, readYaml, be, hop, fs, chokidar, c, lit, spawn, l, z, j, R, most, mostCreate, createRsyncCmd, create_logger, wait, create_proc, main, entry;
+var reg, com, print, data, metadata, readJson, readYaml, be, hop, fs, chokidar, c, lit, spawn, l, z, j, R, most, mostCreate, createRsyncCmd, create_logger, wait, cont, create_proc, main, entry;
 reg = require("./registry");
 com = reg.com, print = reg.print, data = reg.data, metadata = reg.metadata;
 readJson = com.readJson, readYaml = com.readYaml, be = com.be, hop = com.hop, fs = com.fs;
@@ -53,15 +53,29 @@ wait = function(time){
     return setTimeout(resolve, time);
   });
 };
+cont = function(arg$, txt){
+  var status;
+  status = arg$.status;
+  switch (status) {
+  case 0:
+    return new Promise(function(resolve){
+      return setTimeout(resolve, 0);
+    });
+  default:
+    return new Promise(function(resolve, reject){
+      return reject(txt);
+    });
+  }
+};
 create_proc = function(data, logger){
   return function*(){
-    var i$, ref$, len$, txt, shell, rcmd, disp, I, cmd;
+    var i$, ref$, len$, txt, status, rcmd, disp, shell, I, cmd;
     logger.full(data.localbuild.length, " localbuild ");
     for (i$ = 0, len$ = (ref$ = data.localbuild).length; i$ < len$; ++i$) {
       txt = ref$[i$];
       logger.part(txt);
-      shell = spawn(txt);
-      (yield wait(0));
+      status = spawn(txt);
+      (yield cont(status, txt));
     }
     if (data.rsync) {
       rcmd = createRsyncCmd(data);
@@ -101,7 +115,10 @@ main = function(data, buildname, verbose){
   });
   proc = create_proc(data, logger);
   return $.map(function(){
-    return most.generate(proc);
+    return most.generate(proc).recoverWith(function(cmdname){
+      print.cmdError(cmdname);
+      return most.empty();
+    });
   }).switchLatest().drain();
 };
 entry = hop.wh(function(data){
