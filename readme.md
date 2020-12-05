@@ -1,5 +1,3 @@
-![](https://raw.githubusercontent.com/sourcevault/remotemon/dev/rm_when_ready.jpg)
-
 ![](https://raw.githubusercontent.com/sourcevault/remotemon/dev/logo.jpg)
 
 [![Build Status](https://travis-ci.org/sourcevault/remotemon.svg?branch=dev)](https://travis-ci.org/sourcevault/remotemon)
@@ -42,14 +40,15 @@ Running `remotemon` without any arguments makes remotemon execute default routin
 - **Quick Example**
 
   - ```yaml
-    remotehost: pi@191.110.32.10  # required ( remotemon won't run without it ).
+    remotehost: pi@192.152.65.12  # required
     remotefold: ~/test            # required
+    # ↑ remotemon won't run without them ↑
     localbuild: make local
     remotetask: make remote
     ```
 
   - ```yaml
-    remotehost: pi@192.168.43.50
+    remotehost: pi@192.152.65.12
     remotefold: ~/test
     localbuild: make local
     remotetask: make remote
@@ -58,37 +57,35 @@ Running `remotemon` without any arguments makes remotemon execute default routin
     ```
 
   - ```yaml
-    remotehost: pi@192.168.43.50
+    remotehost: pi@192.152.65.12
     remotefold: ~/test
     localbuild: make local
     remotetask: make remote
     chokidar:
       awaitWriteFinish: true
     rsync:                        # rsync options
-      flags:
+      opt:
         - recursive
         - exclude:
           - .gitignore
           - .ls
           - .git
-          - .opts
     ```
 
   - ```yaml
-    remotehost: pi@192.168.43.50
+    remotehost: pi@192.152.65.12
     remotefold: ~/test
     localbuild: make local
     remotetask: make remote
     chokidar:
       awaitWriteFinish: true
     rsync:
-      flags:
+      opt:
         - recursive
         - exclude:
           - .gitignore
           - .ls
           - .git
-          - .opts
     test1:                        # custom routine
       remotefold: ~/test1
     ```
@@ -101,7 +98,7 @@ Running `remotemon` without any arguments makes remotemon execute default routin
 
   ```yaml
   mybuild1:
-    remotehost: pi@192.168.43.50
+    remotehost: pi@192.152.65.12
     remotefold: ~/test
     localbuild: make pi1
     remotetask: make mybuild1
@@ -116,20 +113,19 @@ Running `remotemon` without any arguments makes remotemon execute default routin
 
   ```yaml
   rsync:
-    flags:
+    opt:
       - recursive
       - exclude:
         - .gitignore
         - .ls
-        - .git
-        - .opts
+        - .gi
   mybuild1:
-    remotehost: pi@192.168.43.50
+    remotehost: pi@192.152.65.12
     remotefold: ~/test
     localbuild: make pi1
     remotetask: make mybuild1
   mybuild2:
-    remotehost: pi@192.168.43.51
+    remotehost: pi@192.152.65.12
     remotefold: ~/build
     localbuild: make pi2
     remotetask: make mybuild2
@@ -168,7 +164,7 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
   - `rsync` - options for rsync :
     - `src` - source folder(s) to sync.
     - `des` - destination folder in remote client.
-    - `flags` - rsync flags ( currently supported ) :
+    - `opt` - rsync opt ( currently supported ) :
 
       - `recursive`
       - `verbose`
