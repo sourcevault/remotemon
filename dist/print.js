@@ -45,7 +45,7 @@ print.optError = function(msg, path, filename, type){
   itype = msg[0], imsg = msg[1];
   switch (itype) {
   case 2:
-    lit(["\n  "].concat(arrayFrom$(imsg)), [0, c.er2, c.er1]);
+    lit(["\n  "].concat(arrayFrom$(imsg)), [0, c.er2, c.warn1]);
     break;
   case 1:
     lit(["\n  ", imsg], [0, c.er1]);
@@ -70,7 +70,7 @@ print.resError = function(props, path, filename){
   var key;
   show_name(filename);
   key = R.last(path);
-  return show_body(path, [c.warn("unrecognized config key") + c.er3(" ." + key) + "\n", c.warn("only acceptable keys are :\n"), c.grey("- " + props.join(" \n  - "))].join("\n  "));
+  return show_body(path, [c.grey("unrecognized config key") + c.er3(" ." + key) + "\n", c.grey("only acceptable keys are :\n"), c.warn1("- " + props.join(" \n  - "))].join("\n  "));
 };
 print.usercmd_not_defined = function(msg, path, filename){
   show_name(filename);

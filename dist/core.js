@@ -69,7 +69,7 @@ cont = function(arg$, txt){
 };
 create_proc = function(data, logger){
   return function*(){
-    var i$, ref$, len$, txt, status, rcmd, disp, shell, I, cmd;
+    var i$, ref$, len$, txt, status, rcmd, disp, I, cmd;
     logger.full(data.localbuild.length, " localbuild ");
     for (i$ = 0, len$ = (ref$ = data.localbuild).length; i$ < len$; ++i$) {
       txt = ref$[i$];
@@ -81,8 +81,8 @@ create_proc = function(data, logger){
       rcmd = createRsyncCmd(data);
       disp = [data.rsync.src.join(" "), "->", data.rsync.des].join(" ");
       logger.full(true, " .. attempting rsync.. ", disp, rcmd);
-      shell = spawn(rcmd);
-      (yield wait(0));
+      status = spawn(rcmd);
+      (yield cont(status, rcmd));
     }
     disp = data.remotehost + " " + data.remotefold;
     logger.full(data.remotetask.length, " remotetask ", disp);
@@ -90,15 +90,15 @@ create_proc = function(data, logger){
       I = ref$[i$];
       cmd = "ssh -tt -o LogLevel=QUIET " + data.remotehost + " \"" + ("cd " + data.remotefold + ";") + I + "\"";
       logger.part(cmd);
-      shell = spawn(cmd);
-      (yield wait(0));
+      status = spawn(rcmd);
+      (yield cont(status, rcmd));
     }
     logger.full(data.postscript.length, " postscript ");
     for (i$ = 0, len$ = (ref$ = data.postscript).length; i$ < len$; ++i$) {
       cmd = ref$[i$];
       logger.part(cmd);
-      shell = spawn(cmd);
-      (yield wait(0));
+      status = spawn(rcmd);
+      (yield cont(status, rcmd));
     }
     return logger.full(true, " done, ..returning to watch.. ");
   };

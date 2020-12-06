@@ -185,8 +185,8 @@ ME.opt.main = be.arr.map(ME.opt.string.or(ME.opt.object.cont(function(ob){
     return second;
   }
   return ['opt', [1, "not string of singular object"]];
-})).cont(R.flatten);
-ME.rsync = be.obj.on('src', ME.strlist.undef).on('des', ME.maybe.str).on('opt', ME.opt.main).or(be.bool.cont(function(x, state){
+})).or(unu).cont(R.flatten);
+ME.rsync = be.restricted(['src', 'des', 'opt']).on('src', ME.strlist.undef).on('des', ME.maybe.str).on('opt', ME.opt.main).or(be.bool.cont(function(x, state){
   var rsync, def;
   rsync = arguments[3].origin.rsync;
   if (x === true) {
@@ -228,7 +228,7 @@ ME.main = be.required(['remotehost', 'remotefold']).on(['remotehost', 'remotefol
   for (i$ = 0, len$ = (ref$ = state.cmd).length; i$ < len$; ++i$) {
     I = ref$[i$];
     if (!data[I]) {
-      return [false, ['usercmd_not_defined', I], "hello"];
+      return [false, ['usercmd_not_defined', I]];
     }
   }
   return true;
@@ -244,7 +244,7 @@ ME.main = be.required(['remotehost', 'remotefold']).on(['remotehost', 'remotefol
     if (put['continue']) {
       fin.user[key] = put.value;
     } else {
-      return [false, put.message, put.path];
+      return [false, put.message[0], put.path];
     }
   }
   state.fin = rmAllUndef(fin);
@@ -259,16 +259,16 @@ ME.main = be.required(['remotehost', 'remotefold']).on(['remotehost', 'remotefol
       return print.reqError;
     case 'res':
       return print.resError;
-    case 'opt':
-      return print.optError;
     case 'usercmd_not_defined':
       return print.usercmd_not_defined;
+    case 'opt':
+      return print.optError;
     default:
-      Error = msg[0][0];
+      Error = msg[0];
       return print.basicError;
     }
   }());
-  return F(Error, path, filename, loc);
+  return F(Error, path, filename, msg);
 }).cont(function(__, arg$){
   var fin, user, def, nuser, key, value;
   fin = arg$.fin;
