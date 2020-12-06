@@ -1,7 +1,5 @@
 ![](https://raw.githubusercontent.com/sourcevault/remotemon/dev/logo.jpg)
 
-[![Build Status](https://travis-ci.org/sourcevault/remotemon.svg?branch=dev)](https://travis-ci.org/sourcevault/remotemon)
-
 **Install**
 ```js
 npm install -g remotemon
