@@ -1,8 +1,8 @@
-var reg, com, print, data, metadata, readJson, readYaml, be, hop, fs, chokidar, c, lit, spawn, l, z, j, R, most, mostCreate, createRsyncCmd, create_logger, wait, cont, create_proc, main, entry;
+var reg, com, print, data, metadata, readJson, readYaml, be, hop, fs, chokidar, c, lit, spawn, exec, l, z, j, R, most, mostCreate, createRsyncCmd, create_logger, cont, create_proc, main, entry;
 reg = require("./registry");
 com = reg.com, print = reg.print, data = reg.data, metadata = reg.metadata;
 readJson = com.readJson, readYaml = com.readYaml, be = com.be, hop = com.hop, fs = com.fs;
-chokidar = com.chokidar, c = com.c, lit = com.lit, spawn = com.spawn;
+chokidar = com.chokidar, c = com.c, lit = com.lit, spawn = com.spawn, exec = com.exec;
 l = com.l, z = com.z, j = com.j, R = com.R, most = com.most, mostCreate = com.mostCreate;
 createRsyncCmd = function(data){
   var rsync, str, i$, ref$, len$, I, key, cmd;
@@ -38,7 +38,7 @@ create_logger.prototype.full = function(show, procname, buildtxt, verbose){
   }
   module_name = metadata.name;
   buildname = this.buildname;
-  lit(["[" + module_name + "]", buildname + "", "[" + procname + "] ", buildtxt], [c.ok, c.warn1, c.ok, c.grey]);
+  lit(["[" + module_name + "]", buildname + "", "[" + procname + "] ", buildtxt], [c.ok, c.warn1, c.ok, c.blue]);
   if (this.verbose && verbose) {
     return l("> " + verbose);
   }
@@ -47,11 +47,6 @@ create_logger.prototype.part = function(txt){
   if (this.verbose) {
     return l("> " + txt);
   }
-};
-wait = function(time){
-  return new Promise(function(resolve){
-    return setTimeout(resolve, time);
-  });
 };
 cont = function(arg$, txt){
   var status;
@@ -84,21 +79,21 @@ create_proc = function(data, logger){
       status = spawn(rcmd);
       (yield cont(status, rcmd));
     }
-    disp = data.remotehost + " " + data.remotefold;
+    disp = data.remotehost + ":" + data.remotefold;
     logger.full(data.remotetask.length, " remotetask ", disp);
     for (i$ = 0, len$ = (ref$ = data.remotetask).length; i$ < len$; ++i$) {
       I = ref$[i$];
       cmd = "ssh -tt -o LogLevel=QUIET " + data.remotehost + " \"" + ("cd " + data.remotefold + ";") + I + "\"";
       logger.part(cmd);
-      status = spawn(rcmd);
-      (yield cont(status, rcmd));
+      status = spawn(cmd);
+      (yield cont(status, cmd));
     }
     logger.full(data.postscript.length, " postscript ");
     for (i$ = 0, len$ = (ref$ = data.postscript).length; i$ < len$; ++i$) {
       cmd = ref$[i$];
       logger.part(cmd);
-      status = spawn(rcmd);
-      (yield cont(status, rcmd));
+      status = spawn(cmd);
+      (yield cont(status, cmd));
     }
     return logger.full(true, " done, ..returning to watch.. ");
   };

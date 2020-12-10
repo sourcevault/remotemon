@@ -96,9 +96,13 @@ ME.recursiveStrList = be.arr.map(be.arr.and(function(arr){
     }
   }
   return out;
-});
+}).err("not string or parsable array");
 ME.strlist = function(F){
-  return ME.recursiveStrList.or(be.undefnull.cont(F));
+  return ME.recursiveStrList.or(be.undefnull.cont(F)).err(function(arg$){
+    var msg;
+    msg = arg$[0];
+    return msg;
+  });
 };
 ME.strlist.empty = ME.strlist(function(){
   return [];
@@ -288,6 +292,7 @@ entry = function(data){
     raw = readYaml(FILENAME);
   } catch (e$) {
     Er = e$;
+    l(Er);
     if (data.verbose) {
       l(Er);
     }

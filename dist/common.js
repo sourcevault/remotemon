@@ -1,17 +1,16 @@
-var fs, most, R, yaml, hop, chokidar, cc, be, optionator, mostCreate, prettyError, child_process, jspc, l, z, spawn, exec, noop, j, join, joinType, CUSTOM_SCHEMA, readYaml, readJson, pe, showStack, lit, x$, c, main;
+var fs, most, R, yaml, hop, chokidar, be, optionator, mostCreate, child_process, esp, jspc, l, z, spawn, exec, noop, j, join, joinType, CUSTOM_SCHEMA, readYaml, readJson, lit, x$, c, showStack, main;
 fs = require("fs");
 most = require("most");
 R = require("ramda");
 yaml = require('js-yaml');
 hop = require("hoplon");
 chokidar = require("chokidar");
-cc = require("cli-color");
 be = require("valleydate");
 optionator = require("optionator");
 mostCreate = require("@most/create");
 mostCreate = mostCreate.create;
-prettyError = require("pretty-error");
 child_process = require("child_process");
+esp = require("error-stack-parser");
 jspc = require("@aitodotai/json-stringify-pretty-compact");
 l = console.log;
 z = l;
@@ -64,40 +63,6 @@ readJson = function(filename){
   R.toString(
   fs.readFileSync(filename)));
 };
-pe = new prettyError();
-pe.skipNodeFiles();
-pe.filterParsedError(function(Error){
-  Error._trace = R.takeLast(6, Error._trace);
-  return Error;
-});
-pe.skip(function(traceLine, lineNumber){
-  if (traceLine.dir === "internal/modules/cjs") {
-    return true;
-  }
-  if (traceLine.dir === "internal/modules") {
-    return true;
-  }
-  if (R.includes("valleydate", traceLine.packages)) {
-    return true;
-  }
-  return false;
-});
-pe.appendStyle({
-  "pretty-error > header > title > kind": {
-    display: "none"
-  },
-  "pretty-error > header > colon": {
-    display: "none"
-  },
-  "pretty-error > header > message": {
-    display: "none"
-  }
-});
-showStack = function(){
-  var str;
-  str = pe.render(new Error());
-  l(str);
-};
 lit = function(strs, cols){
   var diff, I, In;
   if (strs.length > cols.length) {
@@ -120,20 +85,55 @@ lit.internal = R.pipe(R.zipWith(function(x, f){
   }
 }), R.join(""), console.log);
 x$ = c = {};
-x$.ok = cc.xterm(2);
-x$.er1 = cc.xterm(3);
-x$.er2 = cc.xterm(13);
-x$.er3 = cc.xterm(1);
-x$.warn = cc.xterm(11);
-x$.warn1 = cc.xterm(17);
-x$.grey = cc.xterm(8);
+x$.ok = function(txt){
+  return "\x1B[38;5;2m" + txt + "\x1B[39m";
+};
+x$.er1 = function(txt){
+  return "\x1B[38;5;3m" + txt + "\x1B[39m";
+};
+x$.er2 = function(txt){
+  return "\x1B[38;5;13m" + txt + "\x1B[39m";
+};
+x$.er3 = function(txt){
+  return "\x1B[38;5;1m" + txt + "\x1B[39m";
+};
+x$.warn = function(txt){
+  return "\x1B[38;5;11m" + txt + "\x1B[39m";
+};
+x$.pink = function(txt){
+  return "\x1B[38;5;17m" + txt + "\x1B[39m";
+};
+x$.grey = function(txt){
+  return "\x1B[38;5;8m" + txt + "\x1B[39m";
+};
+x$.blue = function(txt){
+  return "\x1B[38;5;12m" + txt + "\x1B[39m";
+};
+showStack = function(){
+  var E, i$, len$, I, lineNumber, fileName, functionName, columnNumber, path, first, second, results$ = [];
+  E = esp.parse(new Error());
+  E = R.drop(7, E);
+  for (i$ = 0, len$ = E.length; i$ < len$; ++i$) {
+    I = E[i$];
+    lineNumber = I.lineNumber, fileName = I.fileName, functionName = I.functionName, columnNumber = I.columnNumber;
+    path = fileName.split("/");
+    first = path[0], second = path[1];
+    if (first === 'internal' && second === 'modules') {
+      continue;
+    }
+    if (functionName === 'Object.<anonymous>') {
+      functionName = "";
+    }
+    results$.push(lit(["  - ", R.last(path), ":", lineNumber, " ", functionName, "\n    ", fileName + ":", lineNumber, ":" + columnNumber + "\n"], [0, c.warn, 0, c.er1, 0, 0, 0, c.grey, c.er1, c.grey]));
+  }
+  return results$;
+};
 main = {
   j: j,
   z: z,
   R: R,
   l: l,
   c: c,
-  cc: cc,
   be: be,
   fs: fs,
   lit: lit,
@@ -149,7 +149,6 @@ main = {
   optionator: optionator,
   showStack: showStack,
   mostCreate: mostCreate,
-  prettyError: prettyError,
   child_process: child_process
 };
 module.exports = main;
