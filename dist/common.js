@@ -1,4 +1,4 @@
-var fs, most, R, yaml, hop, chokidar, be, optionator, mostCreate, child_process, esp, jspc, l, z, spawn, exec, noop, j, join, joinType, CUSTOM_SCHEMA, readYaml, readJson, lit, x$, c, showStack, main;
+var fs, most, R, yaml, hop, chokidar, be, optionator, mostCreate, child_process, esp, stringify, l, z, spawn, exec, noop, j, join, joinType, CUSTOM_SCHEMA, readYaml, readJson, lit, x$, c, showStack, main;
 fs = require("fs");
 most = require("most");
 R = require("ramda");
@@ -11,7 +11,7 @@ mostCreate = require("@most/create");
 mostCreate = mostCreate.create;
 child_process = require("child_process");
 esp = require("error-stack-parser");
-jspc = require("@aitodotai/json-stringify-pretty-compact");
+stringify = require("./vendor").stringify;
 l = console.log;
 z = l;
 spawn = function(cmd){
@@ -25,7 +25,7 @@ exec = function(cmd){
 };
 noop = function(){};
 j = function(x){
-  return l(jspc(x, {
+  return l(stringify(x, {
     maxLength: 30,
     margins: true
   }));

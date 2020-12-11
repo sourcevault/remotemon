@@ -275,8 +275,16 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
       - `iconv:`
       - `checksum-seed:`
 
+
 #### LICENCE
+
+As `remotemon` is a command line application ( meaning it's unlikely to be `required` upstream ), its distributed minified to improve it's slow boot time.
+
+All the various sub-modules's license and copyright notices is preserved in `LICENSE.min.txt`.
 
 - Code released under BSD-3-Clause.
 - Documentation and images released under CC BY-NC-ND 4.0.
 - details can be found [here](https://github.com/sourcevault/remotemon/blob/dev/COPYING.txt).
+
+
+

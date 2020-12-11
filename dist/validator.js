@@ -1,4 +1,4 @@
-var reg, com, print, data, metadata, l, z, j, R, readJson, readYaml, be, optionator, lit, c, exec, fs, maybe, log, ME, rm, util, filterForConfigFile, rmEmptyStr, findObInStrList, unu, rmAllUndef, merge, entry;
+var reg, com, print, data, metadata, l, z, j, R, readJson, readYaml, be, optionator, lit, c, exec, fs, maybe, log, ME, rm, util, filterForConfigFile, rmEmptyStr, unu, rmAllUndef, merge, entry;
 reg = require("./registry");
 require("./print");
 require("./data");
@@ -47,33 +47,12 @@ ME.findfile = function(filename){
     return false;
   }
 };
-ME.has = function(props){
-  return function(ob){
-    var i$, ref$, len$, key;
-    for (i$ = 0, len$ = (ref$ = props).length; i$ < len$; ++i$) {
-      key = ref$[i$];
-      if (ob.hasOwnProperty(key)) {
-        return true;
-      }
-    }
-    return false;
-  };
-};
-ME.has_file_filter = ME.has(data.opt.filter);
 rmEmptyStr = R.filter(function(x){
   if (x.length === 0) {
     return false;
   } else {
     return true;
   }
-});
-util.str2arr = function(x){
-  return [x];
-};
-findObInStrList = R.find(function(arg$){
-  var x;
-  x = arg$[0];
-  return x === 'ob_in_str_list';
 });
 ME.recursiveStrList = be.arr.map(be.arr.and(function(arr){
   var ret;
@@ -91,13 +70,7 @@ ME.recursiveStrList = be.arr.map(be.arr.and(function(arr){
   default:
     return [false, ['ob_in_str_list', ['object']]];
   }
-})).or(be.undefnull.cont(undefined)).err(function(msg){
-  var found;
-  found = findObInStrList(msg);
-  if (found) {
-    return found;
-  }
-})).alt(be.str.cont(util.str2arr)).cont(function(list){
+})).or(be.undefnull)).alt(be.str).cont(function(list){
   var out, i$, len$, I;
   out = [];
   for (i$ = 0, len$ = list.length; i$ < len$; ++i$) {
@@ -127,11 +100,7 @@ ME.recursiveStrList = be.arr.map(be.arr.and(function(arr){
   return "not string or string list.";
 });
 ME.strlist = function(F){
-  return ME.recursiveStrList.or(be.undefnull.cont(F)).err(function(arg$){
-    var x;
-    x = arg$[0];
-    return x;
-  });
+  return ME.recursiveStrList.or(be.undefnull.cont(F));
 };
 ME.strlist.empty = ME.strlist(function(){
   return [];
@@ -139,8 +108,8 @@ ME.strlist.empty = ME.strlist(function(){
 ME.strlist.dot = ME.strlist(function(){
   return ["."];
 });
-ME.strlist.undef = ME.strlist(undefined);
-unu = be.undefnull.cont(undefined).err(undefined);
+ME.strlist.undef = ME.strlist(void 8);
+unu = be.undefnull;
 ME.maybe = {};
 ME.maybe.bool = be.bool.or(unu);
 ME.maybe.num = be.num.or(unu);
@@ -153,115 +122,63 @@ rmAllUndef = function(obj){
 merge = R.mergeDeepWith(function(A, B){
   return B;
 });
-ME.opt = {};
-ME.opt.string = be.str.and(function(str){
-  if (!data.opt.bool.has(str)) {
-    return [false, ['opt', [2, [str + "", " not a valid boolean rsync option."]]]];
+ME.rsync = {};
+ME.rsync.string = be.str.and(function(str){
+  if (!data.rsync.bool.has(str)) {
+    return [false, ['rsync', [2, [str + "", " not a valid boolean rsync option."]]]];
   }
   return true;
 });
-ME.opt.object = be.obj.and(function(ob){
+ME.rsync.object = be.obj.and(function(ob){
   var keys, k;
   keys = Object.keys(ob);
   if (!(keys.length === 1)) {
-    return [false, ['opt', [1, ["object can only have singular attribute."]]]];
+    return [false, ['rsync', [1, ["object can only have singular attribute."]]]];
   }
   k = keys[0];
-  if (!data.opt.objectProps.has(k)) {
-    return [false, ['opt', [2, [k + "", " not a valid compound rsync option."]]]];
+  if (!(data.rsync.compound.has(k) || (k === 'src' || k === 'des'))) {
+    return [false, ['rsync', [2, [k + "", " not a valid compound rsync option."]]]];
+  }
+  switch (k) {
+  case 'des':
+    if (!(R.type(ob[k]) === 'string')) {
+      return [false, ['rsync', [2, ["des", " only one remote destination folder for rsync."]]]];
+    }
   }
   return true;
-}).cont(function(ob){
-  var ref$, key, val;
-  if ((ref$ = (function(){
-    var ref$, results$ = [];
-    for (key in ref$ = ob) {
-      val = ref$[key];
-      results$.push(val);
-    }
-    return results$;
-  }())[0]) === undefined || ref$ === null) {
-    return undefined;
-  } else {
-    return ob;
-  }
 });
 ME.chokidar = be.obj.on(data.chokidar.bools, ME.maybe.bool).on(['ignored', 'cwd'], ME.maybe.str).on('awaitWriteFinish', ME.maybe.obj.on(['stabilityThreshold', 'pollInterval'], ME.maybe.num).or(be.bool)).on(['interval', 'binaryInterval', 'depth'], ME.maybe.num);
-ME.opt.main = be.arr.map(ME.opt.string.or(ME.opt.object.cont(function(ob){
-  var key, I;
-  key = Object.keys(ob)[0];
-  if (key === 'exclude' || key === 'include' || key === 'exclude-from' || key === 'include-from') {
-    return (function(){
-      var i$, ref$, len$, ref1$, results$ = [];
-      for (i$ = 0, len$ = (ref$ = ob[key + ""]).length; i$ < len$; ++i$) {
-        I = ref$[i$];
-        results$.push((ref1$ = {}, ref1$[key + ""] = I, ref1$));
-      }
-      return results$;
-    }());
-  }
-  return ob;
-})).or(be.arr.err(undefined).and(function(arr){
+ME.rsync.entry = be.arr.map(ME.rsync.string.or(ME.rsync.object).or(be.arr.err(void 8).and(function(arr){
   var ret;
-  ret = ME.opt.main.auth(arr);
+  ret = Me.rsync.main.auth(arr);
   if (ret['continue']) {
     return true;
   }
   return [false, ret.message, ret.path];
-})).or(unu).err(function(msg){
-  var first, second;
-  first = msg[0], second = msg[1];
-  if (first[0] === 'opt') {
-    return first;
-  }
-  if (second[0] === 'opt') {
-    return second;
-  }
-  return ['opt', [1, "not string of singular object"]];
-})).or(unu).cont(R.flatten);
-ME.rsync = be.restricted(['src', 'des', 'opt']).on('src', ME.strlist.undef).on('des', ME.maybe.str).on('opt', ME.opt.main).or(be.bool.cont(function(x, state){
-  var rsync, def;
-  rsync = arguments[3].origin.rsync;
-  if (x === true) {
-    def = {
-      src: rsync.src,
-      des: rsync.des,
-      opt: rsync.opt
-    };
-    return def;
-  } else {
-    return x;
-  }
-})).or(unu);
+})).or(unu)).or(unu).cont(R.flatten).or(unu);
 ME.user = be.obj.or(be.undefnull.cont(function(){
   return {};
-})).and(be.restricted(data.selected_keys.arr)).on('initialize', ME.maybe.bool).on('watch', ME.strlist.undef).on('remotetask', ME.strlist.undef).on('localbuild', ME.strlist.undef).on('postscript', ME.strlist.undef).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync);
-ME.main = be.required(['remotehost', 'remotefold']).on(['remotehost', 'remotefold'], be.str).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.strlist.dot).on('localbuild', ME.strlist.empty).on('postscript', ME.strlist.empty).on('remotetask', ME.strlist.empty).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).on('rsync', be.obj.alt(be.undefnull.cont(function(){
-  return {};
-})).on('src', ME.strlist(["."])).on('des', be.str.or(be.undefnull.cont(function(){
-  return arguments[3].origin.remotefold;
-}))).on('opt', be.arr.or(be.undefnull.cont(data.def.rsync)).and(ME.opt.main)).or(be.bool.cont(function(raw){
+})).and(be.restricted(data.selected_keys.arr)).on('initialize', ME.maybe.bool).on('watch', ME.strlist.undef).on('remotetask', ME.strlist.undef).on('localbuild', ME.strlist.undef).on('postscript', ME.strlist.undef).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync.entry);
+ME.main = be.required(['remotehost', 'remotefold']).on(['remotehost', 'remotefold'], be.str).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.strlist.dot).on('localbuild', ME.strlist.empty).on('postscript', ME.strlist.empty).on('remotetask', ME.strlist.empty).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).on('rsync', be.arr.or(be.undefnull.cont(function(){
+  return data.def.rsync.concat({
+    des: arguments[2].origin.remotefold
+  });
+})).and(ME.rsync.entry).or(be.bool.cont(function(raw){
   var def;
   if (raw === true) {
-    def = {
-      src: ["."],
-      des: arguments[2].origin.remotefold,
-      opt: data.rsyncOpt
-    };
+    def = data.def.rsync.concat({
+      des: arguments[2].origin.remotefold
+    });
     return def;
   } else {
     return false;
   }
-})).err(function(arg$){
-  var msg;
-  msg = arg$[0];
-  return msg;
-})).and(function(data, state){
+}))).and(function(data, state){
   var i$, ref$, len$, I;
   for (i$ = 0, len$ = (ref$ = state.cmd).length; i$ < len$; ++i$) {
     I = ref$[i$];
     if (!data[I]) {
-      return [false, ['usercmd_not_defined', I]];
+      return [false, ['usercmd_not_defined', [I]]];
     }
   }
   return true;
@@ -282,10 +199,11 @@ ME.main = be.required(['remotehost', 'remotefold']).on(['remotehost', 'remotefol
   }
   state.fin = rmAllUndef(fin);
   return true;
-}).err(function(msg, path, arg$){
-  var filename, loc, Error, F;
+}).err(be.grexato).err(function(all, path, arg$){
+  var filename, topmsg, loc, Error, F;
   filename = arg$.filename;
-  loc = msg[0], Error = msg[1];
+  topmsg = all[0];
+  loc = topmsg[0], Error = topmsg[1];
   F = (function(){
     switch (loc) {
     case 'req':
@@ -294,16 +212,15 @@ ME.main = be.required(['remotehost', 'remotefold']).on(['remotehost', 'remotefol
       return print.resError;
     case 'usercmd_not_defined':
       return print.usercmd_not_defined;
-    case 'opt':
-      return print.optError;
+    case 'rsync':
+      return print.rsyncError;
     case 'ob_in_str_list':
       return print.ob_in_str_list;
     default:
-      Error = msg[0];
-      return print.basicError;
+
     }
   }());
-  return F(Error, path, filename, msg);
+  return F(Error, path, filename, topmsg);
 }).cont(function(__, arg$){
   var fin, user, def, nuser, key, value;
   fin = arg$.fin;
@@ -315,7 +232,7 @@ ME.main = be.required(['remotehost', 'remotefold']).on(['remotehost', 'remotefol
   }
   fin.user = nuser;
   return fin;
-}).cont(reg.core);
+});
 entry = function(data){
   var FILENAME, raw, Er, state, ref$;
   FILENAME = process.cwd() + "/" + data.filename;

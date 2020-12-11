@@ -40,7 +40,7 @@ print.unableToReadConfigYaml = function(filename){
   emsg = ["\n", "  make sure :\n\n", "   - correct path is provided.\n", "   - .yaml file can be parsed without error.\n", "   - .yaml file has no duplicate field."];
   return l(c.grey(emsg.join("")));
 };
-print.optError = function(msg, path, filename, type){
+print.rsyncError = function(msg, path, filename, type){
   var itype, imsg;
   show_name(filename);
   show_body(path);
