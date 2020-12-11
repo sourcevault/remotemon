@@ -64,7 +64,7 @@ cont = function(arg$, txt){
 };
 create_proc = function(data, logger){
   return function*(){
-    var i$, ref$, len$, txt, status, rcmd, disp, I, cmd;
+    var i$, ref$, len$, txt, status, cmd, disp, I;
     logger.full(data.localbuild.length, " localbuild ");
     for (i$ = 0, len$ = (ref$ = data.localbuild).length; i$ < len$; ++i$) {
       txt = ref$[i$];
@@ -73,11 +73,11 @@ create_proc = function(data, logger){
       (yield cont(status, txt));
     }
     if (data.rsync) {
-      rcmd = createRsyncCmd(data);
+      cmd = createRsyncCmd(data);
       disp = [data.rsync.src.join(" "), "->", data.rsync.des].join(" ");
-      logger.full(true, " .. attempting rsync.. ", disp, rcmd);
-      status = spawn(rcmd);
-      (yield cont(status, rcmd));
+      logger.full(true, " .. attempting rsync.. ", disp, cmd);
+      status = spawn(cmd);
+      (yield cont(status, cmd));
     }
     disp = data.remotehost + ":" + data.remotefold;
     logger.full(data.remotetask.length, " remotetask ", disp);

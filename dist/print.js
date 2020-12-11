@@ -34,9 +34,11 @@ show_body = function(path, msg){
   return lit(txt, [c.warn, c.er3, c.er2, c.er1]);
 };
 print.unableToReadConfigYaml = function(filename){
+  var emsg;
   lit(["[" + metadata.name + "]", "[parseError]"], [c.warn, c.er1]);
   l("\n  " + c.er2(filename));
-  return l(c.grey("\n", "  make sure :\n\n", "   - correct path is provided.\n", "   - .yaml file can be parsed without error.\n", "   - .yaml file has no duplicate field."));
+  emsg = ["\n", "  make sure :\n\n", "   - correct path is provided.\n", "   - .yaml file can be parsed without error.\n", "   - .yaml file has no duplicate field."];
+  return l(c.grey(emsg.join("")));
 };
 print.optError = function(msg, path, filename, type){
   var itype, imsg;
@@ -65,6 +67,20 @@ print.reqError = function(props, path, filename){
 };
 print.cmdError = function(cmdname){
   return lit(["[" + metadata.name + "][ cmdFailure ] ", cmdname], [c.er2, c.warn]);
+};
+print.ob_in_str_list = function(arg$, path, filename){
+  var type, txt;
+  type = arg$[0];
+  show_name(filename);
+  txt = (function(){
+    switch (type) {
+    case 'object':
+      return "object not acceted in string list.";
+    case 'empty_object':
+      return "empty object found, it's likely a YAML alias referencing issue.";
+    }
+  }());
+  return show_body(path, txt);
 };
 print.resError = function(props, path, filename){
   var key;

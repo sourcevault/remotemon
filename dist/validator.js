@@ -1,4 +1,4 @@
-var reg, com, print, data, metadata, l, z, j, R, readJson, readYaml, be, optionator, lit, c, exec, fs, maybe, log, ME, rm, util, filterForConfigFile, rmEmptyStr, unu, rmAllUndef, merge, entry;
+var reg, com, print, data, metadata, l, z, j, R, readJson, readYaml, be, optionator, lit, c, exec, fs, maybe, log, ME, rm, util, filterForConfigFile, rmEmptyStr, findObInStrList, unu, rmAllUndef, merge, entry;
 reg = require("./registry");
 require("./print");
 require("./data");
@@ -70,6 +70,11 @@ rmEmptyStr = R.filter(function(x){
 util.str2arr = function(x){
   return [x];
 };
+findObInStrList = R.find(function(arg$){
+  var x;
+  x = arg$[0];
+  return x === 'ob_in_str_list';
+});
 ME.recursiveStrList = be.arr.map(be.arr.and(function(arr){
   var ret;
   ret = ME.recursiveStrList.auth(arr);
@@ -82,26 +87,50 @@ ME.recursiveStrList = be.arr.map(be.arr.and(function(arr){
   keys = Object.keys(obj);
   switch (keys.length) {
   case 0:
-    return [false, ['merge', ['empty_object']]];
+    return [false, ['ob_in_str_list', ['empty_object']]];
   default:
-    return [false, ['object']];
+    return [false, ['ob_in_str_list', ['object']]];
   }
-})).or(be.undefnull.cont(undefined))).alt(be.str.cont(util.str2arr)).cont(function(list){
+})).or(be.undefnull.cont(undefined)).err(function(msg){
+  var found;
+  found = findObInStrList(msg);
+  if (found) {
+    return found;
+  }
+})).alt(be.str.cont(util.str2arr)).cont(function(list){
   var out, i$, len$, I;
   out = [];
   for (i$ = 0, len$ = list.length; i$ < len$; ++i$) {
     I = list[i$];
-    if (!(I === undefined)) {
+    switch (typeof I) {
+    case "undefined":
+      break;
+    case "object":
+      out.push.apply(out, I);
+      break;
+    default:
       out.push(I);
     }
   }
   return out;
-}).err("not string or parsable array");
+}).err(function(arg$){
+  var first;
+  first = arg$[0];
+  return first;
+}).err(function(msg){
+  var type;
+  type = msg[0];
+  switch (type) {
+  case 'ob_in_str_list':
+    return msg;
+  }
+  return "not string or string list.";
+});
 ME.strlist = function(F){
   return ME.recursiveStrList.or(be.undefnull.cont(F)).err(function(arg$){
-    var msg;
-    msg = arg$[0];
-    return msg;
+    var x;
+    x = arg$[0];
+    return x;
   });
 };
 ME.strlist.empty = ME.strlist(function(){
@@ -267,6 +296,8 @@ ME.main = be.required(['remotehost', 'remotefold']).on(['remotehost', 'remotefol
       return print.usercmd_not_defined;
     case 'opt':
       return print.optError;
+    case 'ob_in_str_list':
+      return print.ob_in_str_list;
     default:
       Error = msg[0];
       return print.basicError;
@@ -293,9 +324,6 @@ entry = function(data){
   } catch (e$) {
     Er = e$;
     l(Er);
-    if (data.verbose) {
-      l(Er);
-    }
     print.unableToReadConfigYaml(data.filename);
     return null;
   }
