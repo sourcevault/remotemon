@@ -15,17 +15,17 @@
     "remotemon": "dist/cmdline.js"
   },
   "dependencies": {
-    "@sourcevault/utils.common": "*",
-    "parse-arguments": "*",
     "@most/create": "*",
-    "js-yaml": "3.14.1",
-    "valleydate": "*",
-    "optionator": "*",
+    "@sourcevault/utils.common": "*",
     "chokidar": "*",
-    "yanop": "*",
     "hoplon": "*",
+    "js-yaml": "3.14.1",
+    "most": "*",
+    "optionator": "*",
+    "parse-arguments": "*",
     "ramda": "*",
-    "most": "*"
+    "valleydate": "*",
+    "yanop": "*"
   },
   "keywords": [
     "remote",
