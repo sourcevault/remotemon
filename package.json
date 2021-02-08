@@ -6,7 +6,7 @@
   "license": "BSD-3-Clause",
   "description": "remote monitoring",
   "repository": "https://github.com/sourcevault/remotemon.git",
-  "version": "0.1.25",
+  "version": "0.2.0",
   "main": "dist/main.js",
   "scripts": {
     "test": "make travis"
@@ -15,13 +15,14 @@
     "remotemon": "dist/cmdline.js"
   },
   "dependencies": {
-    "@aitodotai/json-stringify-pretty-compact": "*",
-    "error-stack-parser": "*",
+    "@sourcevault/utils.common": "*",
+    "parse-arguments": "*",
     "@most/create": "*",
+    "js-yaml": "3.14.1",
     "valleydate": "*",
     "optionator": "*",
     "chokidar": "*",
-    "js-yaml": "*",
+    "yanop": "*",
     "hoplon": "*",
     "ramda": "*",
     "most": "*"
