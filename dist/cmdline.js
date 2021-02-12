@@ -53,7 +53,7 @@ if (opt.help) {
   return 0;
 }
 split_by_var = function(rest){
-  var fin, i$, len$, I, which;
+  var fin, i$, len$, I, which, vars, ref$;
   fin = {
     cmd: [],
     vars: []
@@ -69,6 +69,12 @@ split_by_var = function(rest){
       fin.vars.push(which);
     }
   }
+  vars = {};
+  for (i$ = 0, len$ = (ref$ = fin.vars).length; i$ < len$; ++i$) {
+    I = ref$[i$];
+    vars[I[0]] = I[1];
+  }
+  fin.vars = vars;
   return fin;
 };
 print.showHeader();

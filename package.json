@@ -17,10 +17,10 @@
   "dependencies": {
     "@sourcevault/utils.common": "*",
     "@most/create": "*",
-    "js-yaml": "3.14.1",
     "valleydate": "*",
     "optionator": "*",
     "chokidar": "*",
+    "tampax": "*",
     "hoplon": "*",
     "ramda": "*",
     "most": "*"

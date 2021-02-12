@@ -84,6 +84,13 @@ print.ob_in_str_list = function(arg$, path, filename){
   }());
   return l(show_body(path, txt));
 };
+print.failed_in_tampex_parsing = function(filename){
+  var emsg;
+  l(lit(["[" + metadata.name + "]", "[parseError]"], [c.warn, c.er1]));
+  l("\n  " + c.er2(filename));
+  emsg = ["\n", c.pink("  yaml/tampex parsing error.")];
+  return l(c.grey(emsg.join("")));
+};
 print.in_selected_key = function(arg$, path, filename, topmsg){
   var vname, cmd_str;
   vname = arg$[0], cmd_str = arg$[1];

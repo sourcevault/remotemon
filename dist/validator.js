@@ -1,10 +1,10 @@
-var reg, com, print, data, metadata, l, z, j, R, readJson, readYaml, be, optionator, lit, c, exec, fs, zj, maybe, log, ME, rm, util, filterForConfigFile, unu, rm_all_undef, grouparr, organizeRsync, mergeF, vre, yaml_tokenize, vars, isref, entry;
+var reg, com, print, data, metadata, l, z, j, R, readJson, be, optionator, lit, c, exec, fs, zj, tampax, maybe, log, ME, rm, util, filterForConfigFile, unu, rm_all_undef, grouparr, organizeRsync, mergeF, entry;
 reg = require("./registry");
 require("./print");
 require("./data");
 com = reg.com, print = reg.print, data = reg.data, metadata = reg.metadata;
 l = com.l, z = com.z, j = com.j, R = com.R;
-readJson = com.readJson, readYaml = com.readYaml, be = com.be, j = com.j, optionator = com.optionator, lit = com.lit, c = com.c, exec = com.exec, fs = com.fs, zj = com.zj;
+readJson = com.readJson, be = com.be, j = com.j, optionator = com.optionator, lit = com.lit, c = com.c, exec = com.exec, fs = com.fs, zj = com.zj, tampax = com.tampax;
 maybe = be.maybe;
 log = function(x){
   l(x);
@@ -392,7 +392,6 @@ ME.main = be.obj.on('cmd', be.arr.map(function(x){
   var user, def, nuser, key, value, retorn;
   user = state.user, def = state.def;
   nuser = {};
-  def.vars = void 8;
   for (key in user) {
     value = user[key];
     nuser[key] = R.mergeDeepWith(mergeF, def, value);
@@ -402,136 +401,37 @@ ME.main = be.obj.on('cmd', be.arr.map(function(x){
   retorn = rm_all_undef(state);
   return retorn;
 }).cont(reg.core);
-vre = /(\s*#\s*){0,1}(\s*)(\S*):/;
-yaml_tokenize = function(data){
-  var lines, all, i$, len$, I, torna, __, iscommeted, spaces, name, asbool, acc, temp, to$, current;
-  lines = data.split("\n");
-  all = [];
-  for (i$ = 0, len$ = lines.length; i$ < len$; ++i$) {
-    I = lines[i$];
-    torna = vre.exec(I);
-    if (!(torna === null)) {
-      __ = torna[0], iscommeted = torna[1], spaces = torna[2], name = torna[3];
-      asbool = be.not.undef.auth(iscommeted)['continue'];
-      all.push({
-        name: name,
-        iscommeted: asbool,
-        nodec: false,
-        txt: I,
-        space: spaces.length
-      });
-    } else {
-      all.push({
-        nodec: true,
-        space: 0,
-        txt: I
-      });
-    }
-  }
-  acc = [];
-  temp = [];
-  for (i$ = 0, to$ = all.length; i$ < to$; ++i$) {
-    I = i$;
-    current = all[I];
-    if (!current.nodec && current.space === 0) {
-      if (I > 0) {
-        acc.push(temp);
-      }
-      temp = [current];
-    } else {
-      temp.push(current);
-    }
-  }
-  acc.push(temp);
-  return acc;
-};
-vars = {};
-vars.get = function(tokens){
-  var index, I, all, current, K, edit;
-  index = null;
-  I = 0;
-  all = [];
-  while (I < tokens.length) {
-    current = tokens[I];
-    if (current[0].name === 'vars') {
-      index = I;
-      K = 0;
-      while (K < current.length) {
-        edit = [];
-        do {
-          edit.push(current[K]);
-          K += 1;
-        } while (K < current.length && current[K].nodec);
-        all.push(edit);
-      }
-    }
-    I += 1;
-  }
-  return [index, all];
-};
-isref = /\s*\w*:\s*(&\w+\s*){0,1}/;
-vars.edit = function(arg$, vars, tokens){
-  var index, all, i$, len$, ref$, name, txt, j$, to$, I, current, firstline, isr, old_txt;
-  index = arg$[0], all = arg$[1];
-  for (i$ = 0, len$ = vars.length; i$ < len$; ++i$) {
-    ref$ = vars[i$], name = ref$[0], txt = ref$[1];
-    for (j$ = 1, to$ = all.length; j$ < to$; ++j$) {
-      I = j$;
-      current = all[I];
-      if (current[0].name === name) {
-        firstline = current[0];
-        isr = isref.exec(firstline.txt);
-        old_txt = current[0].txt;
-        current[0].txt = isr[0] + " " + txt;
-        all[I] = [current[0]];
-      }
-    }
-  }
-  if (index) {
-    tokens[index] = R.flatten(all);
-  }
-  return tokens;
-};
-vars.stringify = function(tokens){
-  var str, i$, len$, I;
-  str = "";
-  for (i$ = 0, len$ = tokens.length; i$ < len$; ++i$) {
-    I = tokens[i$];
-    str += I.txt + '\n';
-  }
-  return str;
-};
 entry = function(info){
-  var FILENAME, data, tokens, torna, yaml_text, rawJson, Er, state;
+  var FILENAME, data, Er;
   try {
     FILENAME = process.cwd() + "/" + info.filename;
     data = R.toString(
     fs.readFileSync(
     FILENAME));
-    tokens = yaml_tokenize(data);
-    torna = vars.get(tokens);
-    torna = vars.edit(torna, info.vars, tokens);
-    torna = R.flatten(torna);
-    yaml_text = vars.stringify(torna);
-    rawJson = readYaml(yaml_text);
-    rawJson;
+    return tampax.yamlParseString(data, info.vars, function(err, rawJson){
+      var state;
+      if (err) {
+        l(err);
+        print.failed_in_tampex_parsing(info.filename);
+        return;
+      }
+      state = {
+        commandline: info.commandline,
+        filename: info.filename,
+        verbose: info.verbose,
+        dryRun: info.dryRun,
+        cmd: info.cmd,
+        origin: rawJson,
+        def: {},
+        user: {}
+      };
+      return ME.main.auth(state, state);
+    });
   } catch (e$) {
     Er = e$;
-    z(Er);
     print.unableToReadConfigYaml(info.filename);
-    return null;
+    return l(Er);
   }
-  state = {
-    commandline: info.commandline,
-    filename: info.filename,
-    verbose: info.verbose,
-    dryRun: info.dryRun,
-    cmd: info.cmd,
-    origin: rawJson,
-    def: {},
-    user: {}
-  };
-  return ME.main.auth(state, state);
 };
 entry.only_object = ME.main;
 entry.findfile = ME.findfile;

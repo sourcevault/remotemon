@@ -88,7 +88,7 @@ Running `remotemon` without any arguments makes `remotemon` execute default rout
 
 - **Creating named builds**
 
-  Named builds can be created at top-level as long as the name does not clash with selected keywords ( `vars`,`remotehost`,`remotefold`,`exec.locale`,`exec.remote`,`chokidar`,`initialize`,`watch` and `rsync` ).
+  Named builds can be created at top-level as long as the name does not clash with selected keywords ( ,`remotehost`,`remotefold`,`exec.locale`,`exec.remote`,`chokidar`,`initialize`,`watch` and `rsync` ).
 
 
 ```yaml
@@ -129,7 +129,7 @@ In the above config file for example, `mybuild1` and `mybuild2` get their rsync 
 
 Since rsync's default `src` and `des` are not provided by user in our config file, they are derived from `remotemon`'s internal defaults.
 
-#### 🟡 **All Configuration Options**
+#### 🟡 **all configuration options**
 
 - `remotehost`  - `{username}@{ipaddress}` / ssh name of remote client.
 - `remotefold`  - folder in remote client where we want to execute our script.
@@ -157,7 +157,7 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 
 In `make` we can change internal variables (eg.`env`,`file`) from the command line in this way:
 
-```cli
+```bash
 make file=/dist/main.js
 make env=prod file=/dist/main.js
 make compile env=prod file=/dist/main.js
@@ -165,30 +165,25 @@ make compile env=prod file=/dist/main.js
 
 in remotemon the same thing can do done :
 
-```cli
+```bash
 remotemon file=/dist/main.js
 ```
-it changes the internal value(s) of **associated key** in `vars`:
+
+string templates can be used to insert value(s) from the command line :
 
 ```yaml
-vars:
-  file: /dist/main.js
 remotehost: pi@192.152.65.12
 remotefold: ~/test
-exec.locale: make local
-exec.remote: make remote
+exec.locale: make local {{file}}
 ```
-we can then use `YAML` aliases to connect `vars` fields to other values :
 
-```yaml
-# in .remotemon.yaml
-vars:
-  file: &file
-    /dist/main.js
-exec.locale: !join ['make local file=',*file]
-```
-this way we can edit the values of our makefile without opening either `.remotemon.yaml` or `makefile`.
+this way we can edit the values of our makefile without opening either `.remotemon.yaml` or `makefile` ☺️.
 
+#### 🟡 changelog
+
+◾️ `1.0.0`
+
+`remotemon` no longer uses a custom parser with `!join` operator, but uses [`tampax`](https://github.com/arthurlacoste/tampa/) ( much ♥️ ) for yaml parsing.
 
 #### LICENCE
 
