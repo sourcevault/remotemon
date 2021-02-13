@@ -161,11 +161,11 @@ main = function(data, buildname, verbose, dryRun){
   $ = most_create(function(add, end, error){
     chokidar.watch(data.watch, data.chokidar).on('change', add);
     if (data.initialize) {
-      add();
+      return add();
     }
   });
   proc = create_proc(data, logger, cont);
-  return $.map(function(){
+  return $.map(function(changed){
     return most.generate(proc).recoverWith(function(cmdname){
       l(lit(["[" + metadata.name + "]", "[ ", "⚡️", "    error ", "] ", cmdname], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1]));
       return most.empty();
@@ -178,10 +178,8 @@ entry = hop.wh(function(data){
   var $;
   $ = main(data.def, "", data.verbose, data.dryRun);
   return $.tap(function(x){
-    if (x === null) {
-      return l(c.ok("[" + metadata.name + "] .. returning to watch .."));
-    }
-  }).drain();
+    return l(c.ok("[" + metadata.name + "] .. returning to watch .."));
+  });
 }).def(function(data){
   var user, allstreams, i$, ref$, len$, key, $, F;
   user = data.user;
@@ -207,6 +205,6 @@ entry = hop.wh(function(data){
       seed: state
     };
   };
-  return most.mergeArray(allstreams).loop(F, 0).drain();
+  return most.mergeArray(allstreams).loop(F, 0);
 });
 reg.core = entry;

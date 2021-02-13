@@ -1,10 +1,10 @@
-var reg, com, print, data, metadata, l, z, j, R, readJson, be, optionator, lit, c, exec, fs, zj, tampax, maybe, log, ME, rm, util, filterForConfigFile, unu, rm_all_undef, grouparr, organizeRsync, mergeF, entry;
+var reg, com, print, data, metadata, l, z, j, R, readJson, be, optionator, lit, c, exec, fs, zj, tampax, most_create, maybe, log, ME, rm, util, filterForConfigFile, unu, rm_all_undef, grouparr, organizeRsync, mergeF, entry;
 reg = require("./registry");
 require("./print");
 require("./data");
 com = reg.com, print = reg.print, data = reg.data, metadata = reg.metadata;
 l = com.l, z = com.z, j = com.j, R = com.R;
-readJson = com.readJson, be = com.be, j = com.j, optionator = com.optionator, lit = com.lit, c = com.c, exec = com.exec, fs = com.fs, zj = com.zj, tampax = com.tampax;
+readJson = com.readJson, be = com.be, j = com.j, optionator = com.optionator, lit = com.lit, c = com.c, exec = com.exec, fs = com.fs, zj = com.zj, tampax = com.tampax, most_create = com.most_create;
 maybe = be.maybe;
 log = function(x){
   l(x);
@@ -389,7 +389,7 @@ ME.main = be.obj.on('cmd', be.arr.map(function(x){
   }());
   return F(Error, path, filename, topmsg);
 }).edit(function(__, state){
-  var user, def, nuser, key, value, retorn;
+  var user, def, nuser, key, value;
   user = state.user, def = state.def;
   nuser = {};
   for (key in user) {
@@ -398,39 +398,42 @@ ME.main = be.obj.on('cmd', be.arr.map(function(x){
   }
   state.user = nuser;
   state.origin = void 8;
-  retorn = rm_all_undef(state);
-  return retorn;
+  return state;
 }).cont(reg.core);
 entry = function(info){
-  var FILENAME, data, Er;
+  var FILENAME, data, $, Er;
   try {
     FILENAME = process.cwd() + "/" + info.filename;
     data = R.toString(
     fs.readFileSync(
     FILENAME));
-    return tampax.yamlParseString(data, info.vars, function(err, rawJson){
-      var state;
-      if (err) {
-        l(err);
-        print.failed_in_tampex_parsing(info.filename);
-        return;
-      }
-      state = {
-        commandline: info.commandline,
-        filename: info.filename,
-        verbose: info.verbose,
-        dryRun: info.dryRun,
-        cmd: info.cmd,
-        origin: rawJson,
-        def: {},
-        user: {}
-      };
-      return ME.main.auth(state, state);
+    $ = most_create(function(add, end, error){
+      return tampax.yamlParseString(data, info.vars, function(err, rawJson){
+        var state;
+        if (err) {
+          l(err);
+          print.failed_in_tampex_parsing(info.filename);
+          return;
+        }
+        state = {
+          commandline: info.commandline,
+          filename: info.filename,
+          verbose: info.verbose,
+          dryRun: info.dryRun,
+          cmd: info.cmd,
+          origin: rawJson,
+          def: {},
+          user: {}
+        };
+        return add(ME.main.auth(state, state));
+      });
     });
+    return $;
   } catch (e$) {
     Er = e$;
     print.unableToReadConfigYaml(info.filename);
-    return l(Er);
+    l(Er);
+    return null;
   }
 };
 entry.only_object = ME.main;

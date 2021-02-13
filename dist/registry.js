@@ -1,4 +1,4 @@
-var com, z, fs, most, R, yaml, hop, chokidar, be, optionator, temp, child_process, readJson, x$, registry, y$;
+var com, z, fs, most, R, hop, chokidar, be, optionator, temp, child_process, readJson, x$, registry, y$;
 com = require("@sourcevault/utils.common");
 z = com.z;
 fs = require("fs");
@@ -6,7 +6,6 @@ com.fs = fs;
 most = require("most");
 com.most = most;
 R = require("ramda");
-yaml = require("js-yaml");
 hop = require("hoplon");
 com.hop = hop;
 chokidar = require("chokidar");
