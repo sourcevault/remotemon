@@ -433,7 +433,7 @@ entry = function(info){
     Er = e$;
     print.unableToReadConfigYaml(info.filename);
     l(Er);
-    return null;
+    return most.empty();
   }
 };
 entry.only_object = ME.main;

@@ -109,4 +109,11 @@ $ = most_create(function(add, end, error){
     seed: I + 1,
     value: $new
   };
-}, 0).switchLatest().drain();
+}, 0).switchLatest().chain(function(vo){
+  switch (vo['continue']) {
+  case false:
+    return most.empty();
+  case true:
+    return vo.value;
+  }
+}).drain();

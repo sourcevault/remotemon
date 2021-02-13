@@ -112,8 +112,8 @@ create_proc = function(data, logger, cont){
       (yield cont(txt));
     }
     if (!data.remotefold || !data.remotehost) {
-      (yield null);
-      return;
+      (yield 'done');
+      return 'beme';
     }
     if (data.rsync) {
       cmd = create_rsync_cmd(data);
@@ -139,11 +139,12 @@ create_proc = function(data, logger, cont){
       logger('verbose', cmd);
       (yield cont(cmd));
     }
-    (yield null);
+    (yield 'done');
+    return 'beme';
   };
 };
 main = function(data, buildname, verbose, dryRun){
-  var logger, cont, I, $, proc;
+  var logger, cont, I, proc, $;
   logger = create_logger(buildname, verbose);
   cont = create_continue(dryRun);
   if (!data.remotefold || !data.remotehost) {
@@ -158,18 +159,20 @@ main = function(data, buildname, verbose, dryRun){
     }
     return results$;
   }()).join(c.pink(" | ")));
+  proc = create_proc(data, logger, cont);
   $ = most_create(function(add, end, error){
     chokidar.watch(data.watch, data.chokidar).on('change', add);
     if (data.initialize) {
-      return add();
+      return add('init');
     }
   });
-  proc = create_proc(data, logger, cont);
   return $.map(function(changed){
-    return most.generate(proc).recoverWith(function(cmdname){
+    var $inner;
+    $inner = most.generate(proc).recoverWith(function(cmdname){
       l(lit(["[" + metadata.name + "]", "[ ", "⚡️", "    error ", "] ", cmdname], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1]));
       return most.empty();
     });
+    return $inner;
   }).switchLatest();
 };
 entry = hop.wh(function(data){
@@ -178,7 +181,9 @@ entry = hop.wh(function(data){
   var $;
   $ = main(data.def, "", data.verbose, data.dryRun);
   return $.tap(function(x){
-    return l(c.ok("[" + metadata.name + "] .. returning to watch .."));
+    if (x === 'done') {
+      return l(c.ok("[" + metadata.name + "] .. returning to watch .."));
+    }
   });
 }).def(function(data){
   var user, allstreams, i$, ref$, len$, key, $, F;
@@ -191,7 +196,7 @@ entry = hop.wh(function(data){
   }
   F = function(state, x){
     var txt;
-    if (x === null) {
+    if (x === 'done') {
       state += 1;
     }
     if (state === data.cmd.length) {
