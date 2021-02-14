@@ -436,6 +436,5 @@ entry = function(info){
     return most.empty();
   }
 };
-entry.only_object = ME.main;
 entry.findfile = ME.findfile;
 reg.validator = entry;

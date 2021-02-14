@@ -144,7 +144,7 @@ create_proc = function(data, logger, cont){
   };
 };
 main = function(data, buildname, verbose, dryRun){
-  var logger, cont, I, proc, $;
+  var logger, cont, I, proc, $file_watch, $proc;
   logger = create_logger(buildname, verbose);
   cont = create_continue(dryRun);
   if (!data.remotefold || !data.remotehost) {
@@ -160,31 +160,39 @@ main = function(data, buildname, verbose, dryRun){
     return results$;
   }()).join(c.pink(" | ")));
   proc = create_proc(data, logger, cont);
-  $ = most_create(function(add, end, error){
-    chokidar.watch(data.watch, data.chokidar).on('change', add);
+  $file_watch = most_create(function(add, end, error){
+    var watcher;
+    watcher = chokidar.watch(data.watch, data.chokidar);
+    watcher.on('change', add);
     if (data.initialize) {
-      return add('init');
+      add('init');
     }
+    return function(){
+      watcher.close();
+      end();
+    };
   });
-  return $.map(function(changed){
+  $proc = $file_watch.map(function(changed){
     var $inner;
     $inner = most.generate(proc).recoverWith(function(cmdname){
       l(lit(["[" + metadata.name + "]", "[ ", "⚡️", "    error ", "] ", cmdname], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1]));
       return most.empty();
     });
     return $inner;
-  }).switchLatest();
+  });
+  return $proc.switchLatest();
 };
 entry = hop.wh(function(data){
   return data.cmd.length === 0;
 }, function(data){
-  var $;
+  var $, $fin;
   $ = main(data.def, "", data.verbose, data.dryRun);
-  return $.tap(function(x){
+  $fin = $.tap(function(x){
     if (x === 'done') {
       return l(c.ok("[" + metadata.name + "] .. returning to watch .."));
     }
   });
+  return $fin;
 }).def(function(data){
   var user, allstreams, i$, ref$, len$, key, $, F;
   user = data.user;

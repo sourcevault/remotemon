@@ -95,10 +95,16 @@ x$.verbose = opt.verbose;
 x$.dryRun = opt.dryRun;
 x$.commandline = R.drop(2, process.argv);
 $ = most_create(function(add, end, error){
-  chokidar.watch(filename, {
+  var watcher;
+  watcher = chokidar.watch(filename, {
     awaitWriteFinish: true
-  }).on('change', add);
-  return setTimeout(add, 0);
+  });
+  watcher.on('change', add);
+  setTimeout(add, 0);
+  return function(){
+    watcher.close();
+    return end();
+  };
 }).loop(function(I){
   var $new;
   if (I) {
@@ -109,11 +115,12 @@ $ = most_create(function(add, end, error){
     seed: I + 1,
     value: $new
   };
-}, 0).switchLatest().chain(function(vo){
-  switch (vo['continue']) {
-  case false:
-    return most.empty();
-  case true:
+}, 0).chain(function($){
+  return $;
+}).map(function(vo){
+  if (vo['continue']) {
     return vo.value;
+  } else {
+    return most.empty();
   }
-}).drain();
+}).switchLatest().drain();
