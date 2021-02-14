@@ -162,20 +162,31 @@ make file=/dist/main.js
 make env=prod file=/dist/main.js
 make compile env=prod file=/dist/main.js
 ```
-
 in remotemon the same thing can do done :
 
 ```bash
 remotemon file=/dist/main.js
 ```
 
-string templates can be used to insert value(s) from the command line :
+it changes the internal value(s) of **associated key** in `global`:
+
+```yaml
+global:
+  file: /dist/main.js # <-- old value replaced with value taken from commandline
+remotehost: pi@192.152.65.12
+remotefold: ~/test
+exec.locale: make local {{global.file}}
+exec.remote: make remote
+```
+string templates can also used to insert value(s) from the command line :
 
 ```yaml
 remotehost: pi@192.152.65.12
 remotefold: ~/test
 exec.locale: make local {{file}}
 ```
+
+however, *it's better practice* to **first** change `global` from your command-line and **then** use `{{global.*}}` to make local edits, since the `global`variable can have default values - something not possible with direct value injections.
 
 this way we can edit the values of our makefile without opening either `.remotemon.yaml` or `makefile` ☺️.
 

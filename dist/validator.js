@@ -1,4 +1,4 @@
-var reg, com, print, data, metadata, l, z, j, R, readJson, be, optionator, lit, c, exec, fs, zj, tampax, most_create, maybe, log, ME, rm, util, filterForConfigFile, unu, rm_all_undef, grouparr, organizeRsync, mergeF, entry;
+var reg, com, print, data, metadata, l, z, j, R, readJson, be, optionator, lit, c, exec, fs, zj, tampax, most_create, maybe, log, ME, rm, util, filterForConfigFile, unu, rm_all_undef, grouparr, organizeRsync, mergeF, vre, yaml_tokenize, vars, isref, entry;
 reg = require("./registry");
 require("./print");
 require("./data");
@@ -400,15 +400,119 @@ ME.main = be.obj.on('cmd', be.arr.map(function(x){
   state.origin = void 8;
   return state;
 }).cont(reg.core);
+vre = /(\s*#\s*){0,1}(\s*)(\S*):/;
+yaml_tokenize = function(data){
+  var lines, all, i$, len$, I, torna, __, iscommeted, spaces, name, asbool, acc, temp, to$, current;
+  lines = data.split("\n");
+  all = [];
+  for (i$ = 0, len$ = lines.length; i$ < len$; ++i$) {
+    I = lines[i$];
+    torna = vre.exec(I);
+    if (!(torna === null)) {
+      __ = torna[0], iscommeted = torna[1], spaces = torna[2], name = torna[3];
+      asbool = be.not.undef.auth(iscommeted)['continue'];
+      all.push({
+        name: name,
+        iscommeted: asbool,
+        nodec: false,
+        txt: I,
+        space: spaces.length
+      });
+    } else {
+      all.push({
+        nodec: true,
+        space: 0,
+        txt: I
+      });
+    }
+  }
+  acc = [];
+  temp = [];
+  for (i$ = 0, to$ = all.length; i$ < to$; ++i$) {
+    I = i$;
+    current = all[I];
+    if (!current.nodec && current.space === 0) {
+      if (I > 0) {
+        acc.push(temp);
+      }
+      temp = [current];
+    } else {
+      temp.push(current);
+    }
+  }
+  acc.push(temp);
+  return acc;
+};
+vars = {};
+vars.get = function(tokens){
+  var index, I, all, current, K, edit;
+  index = null;
+  I = 0;
+  all = [];
+  while (I < tokens.length) {
+    current = tokens[I];
+    if (current[0].name === 'global') {
+      index = I;
+      K = 0;
+      while (K < current.length) {
+        edit = [];
+        do {
+          edit.push(current[K]);
+          K += 1;
+        } while (K < current.length && current[K].nodec);
+        all.push(edit);
+      }
+    }
+    I += 1;
+  }
+  return [index, all];
+};
+isref = /\s*\w*:\s*(&\w+\s*){0,1}/;
+vars.edit = function(arg$, vars, tokens){
+  var index, all, name, txt, i$, to$, I, current, firstline, isr, old_txt;
+  index = arg$[0], all = arg$[1];
+  for (name in vars) {
+    txt = vars[name];
+    for (i$ = 1, to$ = all.length; i$ < to$; ++i$) {
+      I = i$;
+      current = all[I];
+      if (current[0].name === name) {
+        firstline = current[0];
+        isr = isref.exec(firstline.txt);
+        old_txt = current[0].txt;
+        current[0].txt = isr[0] + " " + txt;
+        all[I] = [current[0]];
+      }
+    }
+  }
+  if (index) {
+    tokens[index] = R.flatten(all);
+  }
+  return tokens;
+};
+vars.stringify = function(tokens){
+  var str, i$, len$, I;
+  str = "";
+  for (i$ = 0, len$ = tokens.length; i$ < len$; ++i$) {
+    I = tokens[i$];
+    str += I.txt + '\n';
+  }
+  return str;
+};
 entry = function(info){
-  var FILENAME, data, $, Er;
+  var FILENAME, data, tokens, torna, yaml_text, $, Er;
   try {
     FILENAME = process.cwd() + "/" + info.filename;
     data = R.toString(
     fs.readFileSync(
     FILENAME));
+    tokens = yaml_tokenize(data);
+    torna = vars.get(tokens);
+    torna = vars.edit(torna, info.vars, tokens);
+    torna = R.flatten(torna);
+    yaml_text = vars.stringify(torna);
     $ = most_create(function(add, end, error){
-      return tampax.yamlParseString(data, info.vars, function(err, rawJson){
+      return tampax.yamlParseString(yaml_text, (import$({}, info.vars)), function(err, rawJson){
         var state;
         if (err) {
           l(err);
@@ -438,3 +542,8 @@ entry = function(info){
 };
 entry.findfile = ME.findfile;
 reg.validator = entry;
+function import$(obj, src){
+  var own = {}.hasOwnProperty;
+  for (var key in src) if (own.call(src, key)) obj[key] = src[key];
+  return obj;
+}
