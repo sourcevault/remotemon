@@ -1,5 +1,6 @@
 ![](https://raw.githubusercontent.com/sourcevault/remotemon/dev/logo.jpg)
 
+
 **Install**
 ```js
 npm install -g remotemon
@@ -8,6 +9,9 @@ npm install -g remotemon
 `remotemon` is a cli-tool for building/copying/executing code on remote machines and monitoring the result.
 
 It's main application use-case is for developing / running scripts for single-board computers like the raspberry pi ..
+
+![](https://github.com/sourcevault/remotemon/blob/dev/example.png)
+
 
 #### 🟡 How to Use
 

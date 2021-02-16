@@ -58,12 +58,12 @@ show = hop.unary.wh(function(arg$){
   type = arg$[0], procname = arg$[1], buildtxt = arg$[2];
   switch (type) {
   case 'ok':
-    procname = c.ok("[") + c.grey(procname + "") + c.ok("]");
+    procname = c.ok("[") + c.pink(procname + "") + c.ok("]");
     break;
   case 'warn':
     procname = lit(["[", procname + "", "]"], [c.pink, null, c.pink]);
   }
-  return l(lit(["[" + metadata.name + "]", state.buildname + "", procname + "", buildtxt], [c.ok, c.pink, c.ok, c.pink]));
+  return l(lit(["[" + metadata.name + "]", state.buildname + "", procname + "", buildtxt], [c.ok, c.warn, c.ok, c.grey]));
 }).ar(2, function(arg$, state){
   var type, txt;
   type = arg$[0], txt = arg$[1];
@@ -101,9 +101,9 @@ create_continue = function(dryRun){
     }
   };
 };
-create_proc = function(data, logger, cont){
+create_proc = function(data, logger, cont, dryRun){
   return function*(){
-    var locale, i$, len$, txt, cmd, disp, remotetask, I, postscript;
+    var locale, i$, len$, txt, cmd, disp, remotetask, E, I, postscript;
     locale = data['exec.locale'];
     logger(locale.length, 'ok', " exec.locale ");
     for (i$ = 0, len$ = locale.length; i$ < len$; ++i$) {
@@ -126,6 +126,17 @@ create_proc = function(data, logger, cont){
     disp = " " + data.remotehost + ":" + data.remotefold;
     remotetask = data['exec.remote'];
     logger(remotetask.length, 'ok', " exec.remote ", disp);
+    if (remotetask.length && !dryRun) {
+      cmd = "ssh -tt -o LogLevel=QUIET " + data.remotehost + " 'ls " + data.remotefold + "'";
+      try {
+        exec(cmd);
+      } catch (e$) {
+        E = e$;
+        l(lit(["[" + metadata.name + "]", " " + data.remotefold, " does not exist, creating new directory .."], [c.ok, c.warn, c.blue]));
+        cmd = "ssh -tt -o LogLevel=QUIET " + data.remotehost + " 'mkdir " + data.remotefold + "'";
+        (yield cont(cmd));
+      }
+    }
     for (i$ = 0, len$ = remotetask.length; i$ < len$; ++i$) {
       I = remotetask[i$];
       cmd = "ssh -tt -o LogLevel=QUIET " + data.remotehost + " \"" + ("cd " + data.remotefold + ";") + I + "\"";
@@ -159,7 +170,7 @@ main = function(data, buildname, verbose, dryRun){
     }
     return results$;
   }()).join(c.pink(" | ")));
-  proc = create_proc(data, logger, cont);
+  proc = create_proc(data, logger, cont, dryRun);
   $file_watch = most_create(function(add, end, error){
     var watcher;
     watcher = chokidar.watch(data.watch, data.chokidar);
@@ -209,7 +220,7 @@ entry = hop.wh(function(data){
     }
     if (state === data.cmd.length) {
       txt = "[" + data.cmd.join("][") + "]";
-      l(lit(["[" + metadata.name + "]", txt, " .. returning to watch .."], [c.ok, c.pink, c.ok]));
+      l(lit(["[" + metadata.name + "]", txt, " .. returning to watch .."], [c.ok, c.warn, c.ok]));
       return {
         seed: 0
       };
