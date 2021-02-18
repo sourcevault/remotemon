@@ -35,7 +35,7 @@ cmd_options = {
       description: 'displays version number'
     }, {
       option: 'dry-run',
-      alias: 'n',
+      alias: 'd',
       type: 'Boolean',
       description: 'perform a trial run without making any changes'
     }, {

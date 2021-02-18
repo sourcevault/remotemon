@@ -195,7 +195,18 @@ however, *it's better practice* to **first** change `global` from your command-l
 
 this way we can edit the values of our makefile without opening either `.remotemon.yaml` or `makefile` ☺️.
 
-#### 🟡 changelog
+##### 🟡 misc features
+
+- `--no-watch` or `-nw` allows to force disable all watches.
+
+- `--dry-run` or `-d` would disable all execution, used for checking and making sure all the commands are accurate.
+
+- `--verbose` or `-v` would show all the command in their full form.
+
+- `rsync:false` disables rsync.
+
+
+##### 🟡 changelog
 
 ◾️ `1.0.0`
 
