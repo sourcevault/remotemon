@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var reg, com, print, metadata, validator, l, z, j, R, fs, lit, c, readJson, most, be, optionator, hop, exec, chokidar, most_create, cmd_options, cmdparser, opt, str, split_by_var, filename, info_from_user, x$, data, y$, $;
+var reg, com, print, metadata, validator, l, z, j, R, fs, lit, c, readJson, most, be, optionator, hop, exec, chokidar, most_create, cmd_options, cmdparser, opt, E, str, split_by_var, filename, info_from_user, x$, data, y$, $;
 reg = require("./registry");
 require("./print");
 require("./data");
@@ -40,7 +40,7 @@ cmd_options = {
       description: 'perform a trial run without making any changes'
     }, {
       option: 'no-watch',
-      alias: 'nw',
+      alias: 'n',
       type: 'Boolean',
       description: 'disable all watches ( globally ), watches don\'t get created.'
     }
@@ -50,7 +50,13 @@ cmdparser = optionator(cmd_options);
 if (!metadata.name) {
   return false;
 }
-opt = cmdparser.parseArgv(process.argv);
+try {
+  opt = cmdparser.parseArgv(process.argv);
+} catch (e$) {
+  E = e$;
+  l(E.toString());
+  return;
+}
 if (opt.help) {
   l(cmdparser.generateHelp());
   str = "\nBy default remotemon will look for .remotemon.yaml in current directory and one level up (only).\n\nusing --config <filename>.yaml option will direct remotemon to use <filename>.yaml as config file :\n\n> remotemon --config custom.yaml\n> remotemon --config custom.yaml -verbose\n\nvalues for internal variables can be changed using '=' :\n\n> remotemon --config custom.yaml -verbose file=dist/main.js\n";

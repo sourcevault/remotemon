@@ -197,7 +197,7 @@ this way we can edit the values of our makefile without opening either `.remotem
 
 ##### 🟡 misc features
 
-- `--no-watch` or `-nw` allows to force disable all watches.
+- `--no-watch` or `-n` allows to force disable all watches.
 
 - `--dry-run` or `-d` would disable all execution, used for checking and making sure all the commands are accurate.
 
