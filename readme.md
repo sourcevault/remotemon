@@ -92,7 +92,7 @@ Running `remotemon` without any arguments makes `remotemon` execute default rout
 
 - **Creating named builds**
 
-  Named builds can be created at top-level as long as the name does not clash with selected keywords ( ,`remotehost`,`remotefold`,`exec.locale`,`exec.remote`,`chokidar`,`initialize`,`watch` and `rsync` ).
+  Named builds can be created at top-level as long as the name does not clash with selected keywords ( ,`remotehost`,`remotefold`,`exec.locale`,`exec.remote`,`chokidar`,`initialize`,`ssh`,`watch` and `rsync` ).
 
 
 ```yaml
@@ -141,6 +141,7 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 - `exec.locale` - local script to run before copying files to remote client and executing our scripts.
 - `exec.remote` - command to execute in remote client.
 - `exec.finale` - command to execute after `exec.remote` returns `exit 0`.
+- `ssh`         - custom `ssh` config options, default is `-tt -o LogLevel=QUIET`.
 
 - `chokidar`- options to use for ![chokidar](https://github.com/paulmillr/chokidar) module :
   - `awaitWriteFinish`

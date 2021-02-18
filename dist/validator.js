@@ -1,4 +1,4 @@
-var reg, com, print, data, metadata, l, z, j, R, readJson, be, optionator, lit, c, exec, fs, zj, tampax, most_create, maybe, log, ME, rm, util, filterForConfigFile, unu, rm_all_undef, grouparr, organizeRsync, mergeF, vre, yaml_tokenize, vars, isref, entry;
+var reg, com, print, data, metadata, l, z, j, R, readJson, be, optionator, lit, c, exec, fs, zj, tampax, most_create, maybe, log, ME, rm, util, filterForConfigFile, unu, rm_all_undef, is_true, is_false, grouparr, organizeRsync, mergeF, vre, yaml_tokenize, vars, isref, entry;
 reg = require("./registry");
 require("./print");
 require("./data");
@@ -110,6 +110,12 @@ ME.maybe.obj = be.obj.or(unu);
 ME.maybe.arr = be.arr.or(unu);
 rm_all_undef = function(obj){
   return JSON.parse(JSON.stringify(obj));
+};
+is_true = function(x){
+  return x === true;
+};
+is_false = function(x){
+  return x === false;
 };
 ME.rsync = {};
 ME.rsync.string = function(str){
@@ -266,6 +272,7 @@ organizeRsync = function(list){
 ME.rsync.strarr = be.arr.map(be.str).or(be.str.cont(function(s){
   return [s];
 })).or(be.undefnull.cont([]));
+ME.watch = ME.strlist.undef.or(be(is_true).cont(["."])).or(is_false);
 ME.rsync.user = be.arr.or(be.undefnull.cont(void 8)).alt(be.bool.cont(function(val){
   var rsync;
   if (val === true) {
@@ -292,10 +299,10 @@ ME.rsync.user = be.arr.or(be.undefnull.cont(void 8)).alt(be.bool.cont(function(v
 ME.chokidar = be.obj.on(data.chokidar.bools, ME.maybe.bool).on(['ignored', 'cwd'], ME.maybe.str).on('awaitWriteFinish', ME.maybe.obj.on(['stabilityThreshold', 'pollInterval'], ME.maybe.num).or(be.bool)).on(['interval', 'binaryInterval', 'depth'], ME.maybe.num);
 ME.user = be.obj.or(be.undefnull.cont(function(){
   return {};
-}).err(void 8)).and(be.restricted(data.selected_keys.arr)).on('initialize', ME.maybe.bool).on('watch', ME.strlist.undef).on(['exec.remote', 'exec.locale', 'exec.finale'], ME.strlist.undef).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync.user);
+}).err(void 8)).and(be.restricted(data.selected_keys.arr)).on('initialize', ME.maybe.bool).on('watch', ME.strlist.undef.or(be(is_true).cont(["."])).or(is_false)).on('ssh', be.str.or(unu)).on(['exec.remote', 'exec.locale', 'exec.finale'], ME.strlist.undef).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync.user);
 ME.origin = be.obj.alt(unu.cont(function(){
   return {};
-})).on(['remotehost', 'remotefold'], be.str.or(unu)).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.strlist.dot).on(['exec.locale', 'exec.finale', 'exec.remote'], ME.strlist.empty).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).edit(function(data){
+})).on('remotehost', be.str.or(unu)).on('remotefold', be.str.or(unu.cont("~"))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.strlist.dot.or(be(is_true).cont(["."])).or(is_false)).on('ssh', be.str.or(be.undefnull.cont(data.def.ssh))).on(['exec.locale', 'exec.finale', 'exec.remote'], ME.strlist.empty).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).edit(function(data){
   arguments[2].temp = data;
   return data;
 }).on('rsync', be(function(){
@@ -326,9 +333,7 @@ ME.origin = be.obj.alt(unu.cont(function(){
     }
   }
   return fin;
-}).or(be(function(x){
-  return x === false;
-})))).map(function(value, key, __, state){
+}).or(is_false))).map(function(value, key, __, state){
   var put;
   switch (data.selected_keys.set.has(key)) {
   case true:
@@ -387,7 +392,7 @@ ME.main = be.obj.on('cmd', be.arr.map(function(x){
       return print.basicError;
     }
   }());
-  return F(Error, path, filename, topmsg);
+  return F(Error, path, filename, all);
 }).edit(function(__, state){
   var user, def, nuser, key, value;
   user = state.user, def = state.def;
@@ -521,9 +526,8 @@ entry = function(info){
         }
         state = {
           commandline: info.commandline,
+          options: info.options,
           filename: info.filename,
-          verbose: info.verbose,
-          dryRun: info.dryRun,
           cmd: info.cmd,
           origin: rawJson,
           def: {},

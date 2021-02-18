@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var reg, com, print, metadata, validator, l, z, j, R, fs, lit, c, readJson, most, be, optionator, hop, exec, chokidar, most_create, cmd_options, cmdparser, opt, str, split_by_var, filename, info_from_user, x$, data, $;
+var reg, com, print, metadata, validator, l, z, j, R, fs, lit, c, readJson, most, be, optionator, hop, exec, chokidar, most_create, cmd_options, cmdparser, opt, str, split_by_var, filename, info_from_user, x$, data, y$, $;
 reg = require("./registry");
 require("./print");
 require("./data");
@@ -38,6 +38,11 @@ cmd_options = {
       alias: 'n',
       type: 'Boolean',
       description: 'perform a trial run without making any changes'
+    }, {
+      option: 'no-watch',
+      alias: 'nw',
+      type: 'Boolean',
+      description: 'disable all watches ( globally ), watches don\'t get created.'
     }
   ]
 };
@@ -91,20 +96,26 @@ x$ = data = {};
 x$.cmd = info_from_user.cmd;
 x$.vars = info_from_user.vars;
 x$.filename = filename;
-x$.verbose = opt.verbose;
-x$.dryRun = opt.dryRun;
 x$.commandline = R.drop(2, process.argv);
+y$ = x$.options = {};
+y$.verbose = opt.verbose;
+y$.dryRun = opt.dryRun;
+y$.noWatch = opt.noWatch;
 $ = most_create(function(add, end, error){
   var watcher;
-  watcher = chokidar.watch(filename, {
-    awaitWriteFinish: true
-  });
-  watcher.on('change', add);
-  setTimeout(add, 0);
-  return function(){
-    watcher.close();
-    return end();
-  };
+  if (data.options.noWatch) {
+    return setTimeout(add, 0);
+  } else {
+    watcher = chokidar.watch(filename, {
+      awaitWriteFinish: true
+    });
+    watcher.on('change', add);
+    setTimeout(add, 0);
+    return function(){
+      watcher.close();
+      return end();
+    };
+  }
 }).loop(function(I){
   var $new;
   if (I) {

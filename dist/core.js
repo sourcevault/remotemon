@@ -1,4 +1,4 @@
-var reg, com, print, data, metadata, readJson, readYaml, be, hop, fs, chokidar, c, lit, spawn, exec, l, z, j, R, most, most_create, create_rsync_cmd, create_logger, show, create_continue, create_proc, main, entry;
+var reg, com, print, data, metadata, readJson, readYaml, be, hop, fs, chokidar, c, lit, spawn, exec, l, z, j, R, most, most_create, create_rsync_cmd, to_bool, create_logger, show, create_continue, create_proc, main, if_show_return_to_watch, entry;
 reg = require("./registry");
 com = reg.com, print = reg.print, data = reg.data, metadata = reg.metadata;
 readJson = com.readJson, readYaml = com.readYaml, be = com.be, hop = com.hop, fs = com.fs;
@@ -32,6 +32,13 @@ create_rsync_cmd = function(data){
     return results$;
   }
 };
+to_bool = function(x){
+  if (x) {
+    return true;
+  } else {
+    return false;
+  }
+};
 create_logger = function(buildname, verbose){
   var ob;
   ob = {
@@ -43,16 +50,13 @@ create_logger = function(buildname, verbose){
   };
 };
 show = hop.unary.wh(function(arg$){
-  var type;
+  var type, ref$;
   type = arg$[0];
-  return typeof type === 'number';
+  return (ref$ = typeof type) === 'boolean' || ref$ === 'number';
 }, function(args, state){
-  switch (args[0]) {
-  case 0:
-    break;
-  default:
+  if (args[0]) {
     return show(R.drop(1, args), state);
-  }
+  } else {}
 }).ar(3, function(arg$, state){
   var type, procname, buildtxt;
   type = arg$[0], procname = arg$[1], buildtxt = arg$[2];
@@ -101,7 +105,7 @@ create_continue = function(dryRun){
     }
   };
 };
-create_proc = function(data, logger, cont, dryRun){
+create_proc = function(data, logger, cont, options){
   return function*(){
     var locale, i$, len$, txt, cmd, disp, remotetask, E, I, postscript;
     locale = data['exec.locale'];
@@ -126,20 +130,20 @@ create_proc = function(data, logger, cont, dryRun){
     disp = " " + data.remotehost + ":" + data.remotefold;
     remotetask = data['exec.remote'];
     logger(remotetask.length, 'ok', " exec.remote ", disp);
-    if (remotetask.length && !dryRun) {
-      cmd = "ssh -tt -o LogLevel=QUIET " + data.remotehost + " 'ls " + data.remotefold + "'";
+    if (remotetask.length && !options.dryRun) {
+      cmd = "ssh " + data.ssh + " " + data.remotehost + " 'ls " + data.remotefold + "'";
       try {
         exec(cmd);
       } catch (e$) {
         E = e$;
         l(lit(["[" + metadata.name + "]", " " + data.remotefold, " does not exist, creating new directory .."], [c.ok, c.warn, c.blue]));
-        cmd = "ssh -tt -o LogLevel=QUIET " + data.remotehost + " 'mkdir " + data.remotefold + "'";
+        cmd = "ssh " + data.ssh + " " + data.remotehost + " 'mkdir " + data.remotefold + "'";
         (yield cont(cmd));
       }
     }
     for (i$ = 0, len$ = remotetask.length; i$ < len$; ++i$) {
       I = remotetask[i$];
-      cmd = "ssh -tt -o LogLevel=QUIET " + data.remotehost + " \"" + ("cd " + data.remotefold + ";") + I + "\"";
+      cmd = ("ssh " + data.ssh + " ") + data.remotehost + " \"" + ("cd " + data.remotefold + ";") + I + "\"";
       logger('verbose', cmd);
       (yield cont(cmd));
     }
@@ -154,15 +158,16 @@ create_proc = function(data, logger, cont, dryRun){
     return 'beme';
   };
 };
-main = function(data, buildname, verbose, dryRun){
-  var logger, cont, I, proc, $file_watch, $proc;
-  logger = create_logger(buildname, verbose);
-  cont = create_continue(dryRun);
+main = function(data, buildname, options){
+  var logger, cont, is_watch, I, proc, $file_watch, $proc;
+  logger = create_logger(buildname, options.verbose);
+  cont = create_continue(options.dryRun);
   if (!data.remotefold || !data.remotehost) {
     logger('warn', lit([" ⛔    ", " warn "], [c.pink, c.warn]), ".remotemon or(and) .remotehost not defined.");
   }
-  logger('ok', "    watching ", c.grey("[ working directory ] → " + process.cwd()));
-  logger("> " + (function(){
+  is_watch = to_bool(data.watch && !options.noWatch);
+  logger(is_watch, 'ok', "    watching ", c.grey("[ working directory ] → " + process.cwd()));
+  logger(is_watch, "> " + (function(){
     var i$, ref$, len$, results$ = [];
     for (i$ = 0, len$ = (ref$ = data.watch).length; i$ < len$; ++i$) {
       I = ref$[i$];
@@ -170,18 +175,20 @@ main = function(data, buildname, verbose, dryRun){
     }
     return results$;
   }()).join(c.pink(" | ")));
-  proc = create_proc(data, logger, cont, dryRun);
+  proc = create_proc(data, logger, cont, options);
   $file_watch = most_create(function(add, end, error){
     var watcher;
-    watcher = chokidar.watch(data.watch, data.chokidar);
-    watcher.on('change', add);
     if (data.initialize) {
       add('init');
     }
-    return function(){
-      watcher.close();
-      end();
-    };
+    if (data.watch && !options.noWatch) {
+      watcher = chokidar.watch(data.watch, data.chokidar);
+      watcher.on('change', add);
+      return function(){
+        watcher.close();
+        end();
+      };
+    } else {}
   });
   $proc = $file_watch.map(function(changed){
     var $inner;
@@ -193,13 +200,37 @@ main = function(data, buildname, verbose, dryRun){
   });
   return $proc.switchLatest();
 };
+if_show_return_to_watch = function(data, count){
+  var ws, i$, ref$, len$, I, torna;
+  if (!(count === data.cmd.length)) {
+    return false;
+  }
+  if (data.options.noWatch === true) {
+    return false;
+  }
+  ws = [];
+  for (i$ = 0, len$ = (ref$ = data.cmd).length; i$ < len$; ++i$) {
+    I = ref$[i$];
+    ws.push(data.user[I].watch);
+  }
+  if (R.sum(ws) === 0) {
+    return 'only_config';
+  }
+  torna = R.zipWith(function(cmd, ws){
+    if (ws) {
+      return cmd;
+    } else {}
+  }, data.cmd, ws);
+  return R.without([void 8], torna);
+};
 entry = hop.wh(function(data){
   return data.cmd.length === 0;
 }, function(data){
-  var $, $fin;
-  $ = main(data.def, "", data.verbose, data.dryRun);
+  var $, is_watch, $fin;
+  $ = main(data.def, "", data.options);
+  is_watch = is_bool(data.def.watch && !data.options.noWatch);
   $fin = $.tap(function(x){
-    if (x === 'done') {
+    if (x === 'done' && is_watch) {
       return l(c.ok("[" + metadata.name + "] .. returning to watch .."));
     }
   });
@@ -210,17 +241,24 @@ entry = hop.wh(function(data){
   allstreams = [];
   for (i$ = 0, len$ = (ref$ = data.cmd).length; i$ < len$; ++i$) {
     key = ref$[i$];
-    $ = main(user[key], "[" + key + "]", data.verbose, data.dryRun);
+    $ = main(user[key], "[" + key + "]", data.options);
     allstreams.push($);
   }
   F = function(state, x){
-    var txt;
+    var torna, txt;
     if (x === 'done') {
       state += 1;
     }
-    if (state === data.cmd.length) {
-      txt = "[" + data.cmd.join("][") + "]";
-      l(lit(["[" + metadata.name + "]", txt, " .. returning to watch .."], [c.ok, c.warn, c.ok]));
+    torna = if_show_return_to_watch(data, state);
+    if (torna) {
+      switch (torna) {
+      case 'only_config':
+        l(lit(["[" + metadata.name + "]", " .. only watching config file ", data.filename + ""], [c.ok, c.ok, c.blue]));
+        break;
+      default:
+        txt = "[" + torna.join("][") + "]";
+        l(lit(["[" + metadata.name + "]", txt, " .. returning to watch .."], [c.ok, c.warn, c.ok]));
+      }
       return {
         seed: 0
       };

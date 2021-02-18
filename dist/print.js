@@ -106,11 +106,15 @@ print.resError = function(props, path, filename){
 };
 print.usercmd_not_defined = function(msg, path, filename){
   show_name(filename);
-  return l(show_body([msg], lit([msg + "", " is not a valid user defined task."], [c.er3, c.warn])));
+  return l(lit(["  " + msg, " is not a valid user defined task."], [c.warn, c.er3, c.er2, c.pink]));
 };
-print.basicError = function(msg, path, filename){
+print.basicError = function(msg, path, filename, all){
+  var vals;
+  vals = R.filter(function(x){
+    return !(x === '');
+  }, all);
   show_name(filename);
-  return l(show_body(path, msg));
+  return l(show_body(path, vals[0]));
 };
 print.no_match_for_arguments = function(){
   return lit(["[" + metadata.name + "]", "[argumentError]\n\n", "   match for arguments failed.\n\n", "   " + j(arguments)], [c.er2, c.er3, c.warn, c.pink]);
