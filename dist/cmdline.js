@@ -59,7 +59,7 @@ try {
 }
 if (opt.help) {
   l(cmdparser.generateHelp());
-  str = "\nBy default remotemon will look for .remotemon.yaml in current directory and one level up (only).\n\nusing --config <filename>.yaml option will direct remotemon to use <filename>.yaml as config file :\n\n> remotemon --config custom.yaml\n> remotemon --config custom.yaml -verbose\n\nvalues for internal variables can be changed using '=' :\n\n> remotemon --config custom.yaml -verbose file=dist/main.js\n";
+  str = "\nBy default remotemon will look for .remotemon.yaml in current directory and one level up (only).\n\nusing --config <filename>.yaml option will direct remotemon to use <filename>.yaml as config file :\n\n> remotemon --config custom.yaml\n> remotemon --config custom.yaml --verbose\n\nvalues for internal variables can be changed using '=' (similar to makefiles) :\n\n> remotemon --config custom.yaml --verbose file=dist/main.js\n\ndocumentation @ [ https://github.com/sourcevault/remotemon ]\n";
   l(str);
   return 0;
 }
