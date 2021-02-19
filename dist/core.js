@@ -143,7 +143,7 @@ create_proc = function(data, logger, cont, options){
     }
     for (i$ = 0, len$ = remotetask.length; i$ < len$; ++i$) {
       I = remotetask[i$];
-      cmd = ("ssh " + data.ssh + " ") + data.remotehost + " \"" + ("cd " + data.remotefold + ";") + I + "\"";
+      cmd = ("ssh " + data.ssh + " ") + data.remotehost + " '" + ("cd " + data.remotefold + ";") + I + "'";
       logger('verbose', cmd);
       (yield cont(cmd));
     }
@@ -228,10 +228,17 @@ entry = hop.wh(function(data){
 }, function(data){
   var $, is_watch, $fin;
   $ = main(data.def, "", data.options);
-  is_watch = is_bool(data.def.watch && !data.options.noWatch);
+  is_watch = if_show_return_to_watch(data, 0);
   $fin = $.tap(function(x){
-    if (x === 'done' && is_watch) {
-      return l(c.ok("[" + metadata.name + "] .. returning to watch .."));
+    if (x === 'done') {
+      switch (is_watch) {
+      case 'only_config':
+        return l(lit(["[" + metadata.name + "]", " .. only watching config file ", data.filename + ""], [c.ok, c.warn, c.blue]));
+      case false:
+        break;
+      default:
+        return l(c.ok("[" + metadata.name + "] .. returning to watch .."));
+      }
     }
   });
   return $fin;
@@ -253,7 +260,9 @@ entry = hop.wh(function(data){
     if (torna) {
       switch (torna) {
       case 'only_config':
-        l(lit(["[" + metadata.name + "]", " .. only watching config file ", data.filename + ""], [c.ok, c.ok, c.blue]));
+        l(lit(["[" + metadata.name + "]", " .. only watching config file ", data.filename + ""], [c.ok, c.warn, c.blue]));
+        break;
+      case false:
         break;
       default:
         txt = "[" + torna.join("][") + "]";
