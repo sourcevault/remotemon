@@ -6,7 +6,7 @@
   "license": "BSD-3-Clause",
   "description": "remote monitoring",
   "repository": "https://github.com/sourcevault/remotemon.git",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "main": "dist/main.js",
   "scripts": {
     "test": "make travis"
