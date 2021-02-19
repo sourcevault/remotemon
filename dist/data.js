@@ -17,7 +17,7 @@ data.def.rsync = [
     src: '.'
   }, 'recursive', 'quiet'
 ];
-data.def.ssh = "-tt -o LogLevel=QUIET";
+data.def.ssh = "-tt -o LogLevel=error";
 data.def.chokidar = {
   awaitWriteFinish: true
 };
