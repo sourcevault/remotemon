@@ -310,7 +310,10 @@ ME.user = be.obj.or(be.undefnull.cont(function(){
 }).err(void 8)).and(be.restricted(data.selected_keys.arr)).on('initialize', ME.maybe.bool).on('watch', ME.strlist.undef.or(be(is_true).cont(["."])).or(is_false)).on('ssh', be.str.or(unu)).on(['exec.remote', 'exec.locale', 'exec.finale'], ME.strlist.undef.cont(replace_single_qoute)).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync.user);
 ME.origin = be.obj.alt(unu.cont(function(){
   return {};
-})).on('remotehost', be.str.or(unu)).on('remotefold', be.str.or(unu.cont("~"))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.strlist.dot.or(be(is_true).cont(["."])).or(is_false)).on('ssh', be.str.or(be.undefnull.cont(data.def.ssh))).on(['exec.locale', 'exec.finale', 'exec.remote'], ME.strlist.empty.cont(replace_single_qoute)).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).edit(function(data){
+})).on('remotehost', be.str.or(unu)).on('remotefold', be.str.or(unu.cont("~"))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.strlist.dot.or(be(is_true).cont(["."])).or(is_false)).on('ssh', be.str.or(be.undefnull.cont(data.def.ssh)).cont(function(x){
+  x;
+  return x;
+})).on(['exec.locale', 'exec.finale', 'exec.remote'], ME.strlist.empty.cont(replace_single_qoute)).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).edit(function(data){
   arguments[2].temp = data;
   return data;
 }).on('rsync', be(function(){
@@ -367,7 +370,7 @@ ME.origin = be.obj.alt(unu.cont(function(){
   return true;
 });
 mergeF = function(a, b){
-  if (!b) {
+  if (b === void 8) {
     return a;
   }
   return b;

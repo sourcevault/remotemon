@@ -1,9 +1,9 @@
-var reg, com, print, data, metadata, readJson, readYaml, be, hop, fs, chokidar, c, lit, spawn, exec, l, z, j, R, most, most_create, create_rsync_cmd, to_bool, create_logger, show, create_continue, create_proc, main, if_show_return_to_watch, entry;
+var reg, com, print, data, metadata, readJson, readYaml, be, hop, fs, chokidar, c, lit, spawn, exec, l, z, j, zj, R, most, most_create, create_rsync_cmd, to_bool, create_logger, show, create_continue, create_proc, main, if_show_return_to_watch, entry;
 reg = require("./registry");
 com = reg.com, print = reg.print, data = reg.data, metadata = reg.metadata;
 readJson = com.readJson, readYaml = com.readYaml, be = com.be, hop = com.hop, fs = com.fs;
 chokidar = com.chokidar, c = com.c, lit = com.lit, spawn = com.spawn, exec = com.exec;
-l = com.l, z = com.z, j = com.j, R = com.R, most = com.most, most_create = com.most_create;
+l = com.l, z = com.z, j = com.j, zj = com.zj, R = com.R, most = com.most, most_create = com.most_create;
 create_rsync_cmd = function(data){
   var rsync, txt, str, obnormal, obarr, des, src, i$, len$, I, ref$, key, val, cmd;
   rsync = data.rsync;
