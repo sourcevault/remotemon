@@ -106,7 +106,7 @@ print.resError = function(props, path, filename){
 };
 print.usercmd_not_defined = function(msg, path, filename){
   show_name(filename);
-  return l(lit(["  " + msg, " is not a valid user defined task."], [c.warn, c.er3, c.er2, c.pink]));
+  return l(lit(["  " + msg, " is not a valid user defined task."], [c.warn, c.er2]));
 };
 print.basicError = function(msg, path, filename, all){
   var vals;

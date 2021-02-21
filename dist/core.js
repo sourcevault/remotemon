@@ -67,7 +67,7 @@ show = hop.unary.wh(function(arg$){
   case 'warn':
     procname = lit(["[", procname + "", "]"], [c.pink, null, c.pink]);
   }
-  return l(lit(["[" + metadata.name + "]", state.buildname + "", procname + "", buildtxt], [c.ok, c.warn, c.ok, c.grey]));
+  return l(lit(["[" + metadata.name + "]", state.buildname + "", procname + "", buildtxt], [c.ok, c.er1, c.ok, c.grey]));
 }).ar(2, function(arg$, state){
   var type, txt;
   type = arg$[0], txt = arg$[1];
@@ -163,7 +163,7 @@ main = function(data, buildname, options){
   logger = create_logger(buildname, options.verbose);
   cont = create_continue(options.dryRun);
   if (!data.remotefold || !data.remotehost) {
-    logger('warn', lit([" ⛔    ", " warn "], [c.pink, c.warn]), ".remotemon or(and) .remotehost not defined.");
+    logger('warn', lit([" ⛔    ", " warn "], [c.er1, c.er1]), " .remotehost or(and) .remotefold not defined.");
   }
   is_watch = to_bool(data.watch && !options.noWatch);
   logger(is_watch, 'ok', "    watching ", c.grey("[ working directory ] → " + process.cwd()));
