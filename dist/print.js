@@ -1,7 +1,7 @@
-var reg, com, print, l, z, lit, j, c, readJson, R, create_stack, show_stack, metadata, show_name, show_body, print_wrap, I, key;
+var reg, com, print, data, l, z, lit, j, hop, c, readJson, R, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, create_logger, show, print_wrap, I, key;
 reg = require("./registry");
-com = reg.com, print = reg.print;
-l = com.l, z = com.z, lit = com.lit, j = com.j;
+com = reg.com, print = reg.print, data = reg.data;
+l = com.l, z = com.z, lit = com.lit, j = com.j, hop = com.hop;
 c = com.c, readJson = com.readJson, R = com.R, z = com.z, create_stack = com.create_stack;
 show_stack = create_stack(2, []);
 R.tryCatch(function(filename){
@@ -25,13 +25,19 @@ show_name = function(filename){
     return l("  " + c.er1(filename) + "\n");
   }
 };
+rdot = /\./;
+clean_path = R.pipe(R.map(function(txt){
+  if (rdot.exec(txt)) {
+    return "\"" + txt + "\"";
+  }
+  return txt;
+}), R.drop(1), R.splitAt(-1));
 show_body = function(path, msg){
   var ref$, init, last, txt;
-  ref$ = R.splitAt(-1)(
-  R.drop(1, path)), init = ref$[0], last = ref$[1];
+  ref$ = clean_path(path), init = ref$[0], last = ref$[1];
   txt = ["  " + init.join("."), "." + last.join("."), " <-- error here"];
   if (msg) {
-    txt.push("\n\n  " + msg, "  ");
+    txt.push("\n\n " + msg, "  ");
   }
   return lit(txt, [c.warn, c.er3, c.er2, c.pink]);
 };
@@ -102,11 +108,15 @@ print.resError = function(props, path, filename){
   var key;
   show_name(filename);
   key = R.last(path);
-  return l(show_body(path, [c.grey("unrecognized config key") + c.er3(" ." + key) + "\n", c.grey("only acceptable keys are :\n"), c.pink("- " + props.join(" \n  - "))].join("\n  ")));
+  return l(show_body(path, [c.grey("unrecognized config key") + c.er3(" " + key) + "\n", c.grey("only acceptable keys are :\n"), c.pink("- " + props.join(" \n  - "))].join("\n  ")));
 };
 print.usercmd_not_defined = function(msg, path, filename){
   show_name(filename);
   return l(lit(["  " + msg, " is not a valid user defined task."], [c.warn, c.er2]));
+};
+print.custom_build = function(msg, path, filename){
+  show_name(filename);
+  return l(show_body(path, [c.grey("unrecognized value provided.") + "\n", c.grey("only acceptable value types :\n"), c.pink("- array of string ( defaults to exec-locale )."), c.pink("- object with restricted keys :"), c.warn("\n  - " + data.selected_keys.arr.join("\n  - "))].join("\n ")));
 };
 print.basicError = function(msg, path, filename, all){
   var vals;
@@ -119,6 +129,56 @@ print.basicError = function(msg, path, filename, all){
 print.no_match_for_arguments = function(){
   return lit(["[" + metadata.name + "]", "[argumentError]\n\n", "   match for arguments failed.\n\n", "   " + j(arguments)], [c.er2, c.er3, c.warn, c.pink]);
 };
+create_logger = function(buildname, verbose){
+  var ob;
+  ob = {
+    buildname: buildname,
+    verbose: verbose
+  };
+  return function(){
+    return show(arguments, ob);
+  };
+};
+show = hop.unary.wh(function(arg$){
+  var type, ref$;
+  type = arg$[0];
+  return (ref$ = typeof type) === 'boolean' || ref$ === 'number';
+}, function(args, state){
+  if (args[0]) {
+    return show(R.drop(1, args), state);
+  } else {}
+}).ar(3, function(arg$, state){
+  var type, procname, buildtxt, buildname;
+  type = arg$[0], procname = arg$[1], buildtxt = arg$[2];
+  buildname = state.buildname;
+  switch (type) {
+  case 'ok':
+    procname = c.ok("[") + c.pink(procname + "") + c.ok("]");
+    break;
+  case 'warn':
+    procname = lit(["[", procname + "", "]"], [c.pink, null, c.pink]);
+    break;
+  case 'no_buildname':
+    buildname = "";
+  }
+  return l(lit(["[" + metadata.name + "]", buildname, procname + "", buildtxt], [c.ok, c.er1, c.ok, c.grey]));
+}).ar(2, function(arg$, state){
+  var type, txt;
+  type = arg$[0], txt = arg$[1];
+  switch (type) {
+  case 'verbose':
+    if (state.verbose) {
+      return l("> " + txt);
+    }
+    break;
+  default:
+    return show([type, txt, ""], state);
+  }
+}).ar(1, function(arg$){
+  var txt;
+  txt = arg$[0];
+  return l(txt);
+}).def();
 print_wrap = function(f){
   return function(){
     f.apply(null, arguments);
@@ -135,4 +195,18 @@ for (I in print) {
 }
 print.showHeader = function(){
   return l(lit(["[" + metadata.name + "]", "[     version ]", " " + metadata.version], [c.ok, c.grey, c.grey]));
+};
+print.create_logger = create_logger;
+print.show = function(disp, txt){
+  var num;
+  if (disp) {
+    switch (typeof disp) {
+    case 'string':
+      num = parseInt(disp[0]);
+      l(c.ok("[" + metadata.name + "]"), txt[num]);
+      break;
+    default:
+      l(c.ok("[" + metadata.name + "]"), txt);
+    }
+  }
 };

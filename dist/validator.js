@@ -55,7 +55,7 @@ ME.recursive_str_list = be.arr.map(be.arr.and(function(arr){
     return true;
   }
   return [false, ret.message, ret.path];
-}).cont(R.flatten).or(be.str).or(be.obj.and(function(obj){
+}).cont(R.flatten).or(be.obj.and(function(obj){
   var keys;
   keys = Object.keys(obj);
   switch (keys.length) {
@@ -64,15 +64,16 @@ ME.recursive_str_list = be.arr.map(be.arr.and(function(arr){
   default:
     return [false, [':ob_in_str_list', 'object']];
   }
-})).or(be.undefnull)).alt(be.str).edit(function(list){
+})).or(be.str).or(be.undefnull)).edit(function(list){
   var out, i$, len$, I;
   out = [];
   for (i$ = 0, len$ = list.length; i$ < len$; ++i$) {
     I = list[i$];
-    switch (typeof I) {
-    case "undefined":
+    switch (R.type(I)) {
+    case "Undefined":
+    case "Null":
       break;
-    case "object":
+    case "Array":
       out.push.apply(out, I);
       break;
     default:
@@ -80,7 +81,9 @@ ME.recursive_str_list = be.arr.map(be.arr.and(function(arr){
     }
   }
   return out;
-}).err(function(msg){
+}).alt(be.str.cont(function(x){
+  return [x];
+})).err(function(msg){
   return msg[0];
 }).err(function(msg){
   var type;
@@ -305,15 +308,16 @@ ME.rsync.user = be.arr.or(be.undefnull.cont(void 8)).alt(be.bool.cont(function(v
   return fin;
 });
 ME.chokidar = be.obj.on(data.chokidar.bools, ME.maybe.bool).on(['ignored', 'cwd'], ME.maybe.str).on('awaitWriteFinish', ME.maybe.obj.on(['stabilityThreshold', 'pollInterval'], ME.maybe.num).or(be.bool)).on(['interval', 'binaryInterval', 'depth'], ME.maybe.num);
-ME.user = be.obj.or(be.undefnull.cont(function(){
+ME.user = be.obj.err([':custom_build']).or(be.undefnull.cont(function(){
   return {};
-}).err(void 8)).and(be.restricted(data.selected_keys.arr)).on('initialize', ME.maybe.bool).on('watch', ME.strlist.undef.or(be(is_true).cont(["."])).or(is_false)).on('ssh', be.str.or(unu)).on(['exec.remote', 'exec.locale', 'exec.finale'], ME.strlist.undef.cont(replace_single_qoute)).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync.user);
-ME.origin = be.obj.alt(unu.cont(function(){
+}).err(void 8)).and(be.restricted(data.selected_keys.arr)).on('initialize', ME.maybe.bool).on('watch', ME.strlist.undef.or(be(is_true).cont(["."])).or(is_false)).on('ssh', be.str.or(unu)).on(['exec-remote', 'exec-locale', 'exec-finale'], ME.strlist.undef.cont(replace_single_qoute)).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync.user).or(unu).or(ME.strlist.empty.cont(function(list){
+  return {
+    'exec-locale': list
+  };
+}));
+ME.origin = be.obj.alt(be.undefnull.cont(function(){
   return {};
-})).on('remotehost', be.str.or(unu)).on('remotefold', be.str.or(unu.cont("~"))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.strlist.dot.or(be(is_true).cont(["."])).or(is_false)).on('ssh', be.str.or(be.undefnull.cont(data.def.ssh)).cont(function(x){
-  x;
-  return x;
-})).on(['exec.locale', 'exec.finale', 'exec.remote'], ME.strlist.empty.cont(replace_single_qoute)).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).edit(function(data){
+})).on('remotehost', be.str.or(unu)).on('remotefold', be.str.or(unu.cont("~"))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.strlist.dot.or(be(is_true).cont(["."])).or(is_false)).on('ssh', be.str.or(be.undefnull.cont(data.def.ssh))).on(['exec-locale', 'exec-finale', 'exec-remote'], ME.strlist.empty.cont(replace_single_qoute)).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).edit(function(data){
   arguments[2].temp = data;
   return data;
 }).on('rsync', be(function(){
@@ -379,9 +383,8 @@ ME.main = be.obj.on('cmd', be.arr.map(function(x){
   return !data.selected_keys.set.has(x);
 }).err(function(x, id, __, state){
   return [':in_selected_key', [state.cmd[id], state.commandline]];
-})).on('origin', ME.origin).err(be.flatato).err(function(all, path, arg$){
-  var filename, topmsg, loc, Error, F;
-  filename = arg$.filename;
+})).on('origin', ME.origin).err(be.flatato).err(function(all, path, state){
+  var topmsg, loc, Error, F;
   topmsg = all[0];
   loc = topmsg[0], Error = topmsg[1];
   F = (function(){
@@ -398,12 +401,15 @@ ME.main = be.obj.on('cmd', be.arr.map(function(x){
       return print.rsyncError;
     case ':ob_in_str_list':
       return print.ob_in_str_list;
+    case ':custom_build':
+      return print.custom_build;
     default:
       Error = all[0];
       return print.basicError;
     }
   }());
-  return F(Error, path, filename, all);
+  F(Error, path, state.filename, all);
+  return print.show(!state.options.noWatch, lit([".. returning to watching broken config file, make sure to fix your errors .."], [c.er1]));
 }).edit(function(__, state){
   var user, def, nuser, key, value;
   user = state.user, def = state.def;
@@ -532,6 +538,7 @@ entry = function(info){
         var state;
         if (err) {
           l(err);
+          zj(rawJson);
           print.failed_in_tampex_parsing(info.filename);
           return;
         }

@@ -1,6 +1,5 @@
 ![](https://raw.githubusercontent.com/sourcevault/remotemon/dev/logo.jpg)
 
-
 **Install**
 ```js
 npm install -g remotemon
@@ -10,7 +9,23 @@ npm install -g remotemon
 
 It's main application use-case is for developing / running scripts for single-board computers like the raspberry pi ..
 
-![](https://github.com/sourcevault/remotemon/blob/dev/example.png)
+.. however it can also be used as as a replacement for `make` / `nodemon` 😀.
+
+```bash
+remotemon rpi.update # to update rpi 😎
+remotemon dns # to change default dns 🧐
+remotemon rpi.zsh # install zsh and get oh-my-zsh on the raspberry pi 😏
+remotemon ssh45 # to change default ssh port to 45 👮🏼‍♂️
+```
+
+<!-- ![](https://github.com/sourcevault/remotemon/blob/dev/example.png) -->
+![](./example.png)
+
+***When not to use remotemon ?***
+
+- when your build process gets complicated enough to warrant the use of gulpfiles, makefiles, etc.
+
+- `remotemon` is meant for situations where you are constantly having to configure linux system files, but also developing and running code on remote machines, that involves complicated `rsync` and `ssh` commands, but prefer to change those files from the comfort of your favorite local text editor - not everybody has time to learn vim.
 
 
 #### 🟡 How to Use
@@ -44,15 +59,15 @@ Running `remotemon` without any arguments makes `remotemon` execute default rout
 ```yaml
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  exec.locale: make local
-  exec.remote: make remote
+  exec-locale: make local
+  exec-remote: make remote
 ```
 
 ```yaml
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  exec.locale: make local
-  exec.remote: make remote
+  exec-locale: make local
+  exec-remote: make remote
   chokidar:                     # chokidar options
     awaitWriteFinish: true
 ```
@@ -60,8 +75,8 @@ Running `remotemon` without any arguments makes `remotemon` execute default rout
 ```yaml
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  exec.locale: make local
-  exec.remote: make remote
+  exec-locale: make local
+  exec-remote: make remote
   chokidar:
     awaitWriteFinish: true
   rsync:                        # rsync options
@@ -75,8 +90,8 @@ Running `remotemon` without any arguments makes `remotemon` execute default rout
 ```yaml
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  exec.locale: make local
-  exec.remote: make remote
+  exec-locale: make local
+  exec-remote: make remote
   chokidar:
     awaitWriteFinish: true
   rsync:
@@ -92,20 +107,20 @@ Running `remotemon` without any arguments makes `remotemon` execute default rout
 
 - **Creating named builds**
 
-  Named builds can be created at top-level as long as the name does not clash with selected keywords ( ,`remotehost`,`remotefold`,`exec.locale`,`exec.remote`,`chokidar`,`initialize`,`ssh`,`watch` and `rsync` ).
+  Named builds can be created at top-level as long as the name does not clash with selected keywords ( ,`remotehost`,`remotefold`,`exec-locale`,`exec-remote`,`chokidar`,`initialize`,`ssh`,`watch` and `rsync` ).
 
 
 ```yaml
 mybuild1:
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  exec.locale: make pi1
-  exec.remote: make mybuild1
+  exec-locale: make pi1
+  exec-remote: make mybuild1
 mybuild2:
   remotehost: pi@192.168.43.51
   remotefold: ~/build
-  exec.locale: make pi2
-  exec.remote: make mybuild2
+  exec-locale: make pi2
+  exec-remote: make mybuild2
 ```
 
 values not provided in a build are merged with default provided at top-level , in case defaults don't exist at top level then values are extracted from module's internal defaults.
@@ -120,13 +135,13 @@ rsync:
 mybuild1:
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  exec.locale: make pi1
-  exec.remote: make mybuild1
+  exec-locale: make pi1
+  exec-remote: make mybuild1
 mybuild2:
   remotehost: pi@192.152.65.12
   remotefold: ~/build
-  exec.locale: make pi2
-  exec.remote: make mybuild2
+  exec-locale: make pi2
+  exec-remote: make mybuild2
 ```
 
 In the above config file for example, `mybuild1` and `mybuild2` get their rsync values from the common `rsync` field.
@@ -138,9 +153,9 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 - `remotehost`  - `{username}@{ipaddress}` / ssh name of remote client.
 - `remotefold`  - folder in remote client where we want to execute our script.
 - `watch`       - local file(s) or folders(s) to watch for changes.
-- `exec.locale` - local script to run before copying files to remote client and executing our scripts.
-- `exec.remote` - command to execute in remote client.
-- `exec.finale` - command to execute after `exec.remote` returns `exit 0`.
+- `exec-locale` - local script to run before copying files to remote client and executing our scripts.
+- `exec-remote` - command to execute in remote client.
+- `exec-finale` - command to execute after `exec-remote` returns `exit 0`.
 - `ssh`         - custom `ssh` config options, default is `-tt -o LogLevel=QUIET`.
 
 - `chokidar`- options to use for ![chokidar](https://github.com/paulmillr/chokidar) module :
@@ -180,15 +195,15 @@ global:
   file: /dist/main.js # <-- old value replaced with value taken from commandline
 remotehost: pi@192.152.65.12
 remotefold: ~/test
-exec.locale: make local {{global.file}}
-exec.remote: make remote
+exec-locale: make local {{global.file}}
+exec-remote: make remote
 ```
 string templates can also used to insert value(s) from the command line :
 
 ```yaml
 remotehost: pi@192.152.65.12
 remotefold: ~/test
-exec.locale: make local {{file}}
+exec-locale: make local {{file}}
 ```
 
 however, *it's better practice* to **first** change `global` from your command-line and **then** use `{{global.*}}` to make local edits, since the `global`variable can have default values - something not possible with direct value injections.
@@ -207,6 +222,12 @@ this way we can edit the values of our makefile without opening either `.remotem
 
 
 ##### 🟡 changelog
+
+◾️ `1.1.2`
+
+- custom build accepts array.str ( defaults to `exec-locale` values).
+
+- all `exec.*` changed to `exec-*`
 
 ◾️ `1.0.0`
 

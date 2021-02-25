@@ -1,4 +1,4 @@
-var reg, com, print, data, metadata, readJson, readYaml, be, hop, fs, chokidar, c, lit, spawn, exec, l, z, j, zj, R, most, most_create, create_rsync_cmd, to_bool, create_logger, show, create_continue, create_proc, main, if_show_return_to_watch, entry;
+var reg, com, print, data, metadata, readJson, readYaml, be, hop, fs, chokidar, c, lit, spawn, exec, l, z, j, zj, R, most, most_create, create_rsync_cmd, to_bool, create_continue, create_proc, wait, diff, main, disp, entry;
 reg = require("./registry");
 com = reg.com, print = reg.print, data = reg.data, metadata = reg.metadata;
 readJson = com.readJson, readYaml = com.readYaml, be = com.be, hop = com.hop, fs = com.fs;
@@ -39,52 +39,6 @@ to_bool = function(x){
     return false;
   }
 };
-create_logger = function(buildname, verbose){
-  var ob;
-  ob = {
-    buildname: buildname,
-    verbose: verbose
-  };
-  return function(){
-    return show(arguments, ob);
-  };
-};
-show = hop.unary.wh(function(arg$){
-  var type, ref$;
-  type = arg$[0];
-  return (ref$ = typeof type) === 'boolean' || ref$ === 'number';
-}, function(args, state){
-  if (args[0]) {
-    return show(R.drop(1, args), state);
-  } else {}
-}).ar(3, function(arg$, state){
-  var type, procname, buildtxt;
-  type = arg$[0], procname = arg$[1], buildtxt = arg$[2];
-  switch (type) {
-  case 'ok':
-    procname = c.ok("[") + c.pink(procname + "") + c.ok("]");
-    break;
-  case 'warn':
-    procname = lit(["[", procname + "", "]"], [c.pink, null, c.pink]);
-  }
-  return l(lit(["[" + metadata.name + "]", state.buildname + "", procname + "", buildtxt], [c.ok, c.er1, c.ok, c.grey]));
-}).ar(2, function(arg$, state){
-  var type, txt;
-  type = arg$[0], txt = arg$[1];
-  switch (type) {
-  case 'verbose':
-    if (state.verbose) {
-      return l("> " + txt);
-    }
-    break;
-  default:
-    return show([type, txt, ""], state);
-  }
-}).ar(1, function(arg$){
-  var txt;
-  txt = arg$[0];
-  return l(txt);
-}).def();
 create_continue = function(dryRun){
   return function(txt){
     var status;
@@ -108,8 +62,8 @@ create_continue = function(dryRun){
 create_proc = function(data, logger, cont, options){
   return function*(){
     var locale, i$, len$, txt, cmd, disp, remotetask, E, I, postscript;
-    locale = data['exec.locale'];
-    logger(locale.length, 'ok', " exec.locale ");
+    locale = data['exec-locale'];
+    logger(locale.length, 'ok', " exec-locale ");
     for (i$ = 0, len$ = locale.length; i$ < len$; ++i$) {
       txt = locale[i$];
       logger('verbose', txt);
@@ -128,7 +82,7 @@ create_proc = function(data, logger, cont, options){
       logger('ok', lit([" rsync", "    ✔️ "], [0, c.ok]));
     }
     disp = " " + data.remotehost + ":" + data.remotefold;
-    remotetask = data['exec.remote'];
+    remotetask = data['exec-remote'];
     logger(remotetask.length, 'ok', " exec.remote ", disp);
     if (remotetask.length && !options.dryRun) {
       cmd = "ssh " + data.ssh + " " + data.remotehost + " 'ls " + data.remotefold + "'";
@@ -147,8 +101,8 @@ create_proc = function(data, logger, cont, options){
       logger('verbose', cmd);
       (yield cont(cmd));
     }
-    postscript = data['exec.finale'];
-    logger(postscript.length, 'ok', " exec.finale ");
+    postscript = data['exec-finale'];
+    logger(postscript.length, 'ok', " exec-finale ");
     for (i$ = 0, len$ = postscript.length; i$ < len$; ++i$) {
       cmd = postscript[i$];
       logger('verbose', cmd);
@@ -158,12 +112,21 @@ create_proc = function(data, logger, cont, options){
     return 'beme';
   };
 };
+wait = function(f, t){
+  return setTimeout(f, t);
+};
+diff = R.pipe(R.aperture(2), R.map(function(arg$){
+  var x, y;
+  x = arg$[0], y = arg$[1];
+  return y - x;
+}));
 main = function(data, buildname, options){
   var logger, cont, is_watch, I, proc, $file_watch, $proc;
-  logger = create_logger(buildname, options.verbose);
+  logger = print.create_logger(buildname, options.verbose);
   cont = create_continue(options.dryRun);
+  l("");
   if (!data.remotefold || !data.remotehost) {
-    logger('warn', lit([" ⛔    ", " warn "], [c.er1, c.er1]), " .remotehost or(and) .remotefold not defined.");
+    logger('warn', lit([" ⛔    ", " warn "], [c.er1, c.er1]), " remotehost address not defined for task.");
   }
   is_watch = to_bool(data.watch && !options.noWatch);
   logger(is_watch, 'ok', "    watching ", c.grey("[ working directory ] → " + process.cwd()));
@@ -190,29 +153,70 @@ main = function(data, buildname, options){
       };
     } else {}
   });
-  $proc = $file_watch.map(function(changed){
-    var $inner;
-    $inner = most.generate(proc).recoverWith(function(cmdname){
+  $proc = $file_watch.timestamp().loop(function(db, ob){
+    var ref$, first, second, fin;
+    db.shift();
+    db.push(Math.floor(ob.time / 2000));
+    ref$ = diff(db), first = ref$[0], second = ref$[1];
+    fin = {
+      seed: db
+    };
+    if (first === second) {
+      l(lit(["[" + metadata.name + "]", "[ ", "⚡️", "    error ", "] ", "infinite loop detected ", ob.value, " is offending file, ignoring event."], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1, c.warn, c.er1]));
+      fin.value = 'err';
+    } else {
+      fin.value = 'ok';
+    }
+    return fin;
+  }, [0, 0, 0]).map(function(status){
+    if (status === 'err') {
+      return most.just('done');
+    }
+    return most.generate(proc).recoverWith(function(cmdname){
       l(lit(["[" + metadata.name + "]", "[ ", "⚡️", "    error ", "] ", cmdname], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1]));
-      return most.empty();
+      return most.just('done');
     });
-    return $inner;
   });
   return $proc.switchLatest();
 };
-if_show_return_to_watch = function(data, count){
-  var ws, i$, ref$, len$, I, torna;
-  if (!(count === data.cmd.length)) {
+disp = {};
+disp.single = hop.ma(function(data, signal){
+  if (signal !== 'done') {
+    return false;
+  }
+  if (data.options.noWatch) {
+    return false;
+  }
+  if (data.def.watch === false) {
+    return 'only_config';
+  }
+  return true;
+}, function(type, data, signal){
+  switch (type) {
+  case 'only_config':
+    return l(lit(["[" + metadata.name + "]", " .. only watching config file ", data.filename + ""], [c.ok, c.warn, c.blue]));
+  default:
+    return l(c.ok("[" + metadata.name + "] .. returning to watch .."));
+  }
+}).def();
+disp.multiple = hop.ma(function(arg$, signal){
+  var count, data, ws, res$, i$, ref$, len$, I, torna;
+  count = arg$[0], data = arg$[1];
+  if (signal !== 'done') {
+    return false;
+  }
+  if (count !== data.cmd.length) {
     return false;
   }
   if (data.options.noWatch === true) {
     return false;
   }
-  ws = [];
+  res$ = [];
   for (i$ = 0, len$ = (ref$ = data.cmd).length; i$ < len$; ++i$) {
     I = ref$[i$];
-    ws.push(data.user[I].watch);
+    res$.push(data.user[I].watch);
   }
+  ws = res$;
   if (R.sum(ws) === 0) {
     return 'only_config';
   }
@@ -222,28 +226,39 @@ if_show_return_to_watch = function(data, count){
     } else {}
   }, data.cmd, ws);
   return R.without([void 8], torna);
-};
+}, function(torna, arg$){
+  var count, data, txt;
+  count = arg$[0], data = arg$[1];
+  switch (torna) {
+  case 'only_config':
+    l(lit(["[" + metadata.name + "]", " .. only watching config file ", data.filename + ""], [c.ok, c.warn, c.blue]));
+    break;
+  default:
+    txt = "[" + torna.join("][") + "]";
+    l(lit(["[" + metadata.name + "]", txt, " .. returning to watch .."], [c.ok, c.warn, c.ok]));
+  }
+  return {
+    seed: [1, data]
+  };
+}).def(function(arg$){
+  var count, data;
+  count = arg$[0], data = arg$[1];
+  return {
+    seed: [count + 1, data]
+  };
+});
 entry = hop.wh(function(data){
   return data.cmd.length === 0;
 }, function(data){
-  var $, is_watch, $fin;
+  var $, $fin;
   $ = main(data.def, "", data.options);
-  is_watch = if_show_return_to_watch(data, 0);
-  $fin = $.tap(function(x){
-    if (x === 'done') {
-      switch (is_watch) {
-      case 'only_config':
-        return l(lit(["[" + metadata.name + "]", " .. only watching config file ", data.filename + ""], [c.ok, c.warn, c.blue]));
-      case false:
-        break;
-      default:
-        return l(c.ok("[" + metadata.name + "] .. returning to watch .."));
-      }
-    }
+  $fin = $;
+  $fin = $.tap(function(signal){
+    return disp.single(data, signal);
   });
   return $fin;
 }).def(function(data){
-  var user, allstreams, i$, ref$, len$, key, $, F;
+  var user, allstreams, i$, ref$, len$, key, $;
   user = data.user;
   allstreams = [];
   for (i$ = 0, len$ = (ref$ = data.cmd).length; i$ < len$; ++i$) {
@@ -251,31 +266,6 @@ entry = hop.wh(function(data){
     $ = main(user[key], "[" + key + "]", data.options);
     allstreams.push($);
   }
-  F = function(state, x){
-    var torna, txt;
-    if (x === 'done') {
-      state += 1;
-    }
-    torna = if_show_return_to_watch(data, state);
-    if (torna) {
-      switch (torna) {
-      case 'only_config':
-        l(lit(["[" + metadata.name + "]", " .. only watching config file ", data.filename + ""], [c.ok, c.warn, c.blue]));
-        break;
-      case false:
-        break;
-      default:
-        txt = "[" + torna.join("][") + "]";
-        l(lit(["[" + metadata.name + "]", txt, " .. returning to watch .."], [c.ok, c.warn, c.ok]));
-      }
-      return {
-        seed: 0
-      };
-    }
-    return {
-      seed: state
-    };
-  };
-  return most.mergeArray(allstreams).loop(F, 0);
+  return most.mergeArray(allstreams).loop(disp.multiple, [1, data]);
 });
 reg.core = entry;

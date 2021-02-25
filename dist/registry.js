@@ -18,6 +18,7 @@ temp = require("@most/create");
 com.most_create = temp.create;
 child_process = require("child_process");
 com.tampax = require("tampax");
+com.updateNotifier = require("update-notifier");
 R = com.R;
 com.spawn = function(cmd){
   return child_process.spawnSync(cmd, {
