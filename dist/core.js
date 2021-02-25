@@ -39,7 +39,7 @@ to_bool = function(x){
     return false;
   }
 };
-create_continue = function(dryRun){
+create_continue = function(dryRun, buildname){
   return function(txt){
     var status;
     if (dryRun) {
@@ -54,7 +54,7 @@ create_continue = function(dryRun){
       });
     default:
       return new Promise(function(resolve, reject){
-        return reject(txt);
+        return reject([txt, buildname]);
       });
     }
   };
@@ -123,7 +123,7 @@ diff = R.pipe(R.aperture(2), R.map(function(arg$){
 main = function(data, buildname, options){
   var logger, cont, is_watch, I, proc, $file_watch, $proc;
   logger = print.create_logger(buildname, options.verbose);
-  cont = create_continue(options.dryRun);
+  cont = create_continue(options.dryRun, buildname);
   l("");
   if (!data.remotefold || !data.remotehost) {
     logger('warn', lit([" ⛔    ", " warn "], [c.er1, c.er1]), " remotehost address not defined for task.");
@@ -172,8 +172,10 @@ main = function(data, buildname, options){
     if (status === 'err') {
       return most.just('done');
     }
-    return most.generate(proc).recoverWith(function(cmdname){
-      l(lit(["[" + metadata.name + "]", "[ ", "⚡️", "    error ", "] ", cmdname], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1]));
+    return most.generate(proc).recoverWith(function(arg$){
+      var cmdtxt, buildname;
+      cmdtxt = arg$[0], buildname = arg$[1];
+      l(lit(["[" + metadata.name + "]" + buildname, "[ ", "⚡️", "    error ", "] ", cmdtxt], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1]));
       return most.just('done');
     });
   });
@@ -235,17 +237,23 @@ disp.multiple = hop.ma(function(arg$, signal){
     break;
   default:
     txt = "[" + torna.join("][") + "]";
-    l(lit(["[" + metadata.name + "]", txt, " .. returning to watch .."], [c.ok, c.warn, c.ok]));
+    l(lit(["[" + metadata.name + "]", txt, " .. returning to watch .."], [c.ok, c.er1, c.ok]));
   }
   return {
     seed: [1, data]
   };
-}).def(function(arg$){
+}).def(function(arg$, signal){
   var count, data;
   count = arg$[0], data = arg$[1];
-  return {
-    seed: [count + 1, data]
-  };
+  if (signal === 'done') {
+    return {
+      seed: [count + 1, data]
+    };
+  } else {
+    return {
+      seed: [count, data]
+    };
+  }
 });
 entry = hop.wh(function(data){
   return data.cmd.length === 0;
