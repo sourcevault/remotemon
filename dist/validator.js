@@ -1,10 +1,10 @@
-var reg, com, print, data, metadata, l, z, j, R, readJson, be, optionator, lit, c, exec, fs, zj, tampax, most_create, maybe, log, ME, rm, util, filterForConfigFile, replace_single_qoute, unu, rm_all_undef, is_true, is_false, grouparr, organizeRsync, mergeF, vre, yaml_tokenize, vars, isref, entry;
+var reg, com, print, data, metadata, l, z, j, R, readJson, be, optionator, lit, c, exec, fs, zj, tampax, most_create, most, maybe, log, ME, rm, util, filterForConfigFile, replace_single_qoute, unu, rm_all_undef, is_true, is_false, grouparr, organizeRsync, mergeF, vre, yaml_tokenize, vars, isref, entry;
 reg = require("./registry");
 require("./print");
 require("./data");
 com = reg.com, print = reg.print, data = reg.data, metadata = reg.metadata;
 l = com.l, z = com.z, j = com.j, R = com.R;
-readJson = com.readJson, be = com.be, j = com.j, optionator = com.optionator, lit = com.lit, c = com.c, exec = com.exec, fs = com.fs, zj = com.zj, tampax = com.tampax, most_create = com.most_create;
+readJson = com.readJson, be = com.be, j = com.j, optionator = com.optionator, lit = com.lit, c = com.c, exec = com.exec, fs = com.fs, zj = com.zj, tampax = com.tampax, most_create = com.most_create, most = com.most;
 maybe = be.maybe;
 log = function(x){
   l(x);
@@ -409,7 +409,7 @@ ME.main = be.obj.on('cmd', be.arr.map(function(x){
     }
   }());
   F(Error, path, state.filename, all);
-  return print.show(!state.options.noWatch, lit([".. returning to watching broken config file, make sure to fix your errors .."], [c.er1]));
+  return 'error.validate';
 }).edit(function(__, state){
   var user, def, nuser, key, value;
   user = state.user, def = state.def;
@@ -538,8 +538,11 @@ entry = function(info){
         var state;
         if (err) {
           l(err);
-          zj(rawJson);
           print.failed_in_tampex_parsing(info.filename);
+          add({
+            'continue': false,
+            message: 'error.parse'
+          });
           return;
         }
         state = {
@@ -551,7 +554,8 @@ entry = function(info){
           def: {},
           user: {}
         };
-        return add(ME.main.auth(state, state));
+        add(ME.main.auth(state, state));
+        return end();
       });
     });
     return $;
@@ -559,7 +563,10 @@ entry = function(info){
     Er = e$;
     print.unableToReadConfigYaml(info.filename);
     l(Er);
-    return most.empty();
+    return most.just({
+      'continue': false,
+      message: 'error.read.parse'
+    });
   }
 };
 entry.findfile = ME.findfile;

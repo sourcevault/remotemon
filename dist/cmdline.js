@@ -138,7 +138,11 @@ $.chain(function(){
 }).map(function(vo){
   if (vo['continue']) {
     return vo.value;
-  } else {
-    return most.empty();
   }
+  switch (vo.message) {
+  case 'error.validate':
+  case 'error.parse':
+    print.show(!data.options.noWatch, lit([".. returning to watching broken config file, make sure to fix your errors .."], [c.er1]));
+  }
+  return most.empty();
 }).switchLatest().drain();
