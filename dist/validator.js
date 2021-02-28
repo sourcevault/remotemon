@@ -312,23 +312,22 @@ ME.user = be.obj.err([':custom_build']).or(be.undefnull.cont(function(){
   return {};
 }).err(void 8)).and(be.restricted(data.selected_keys.arr)).on('initialize', ME.maybe.bool).on('watch', ME.strlist.undef.or(be(is_true).cont(["."])).or(is_false)).on('ssh', be.str.or(unu)).on(['exec-remote', 'exec-locale', 'exec-finale'], ME.strlist.undef.cont(replace_single_qoute)).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync.user).or(unu).or(ME.strlist.empty.cont(function(list){
   return {
-    'exec-locale': list
+    'exec-locale': list,
+    rsync: false
   };
 }));
 ME.origin = be.obj.alt(be.undefnull.cont(function(){
   return {};
-})).on('remotehost', be.str.or(unu)).on('remotefold', be.str.or(unu.cont("~"))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.strlist.dot.or(be(is_true).cont(["."])).or(is_false)).on('ssh', be.str.or(be.undefnull.cont(data.def.ssh))).on(['exec-locale', 'exec-finale', 'exec-remote'], ME.strlist.empty.cont(replace_single_qoute)).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).edit(function(data){
-  arguments[2].temp = data;
-  return data;
-}).on('rsync', be(function(){
-  var data;
-  data = arguments[3].temp;
-  arguments[3].temp = void 8;
-  if (!data.remotefold || !data.remotehost) {
+})).on('remotehost', be.str.or(unu)).on('remotefold', be.str.or(unu.cont("~"))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.strlist.dot.or(be(is_true).cont(["."])).or(is_false)).on('ssh', be.str.or(be.undefnull.cont(data.def.ssh))).on(['exec-locale', 'exec-finale', 'exec-remote'], ME.strlist.empty.cont(replace_single_qoute)).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).and(be(function(data){
+  if (data.remotehost) {
     return true;
+  } else {
+    return false;
   }
-  return false;
-}).cont(false).or(be.arr.alt(be.undefnull.cont(function(){
+}).fix(function(data){
+  data.rsync = false;
+  return data;
+})).on('rsync', be.arr.alt(be.undefnull.cont(function(){
   return data.def.rsync.concat({
     des: arguments[3].origin.remotefold
   });
@@ -348,7 +347,7 @@ ME.origin = be.obj.alt(be.undefnull.cont(function(){
     }
   }
   return fin;
-}).or(is_false))).map(function(value, key, __, state){
+}).or(is_false)).map(function(value, key, __, state){
   var put;
   switch (data.selected_keys.set.has(key)) {
   case true:
