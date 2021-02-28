@@ -1,4 +1,4 @@
-var reg, com, print, data, metadata, readJson, readYaml, be, hop, fs, chokidar, c, lit, spawn, exec, l, z, j, zj, R, most, most_create, create_rsync_cmd, to_bool, create_continue, create_proc, wait, diff, main, disp, entry;
+var reg, com, print, data, metadata, readJson, readYaml, be, hop, fs, chokidar, c, lit, spawn, exec, l, z, j, zj, R, most, most_create, create_rsync_cmd, to_bool, execFinale, create_continue, create_proc, wait, diff, main, disp, entry;
 reg = require("./registry");
 com = reg.com, print = reg.print, data = reg.data, metadata = reg.metadata;
 readJson = com.readJson, readYaml = com.readYaml, be = com.be, hop = com.hop, fs = com.fs;
@@ -39,6 +39,17 @@ to_bool = function(x){
     return false;
   }
 };
+execFinale = function*(data, logger, cont){
+  var postscript, i$, len$, cmd, results$ = [];
+  postscript = data['exec-finale'];
+  logger(postscript.length, 'ok', " exec-finale ");
+  for (i$ = 0, len$ = postscript.length; i$ < len$; ++i$) {
+    cmd = postscript[i$];
+    logger('verbose', cmd);
+    results$.push((yield cont(cmd)));
+  }
+  return results$;
+};
 create_continue = function(dryRun, buildname){
   return function(txt){
     var status;
@@ -61,7 +72,7 @@ create_continue = function(dryRun, buildname){
 };
 create_proc = function(data, logger, cont, options){
   return function*(){
-    var locale, i$, len$, txt, cmd, disp, remotetask, E, I, postscript;
+    var locale, i$, len$, txt, cmd, disp, remotetask, E, I;
     locale = data['exec-locale'];
     logger(locale.length, 'ok', " exec-locale ");
     for (i$ = 0, len$ = locale.length; i$ < len$; ++i$) {
@@ -69,9 +80,12 @@ create_proc = function(data, logger, cont, options){
       logger('verbose', txt);
       (yield cont(txt));
     }
-    if (!data.remotefold || !data.remotehost) {
+    if (!data.remotehost) {
+      if (!data['exec-remote'].length) {
+        (yield* execFinale(data, logger, cont));
+      }
       (yield 'done');
-      return 'beme';
+      return;
     }
     if (data.rsync) {
       cmd = create_rsync_cmd(data);
@@ -101,15 +115,8 @@ create_proc = function(data, logger, cont, options){
       logger('verbose', cmd);
       (yield cont(cmd));
     }
-    postscript = data['exec-finale'];
-    logger(postscript.length, 'ok', " exec-finale ");
-    for (i$ = 0, len$ = postscript.length; i$ < len$; ++i$) {
-      cmd = postscript[i$];
-      logger('verbose', cmd);
-      (yield cont(cmd));
-    }
+    (yield* execFinale(data, logger, cont));
     (yield 'done');
-    return 'beme';
   };
 };
 wait = function(f, t){
@@ -125,7 +132,7 @@ main = function(data, buildname, options){
   logger = print.create_logger(buildname, options.verbose);
   cont = create_continue(options.dryRun, buildname);
   l("");
-  if (!data.remotefold || !data.remotehost) {
+  if (!data.remotehost && data['exec-remote'].length) {
     logger('warn', lit([" ⛔    ", " warn "], [c.er1, c.er1]), " remotehost address not defined for task.");
   }
   is_watch = to_bool(data.watch && !options.noWatch);

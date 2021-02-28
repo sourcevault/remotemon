@@ -223,15 +223,15 @@ this way we can edit the values of our makefile without opening either `.remotem
 
 ##### 🟡 changelog
 
-◾️ `1.1.2`
+`1.1.2`
 
 - custom build accepts array.str ( defaults to `exec-locale` values).
 
 - all `exec.*` changed to `exec-*`
 
-◾️ `1.0.0`
+`1.0.0`
 
-`remotemon` no longer uses a custom parser with `!join` operator, but uses [`tampax`](https://github.com/arthurlacoste/tampa/) ( much ♥️ ) for yaml parsing.
+- `remotemon` no longer uses a custom parser with `!join` operator, but uses [`tampax`](https://github.com/arthurlacoste/tampa/) ( much ♥️ ) for yaml parsing.
 
 #### LICENCE
 
