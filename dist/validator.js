@@ -313,8 +313,7 @@ ME.user = be.obj.err([':custom_build']).or(be.undefnull.cont(function(){
 }).err(void 8)).and(be.restricted(data.selected_keys.arr)).on('initialize', ME.maybe.bool).on('watch', ME.strlist.undef.or(be(is_true).cont(["."])).or(is_false)).on('ssh', be.str.or(unu)).on(['exec-remote', 'exec-locale', 'exec-finale'], ME.strlist.undef.cont(replace_single_qoute)).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync.user).or(unu).or(ME.strlist.empty.cont(function(list){
   return {
     'exec-locale': list,
-    rsync: false,
-    watch: false
+    rsync: false
   };
 }));
 ME.origin = be.obj.alt(be.undefnull.cont(function(){
