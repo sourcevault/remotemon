@@ -1,4 +1,4 @@
-var reg, com, print, data, metadata, readJson, readYaml, be, hop, fs, chokidar, c, lit, spawn, exec, l, z, j, zj, R, most, most_create, create_rsync_cmd, to_bool, execFinale, create_continue, create_proc, wait, diff, main, disp, entry;
+var reg, com, print, data, metadata, readJson, readYaml, be, hop, fs, chokidar, c, lit, spawn, exec, l, z, j, zj, R, most, most_create, create_rsync_cmd, to_bool, execFinale, create_continue, create_proc, wait, diff, sanatize_cmd, main, disp, entry;
 reg = require("./registry");
 com = reg.com, print = reg.print, data = reg.data, metadata = reg.metadata;
 readJson = com.readJson, readYaml = com.readYaml, be = com.be, hop = com.hop, fs = com.fs;
@@ -127,6 +127,13 @@ diff = R.pipe(R.aperture(2), R.map(function(arg$){
   x = arg$[0], y = arg$[1];
   return y - x;
 }));
+sanatize_cmd = function(cmd){
+  if (cmd.split('\n').length > 1) {
+    return '\n' + cmd;
+  } else {
+    return cmd;
+  }
+};
 main = function(data, buildname, options){
   var logger, cont, is_watch, I, proc, $file_watch, $proc;
   logger = print.create_logger(buildname, options.verbose);
@@ -182,7 +189,7 @@ main = function(data, buildname, options){
     return most.generate(proc).recoverWith(function(arg$){
       var cmdtxt, buildname;
       cmdtxt = arg$[0], buildname = arg$[1];
-      l(lit(["[" + metadata.name + "]" + buildname, "[ ", "⚡️", "    error ", "] ", cmdtxt], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1]));
+      l(lit(["[" + metadata.name + "]" + buildname, "[ ", "⚡️", "    error ", "] ", sanatize_cmd(cmdtxt)], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1]));
       return most.just('done');
     });
   });
