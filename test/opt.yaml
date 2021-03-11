@@ -1,0 +1,34 @@
+global:
+  file: dist/main.js
+  proj: utils
+
+remotehost: pi@192.162.92.1
+
+# rm-dist:
+#   exec-locale:
+#     - rm -rf dist/*
+
+watch: package.json
+
+
+pkg:
+  exec-locale: &pkg
+    - yaml2json src/package.yaml > package.json
+
+# compile.all:
+#   exec-finale:
+#     - echo
+    # - *pkg
+    # - lsc -bco dist src
+    # - lsc -bc test
+    # - node {{global.file}}
+
+    # - lsc -bco dist/{{global.proj}} src/{{global.proj}}
+    # - lsc -bc test/{{global.proj}}
+    # - node {{global.file}}
+
+foo:
+  - |-
+    echo 'first line' ; exit 1
+
+

@@ -1,30 +1,33 @@
-reg = require "./registry"
+ext = require "./print"
 
-{com,print,packageJ,data} = reg
+{l,z,j,R} = ext.com
 
-{l,z,j,R} = com
+data = {}
+
+export {com:ext.com,print:ext.print,data:data}
 
 data.chokidar = {}
 
+data.def = {}
 
 data.chokidar.bools =
   *\persistent \ignoreInitial \followSymlinks \disableGlobbing \usePolling
    \alwaysStat \ignorePermissionErrors \atomic
 
-data.flag = {}
+data.rsync = {}
 
-data.flag.object-props = new Set do
- *\chmod \block-size \rsh \rsync-path \max-delete \max-size \max-size \partial-dir
-  \timeout \contimeout \modify-window \temp-dir \fuzzy \compare-dest \copy-dest
-  \link-dest \compress-level \skip-compress \filter \exclude \exclude-from
-  \include \include-from \files-from \address \port \sockopts \out-format \log-file
-  \log-file-format \password-file \bwlimit \write-batch \only-write-batch \read-batch
-  \protocol \iconv \checksum-seed
+data.rsync.compound = new Set do
+ *\backup-dir \suffix \chmod \block-size \rsh \rsync-path \max-delete \max-size
+  \max-size \partial-dir \timeout \contimeout \modify-window \temp-dir \fuzzy
+  \compare-dest \copy-dest \link-dest \compress-level \skip-compress \filter
+  \files-from \address \port \sockopts \out-format \log-file \log-file-format
+  \password-file \bwlimit \write-batch \only-write-batch \read-batch \protocol
+  \iconv \checksum-seed \exclude \exclude-from \include \include-from
 
-data.flag.filter = new Set do
+data.rsync.filter = new Set do
   *\exclude \exclude-from \include \include-from
 
-data.flag.bool = new Set do
+data.rsync.bool = new Set do
  *\verbose \quiet \no-motd \checksum \archive \relative \no-OPTION \recursive
   \no-implied-dirs \backup \update \inplace \append \append-verify \dirs \links
   \copy-links \copy-unsafe-links \safe-links \copy-dirlinks \keep-dirlinks \hard-links
@@ -36,12 +39,14 @@ data.flag.bool = new Set do
   \compress \cvs-exclude \F \from0 \protect-args \blocking-io \stats \8-bit-output
   \human-readable \progress \P \itemize-changes \list-only
 
-
 data.selected_keys = {}
 
-  ..arr = [\watch \remotehost \localbuild \remotetask \chokidar \rsync \remotefold \initialize]
+  ..arr = [\watch \remotehost \remotefold \chokidar \rsync \initialize \exec-locale \exec-remote \exec-finale,\ssh,\global]
 
 data.selected_keys.set = new Set data.selected_keys.arr
 
+data.def.rsync = [(src:\.),\recursive,\quiet]
 
-module.exports = data
+data.def.ssh = "-tt -o LogLevel=error"
+
+data.def.chokidar = {awaitWriteFinish:true}

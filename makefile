@@ -14,16 +14,14 @@ pkg:
 	yaml2json src/package.yaml > package.json
 
 compile:
-	lsc -cbo dist src
+	lsc --no-header -cbo dist src
 	lsc -cb test
 	make pkg
-	yaml2json test/opts.yaml > test/opts.json
-	yaml2json test/opts1.yaml > test/opts1.json
-	yaml2json test/opts_all.yaml > test/opts_all.json
-	node ${file} test1 --config .remotemon.yaml --verbose
+	remotemon --config ./test/opt.yaml foo -n
 
 w.compile:
-	nodemon  --exec "make compile || exit 1" ${SRC_FILES} ${TEST_FILES}
+# 	nodemon  --exec "make compile || exit 1" ${SRC_FILES} ${TEST_FILES}
+	nodemon  --exec "make compile || exit 1" ${SRC_FILES}
 
 .ONESHELL:
 SHELL = /bin/bash

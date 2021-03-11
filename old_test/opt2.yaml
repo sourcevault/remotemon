@@ -1,24 +1,27 @@
-remotehost: pi@192.168.43.50
-remotefold: ~/test
+remotehost:
+  &ip pi@192.168.43.50
+remotefold:
+  &fold ~/test
 
-watch: &watch
-  - ./watch/file1.txt
+# watch: &watch
+#   - ./watch/file1.txt
 
-localbuild:
-  - ls
+# localbuild: &copy
+#   - ls
+#   - echo "local"
 
 remotetask:
-  - ls
-  - echo "bat"
-
-chokidar:
-  awaitWriteFinish: true
-rsync:
-  src: ./watch
-  des:
-    - "hello"
-  flags: &flags
-    - recursive
+  - scp:
+    - !!merge \.
+    - [*ip,":",[]]
+# chokidar:
+#   awaitWriteFinish: true
+# rsync:
+  # src: ./watch
+  # des:
+   # - "hello"
+  # opt: &flags
+    # - recursive
     # - verbose
     # - quiet
     # - no-motd
@@ -139,16 +142,16 @@ rsync:
 	# - iconv:
 	# - checksum-seed:
 
-test1:
-  initialize: true
-  watch:
-    - ./watch/file1.txt
+# test1:
+#   initialize: true
+#   watch:
+#     - ./watch/file1.txt
 
-  localbuild:
-    - ls
+#   localbuild:
+#     - ls
 
-test2:
-  initialize: false
-  watch:
-    - ./watch/file2.txt
+# test2:
+#   initialize: false
+#   watch:
+#     - ./watch/file2.txt
 

@@ -3,25 +3,26 @@
   "author": "sourcevault",
   "email": "joykrishnamondal@gmail.com",
   "homepage": "https://github.com/sourcevault/remotemon#readme.md",
-  "license": "MIT",
+  "license": "BSD-3-Clause",
   "description": "remote monitoring",
   "repository": "https://github.com/sourcevault/remotemon.git",
-  "version": "0.0.1",
+  "version": "1.2.0",
   "main": "dist/main.js",
   "scripts": {
     "test": "make travis"
   },
+  "bin": {
+    "remotemon": "dist/cmdline.js"
+  },
   "dependencies": {
-    "ramda": "0.26.1",
-    "hoplon": "*",
-    "valleydate": "*",
+    "update-notifier": "*",
+    "@most/create": "*",
     "optionator": "*",
-    "pretty-error": "2.1.1",
-    "@aitodotai/json-stringify-pretty-compact": "*",
-    "cli-color": "2.0.0",
     "chokidar": "*",
-    "js-yaml": "*",
-    "flyd": "*"
+    "tampax": "*",
+    "hoplon": "*",
+    "ramda": "*",
+    "most": "*"
   },
   "keywords": [
     "remote",

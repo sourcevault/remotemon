@@ -1,0 +1,25 @@
+watch: "."
+# chokidar:
+#   awaitWriteFinish: true
+#   stabilityThreshold: 2000
+#   pollInterval: 100
+# rsync:
+#   src: "."
+#   des: ~/test
+#   flags:
+#     - inplace
+#     - whole-file
+#     - no-perms
+#     - no-compress
+#     - archive
+#     - verbose
+#     - rsh: ssh
+#     - rsync-path: sudo rsync
+#   exclude:
+#     - .gitignore
+#     - '*.ls'
+#     - .git
+#     - .opts
+# ssh:
+# remote:
+#   host:
