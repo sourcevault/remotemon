@@ -1,9 +1,10 @@
-var reg, com, print, data, metadata, readJson, readYaml, be, hop, fs, chokidar, c, lit, spawn, exec, l, z, j, zj, R, most, most_create, create_rsync_cmd, to_bool, execFinale, create_continue, create_proc, wait, diff, sanatize_cmd, main, disp, entry;
-reg = require("./registry");
-com = reg.com, print = reg.print, data = reg.data, metadata = reg.metadata;
-readJson = com.readJson, readYaml = com.readYaml, be = com.be, hop = com.hop, fs = com.fs;
-chokidar = com.chokidar, c = com.c, lit = com.lit, spawn = com.spawn, exec = com.exec;
-l = com.l, z = com.z, j = com.j, zj = com.zj, R = com.R, most = com.most, most_create = com.most_create;
+var ext, com, print, data, metadata, readJson, readYaml, hoplon, fs, most, most_create, spawn, exec, chokidar, ref$, c, R, lit, l, z, j, zj, oxo, create_rsync_cmd, to_bool, execFinale, create_continue, create_proc, wait, diff, sanatize_cmd, main, disp, entry;
+ext = require("./data");
+com = ext.com, print = ext.print, data = ext.data;
+metadata = com.metadata;
+readJson = com.readJson, readYaml = com.readYaml, hoplon = com.hoplon, fs = com.fs, most = com.most, most_create = com.most_create, spawn = com.spawn, exec = com.exec, chokidar = com.chokidar;
+ref$ = hoplon.utils, c = ref$.c, R = ref$.R, lit = ref$.lit, l = ref$.l, z = ref$.z, j = ref$.j, zj = ref$.zj;
+oxo = hoplon.guard;
 create_rsync_cmd = function(data){
   var rsync, txt, str, obnormal, obarr, des, src, i$, len$, I, ref$, key, val, cmd;
   rsync = data.rsync;
@@ -72,13 +73,13 @@ create_continue = function(dryRun, buildname){
 };
 create_proc = function(data, logger, cont, options){
   return function*(){
-    var locale, i$, len$, txt, cmd, disp, remotetask, E, I;
+    var locale, i$, len$, cmd, disp, remotetask, E, I;
     locale = data['exec-locale'];
     logger(locale.length, 'ok', " exec-locale ");
     for (i$ = 0, len$ = locale.length; i$ < len$; ++i$) {
-      txt = locale[i$];
-      logger('verbose', txt);
-      (yield cont(txt));
+      cmd = locale[i$];
+      logger('verbose', cmd);
+      (yield cont(cmd));
     }
     if (!data.remotehost) {
       if (!data['exec-remote'].length) {
@@ -196,7 +197,7 @@ main = function(data, buildname, options){
   return $proc.switchLatest();
 };
 disp = {};
-disp.single = hop.ma(function(data, signal){
+disp.single = oxo.ma(function(data, signal){
   if (signal !== 'done') {
     return false;
   }
@@ -215,7 +216,7 @@ disp.single = hop.ma(function(data, signal){
     return l(c.ok("[" + metadata.name + "] .. returning to watch .."));
   }
 }).def();
-disp.multiple = hop.ma(function(arg$, signal){
+disp.multiple = oxo.ma(function(arg$, signal){
   var count, data, ws, res$, i$, ref$, len$, I, torna;
   count = arg$[0], data = arg$[1];
   if (signal !== 'done') {
@@ -269,7 +270,7 @@ disp.multiple = hop.ma(function(arg$, signal){
     };
   }
 });
-entry = hop.wh(function(data){
+entry = oxo.wh(function(data){
   return data.cmd.length === 0;
 }, function(data){
   var $, $fin;
@@ -290,4 +291,4 @@ entry = hop.wh(function(data){
   }
   return most.mergeArray(allstreams).loop(disp.multiple, [1, data]);
 });
-reg.core = entry;
+module.exports = entry;

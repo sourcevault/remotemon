@@ -1,14 +1,12 @@
 #!/usr/bin/env node
 
-var reg, com, print, metadata, validator, l, z, j, R, fs, lit, c, readJson, most, be, optionator, hop, exec, chokidar, most_create, updateNotifier, cmd_options, cmdparser, opt, E, str, pkg, notifier, split_by_var, filename, info_from_user, x$, data, y$, $;
-reg = require("./registry");
-require("./print");
-require("./data");
-require("./core");
-require("./validator");
-com = reg.com, print = reg.print, metadata = reg.metadata, validator = reg.validator;
-l = com.l, z = com.z, j = com.j, R = com.R, fs = com.fs, lit = com.lit, c = com.c;
-readJson = com.readJson, most = com.most, be = com.be, j = com.j, optionator = com.optionator, hop = com.hop, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, updateNotifier = com.updateNotifier;
+var bani, ext, validator, findfile, com, print, readJson, most, j, optionator, exec, chokidar, most_create, updateNotifier, fs, metadata, ref$, l, z, R, lit, c, be, cmd_options, cmdparser, opt, E, str, pkg, notifier, split_by_var, filename, info_from_user, x$, data, y$, $;
+bani = require("./validator");
+ext = bani.ext, validator = bani.validator, findfile = bani.findfile;
+com = ext.com, print = ext.print;
+readJson = com.readJson, most = com.most, j = com.j, optionator = com.optionator, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, updateNotifier = com.updateNotifier, fs = com.fs, metadata = com.metadata;
+ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, j = ref$.j, R = ref$.R, lit = ref$.lit, c = ref$.c;
+be = com.hoplon.types;
 cmd_options = {
   prepend: "Usage: remotemon [ command name ]",
   append: metadata.version,
@@ -100,7 +98,7 @@ if (opt.version) {
   return 0;
 }
 filename = opt.config;
-filename = validator.findfile(filename);
+filename = findfile(filename);
 if (!filename) {
   return null;
 }
@@ -134,7 +132,7 @@ $.skip(1).tap(function(){
   l(lit(["\n[" + metadata.name + "]", " configuration file ", filename + "", " itself has changed, restarting watch.."], [c.ok, c.pink, c.warn, c.pink]));
 }).drain();
 $.chain(function(){
-  return reg.validator(data);
+  return validator(data);
 }).map(function(vo){
   if (vo['continue']) {
     return vo.value;

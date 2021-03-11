@@ -1,24 +1,55 @@
-var reg, com, print, data, l, z, lit, j, hop, c, readJson, R, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, create_logger, show, print_wrap, I, key;
-reg = require("./registry");
-com = reg.com, print = reg.print, data = reg.data;
-l = com.l, z = com.z, lit = com.lit, j = com.j, hop = com.hop;
-c = com.c, readJson = com.readJson, R = com.R, z = com.z, create_stack = com.create_stack;
+var x$, com, y$, hoplon, child_process, print, ref$, c, l, lit, j, readJson, R, z, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, create_logger, show, print_wrap, I, key, out$ = typeof exports != 'undefined' && exports || this;
+x$ = com = {};
+y$ = x$.metadata = {};
+y$.name = null;
+y$.repourl = null;
+y$.homepage = null;
+y$.version = null;
+com.fs = require('fs');
+com.most = require('most');
+com.chokidar = require('chokidar');
+com.optionator = require('optionator');
+hoplon = require('hoplon');
+com.hoplon = hoplon;
+com.most_create = require("@most/create").create;
+child_process = require('child_process');
+com.child_process = child_process;
+com.tampax = require('tampax');
+com.updateNotifier = require('update-notifier');
+com.spawn = function(cmd){
+  return child_process.spawnSync(cmd, {
+    shell: true,
+    stdio: "inherit"
+  });
+};
+com.exec = function(cmd){
+  return child_process.execSync(cmd).toString();
+};
+com.readJson = function(filename){
+  return JSON.parse(
+  com.hoplon.utils.R.toString(
+  com.fs.readFileSync(filename)));
+};
+print = {};
+out$.com = com;
+out$.print = print;
+ref$ = hoplon.utils, c = ref$.c, l = ref$.l, lit = ref$.lit, j = ref$.j, readJson = ref$.readJson, R = ref$.R, z = ref$.z, create_stack = ref$.create_stack;
 show_stack = create_stack(2, []);
 R.tryCatch(function(filename){
   var raw, pj;
-  raw = readJson(filename);
+  raw = com.readJson(filename);
   pj = {};
   pj.name = raw.name;
   pj.repourl = raw.repository;
   pj.homepage = raw.homepage;
   pj.version = raw.version;
-  reg.metadata = pj;
+  com.metadata = pj;
 }, function(){
   l(c.er2("- | unable to locate or parse package.json of module."));
   show_stack();
 })(
-__dirname + "/../package.json");
-metadata = reg.metadata;
+__dirname + '/../package.json');
+metadata = com.metadata;
 show_name = function(filename){
   l(lit(["[" + metadata.name + "]", "[dataError]\n"], [c.er2, c.er3]));
   if (filename) {
@@ -39,7 +70,7 @@ show_body = function(path, msg){
   if (msg) {
     txt.push("\n\n " + msg, "  ");
   }
-  return lit(txt, [c.warn, c.er3, c.er2, c.pink]);
+  return l(lit(txt, [c.warn, c.er3, c.er2, c.pink]));
 };
 print.unableToReadConfigYaml = function(filename){
   var emsg;
@@ -63,14 +94,14 @@ print.rsyncError = function(msg, path, filename, type){
   return l(c.grey("\n  please refer to docs to provide valid values."));
 };
 print.incorrect_arg_num = function(){
-  lit(["[" + metadata.name + "]", "[inputError]\n"], [c.er2, c.er3]);
-  return lit(["  ", "incorrect number of arguments for function."], [0, c.er1, c.er3, c.er1]);
+  l(lit(["[" + metadata.name + "]", "[inputError]\n"], [c.er2, c.er3]));
+  return l(lit(["  ", "incorrect number of arguments for function."], [0, c.er1, c.er3, c.er1]));
 };
 print.reqError = function(props, path, filename){
   var ref$, init, last;
   show_name(filename);
   ref$ = R.splitAt(-1, path), init = ref$[0], last = ref$[1][0];
-  lit(["  mandatory value " + c.er1("." + last) + " not present.\n\n", "  all mandatory value(s) :\n"], [c.grey, c.grey]);
+  l(lit(["  mandatory value " + c.er1("." + last) + " not present.\n\n", "  all mandatory value(s) :\n"], [c.grey, c.grey]));
   return l(c.er1("  ." + props.join(" .")));
 };
 print.cmdError = function(cmdname){
@@ -127,7 +158,7 @@ print.basicError = function(msg, path, filename, all){
   return l(show_body(path, vals[0]));
 };
 print.no_match_for_arguments = function(){
-  return lit(["[" + metadata.name + "]", "[argumentError]\n\n", "   match for arguments failed.\n\n", "   " + j(arguments)], [c.er2, c.er3, c.warn, c.pink]);
+  return l(lit(["[" + metadata.name + "]", "[argumentError]\n\n", "   match for arguments failed.\n\n", "   " + j(arguments)], [c.er2, c.er3, c.warn, c.pink]));
 };
 create_logger = function(buildname, verbose){
   var ob;
@@ -139,7 +170,7 @@ create_logger = function(buildname, verbose){
     return show(arguments, ob);
   };
 };
-show = hop.unary.wh(function(arg$){
+show = hoplon.guard.unary.wh(function(arg$){
   var type, ref$;
   type = arg$[0];
   return (ref$ = typeof type) === 'boolean' || ref$ === 'number';

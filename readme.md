@@ -198,15 +198,6 @@ remotefold: ~/test
 exec-locale: make local {{global.file}}
 exec-remote: make remote
 ```
-string templates can also used to insert value(s) from the command line :
-
-```yaml
-remotehost: pi@192.152.65.12
-remotefold: ~/test
-exec-locale: make local {{file}}
-```
-
-however, *it's better practice* to **first** change `global` from your command-line and **then** use `{{global.*}}` to make local edits, since the `global`variable can have default values - something not possible with direct value injections.
 
 this way we can edit the values of our makefile without opening either `.remotemon.yaml` or `makefile` ☺️.
 
@@ -219,6 +210,12 @@ this way we can edit the values of our makefile without opening either `.remotem
 - `--verbose` or `-v` would show all the command in their full form.
 
 - `rsync:false` disables rsync.
+
+##### 🔴 Bugs
+
+- [same object ref doesn't work #6](https://github.com/arthurlacoste/tampa/issues/6)
+
+For now it's not possible for `remotemon` to do two levels of referencing in config file, as `remotemon` uses `tampex`, and the issue is with `tampex`, write your config files to work around the issue ( for now ).
 
 
 ##### 🟡 changelog

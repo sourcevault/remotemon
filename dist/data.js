@@ -1,7 +1,11 @@
-var reg, com, print, packageJ, data, l, z, j, R, x$;
-reg = require("./registry");
-com = reg.com, print = reg.print, packageJ = reg.packageJ, data = reg.data;
-l = com.l, z = com.z, j = com.j, R = com.R;
+var ext, ref$, l, z, j, R, data, x$, out$ = typeof exports != 'undefined' && exports || this;
+ext = require("./print");
+ref$ = ext.com, l = ref$.l, z = ref$.z, j = ref$.j, R = ref$.R;
+data = {};
+ref$ = out$;
+ref$.com = ext.com;
+ref$.print = ext.print;
+ref$.data = data;
 data.chokidar = {};
 data.def = {};
 data.chokidar.bools = ['persistent', 'ignoreInitial', 'followSymlinks', 'disableGlobbing', 'usePolling', 'alwaysStat', 'ignorePermissionErrors', 'atomic'];
@@ -21,4 +25,3 @@ data.def.ssh = "-tt -o LogLevel=error";
 data.def.chokidar = {
   awaitWriteFinish: true
 };
-module.exports = data;

@@ -1,10 +1,11 @@
-var reg, com, print, data, metadata, l, z, j, R, readJson, be, optionator, lit, c, exec, fs, zj, tampax, most_create, most, maybe, log, ME, rm, util, filterForConfigFile, replace_single_qoute, unu, rm_all_undef, is_true, is_false, grouparr, organizeRsync, mergeF, vre, yaml_tokenize, vars, isref, entry;
-reg = require("./registry");
-require("./print");
-require("./data");
-com = reg.com, print = reg.print, data = reg.data, metadata = reg.metadata;
-l = com.l, z = com.z, j = com.j, R = com.R;
-readJson = com.readJson, be = com.be, j = com.j, optionator = com.optionator, lit = com.lit, c = com.c, exec = com.exec, fs = com.fs, zj = com.zj, tampax = com.tampax, most_create = com.most_create, most = com.most;
+var ext, core, com, print, data, metadata, ref$, l, z, j, R, readJson, exec, fs, tampax, most_create, most, zj, lit, c, optionator, be, maybe, log, ME, rm, util, filterForConfigFile, replace_single_qoute, unu, rm_all_undef, is_true, is_false, grouparr, organizeRsync, mergeF, vre, yaml_tokenize, vars, isref, entry;
+ext = require("./data");
+core = require("./core");
+com = ext.com, print = ext.print, data = ext.data, metadata = ext.metadata;
+ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, j = ref$.j, R = ref$.R;
+readJson = com.readJson, exec = com.exec, fs = com.fs, tampax = com.tampax, most_create = com.most_create, most = com.most, metadata = com.metadata;
+ref$ = com.hoplon.utils, zj = ref$.zj, j = ref$.j, lit = ref$.lit, c = ref$.c, optionator = ref$.optionator, R = ref$.R;
+be = com.hoplon.types;
 maybe = be.maybe;
 log = function(x){
   l(x);
@@ -420,7 +421,7 @@ ME.main = be.obj.on('cmd', be.arr.map(function(x){
   state.user = nuser;
   state.origin = void 8;
   return state;
-}).cont(reg.core);
+}).cont(core);
 vre = /(\s*#\s*){0,1}(\s*)(\S*):/;
 yaml_tokenize = function(data){
   var lines, all, i$, len$, I, torna, __, iscommeted, spaces, name, asbool, acc, temp, to$, current;
@@ -568,8 +569,11 @@ entry = function(info){
     });
   }
 };
-entry.findfile = ME.findfile;
-reg.validator = entry;
+module.exports = {
+  validator: entry,
+  findfile: ME.findfile,
+  ext: ext
+};
 function import$(obj, src){
   var own = {}.hasOwnProperty;
   for (var key in src) if (own.call(src, key)) obj[key] = src[key];
