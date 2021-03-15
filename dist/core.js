@@ -139,7 +139,6 @@ main = function(data, buildname, options){
   var logger, cont, is_watch, I, proc, $file_watch, $proc;
   logger = print.create_logger(buildname, options.verbose);
   cont = create_continue(options.dryRun, buildname);
-  l("");
   if (!data.remotehost && data['exec-remote'].length) {
     logger('warn', lit([" ⛔    ", " warn "], [c.er1, c.er1]), " remotehost address not defined for task.");
   }

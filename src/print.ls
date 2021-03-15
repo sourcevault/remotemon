@@ -378,7 +378,7 @@ for I,key of print
   print[I] = print_wrap key
 
 print.show-header = -> l lit do
-  ["[#{metadata.name}]","[     version ]"," #{metadata.version}"]
+  ["[#{metadata.name}]"," v#{metadata.version}"]
   [c.ok,c.grey,c.grey]
 
 print.create_logger = create_logger

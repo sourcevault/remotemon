@@ -225,7 +225,7 @@ for (I in print) {
   print[I] = print_wrap(key);
 }
 print.showHeader = function(){
-  return l(lit(["[" + metadata.name + "]", "[     version ]", " " + metadata.version], [c.ok, c.grey, c.grey]));
+  return l(lit(["[" + metadata.name + "]", " v" + metadata.version], [c.ok, c.grey, c.grey]));
 };
 print.create_logger = create_logger;
 print.show = function(disp, txt){

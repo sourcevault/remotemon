@@ -29,6 +29,5 @@ pkg:
 
 foo:
   - |-
-    echo 'first line' ; exit 1
-
+    echo 'first line' ; exit 0
 

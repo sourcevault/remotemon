@@ -174,8 +174,6 @@ main = (data,buildname,options) ->
 
   cont = create_continue options.dryRun,buildname
 
-  l ""
-
   if (not data.remotehost) and data['exec-remote'].length
 
     logger do
