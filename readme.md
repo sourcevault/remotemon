@@ -7,7 +7,7 @@ npm install -g remotemon
 
 `remotemon` is a cli-tool for building/copying/executing code on remote machines and monitoring the result.
 
-It's main application use-case is for developing / running scripts for single-board computers like the raspberry pi ..
+Its main application use-case is for developing / running scripts on remote machines like the raspberry pi ..
 
 .. however it can also be used as as a replacement for `make` / `nodemon` 😀.
 
@@ -25,7 +25,7 @@ remotemon ssh45 # to change default ssh port to 45 👮🏼‍♂️
 
 - when your build process gets complicated enough to warrant the use of gulpfiles, makefiles, etc.
 
-- `remotemon` is meant for situations where you are constantly having to configure linux system files, but also developing and running code on remote machines, that involves complicated `rsync` and `ssh` commands, but prefer to change those files from the comfort of your favorite local text editor - not everybody has time to learn vim.
+- `remotemon` is meant for situations where you are constantly having to configure linux system files, but also developing and running code on remote machines, that involves complicated `rsync` and `ssh` commands, but prefer to change those files from the comfort of your favorite local text editor - not everybody knows how to use vim.
 
 
 #### 🟡 How to Use
@@ -40,7 +40,7 @@ Running `remotemon` without any arguments makes `remotemon` execute default rout
 ~/app:(dev*) remotemon
 ```
 
-`remotemon` accepts arguments which are name(s) of build routines to use, specified through our configuration `.yaml` file.
+First argument to `remotemon` is the name of the build routine to use, specified through our configuration `.yaml` file, subsequent arguments can be used internally as variables using handlebar syntax (eg. `{{0}}`).
 
 ```zsh
 ~/app:(dev*) remotemon test1
@@ -123,7 +123,7 @@ mybuild2:
   exec-remote: make mybuild2
 ```
 
-values not provided in a build are merged with default provided at top-level , in case defaults don't exist at top level then values are extracted from module's internal defaults.
+values not provided in a build are merged with default provided at top-level, in case defaults don't exist at top level then values are extracted from module's internal defaults.
 
 ```yaml
 rsync:
@@ -203,22 +203,34 @@ this way we can edit the values of our makefile without opening either `.remotem
 
 ##### 🟡 misc features
 
-- `--no-watch` or `-n` allows to force disable all watches.
+- `--watch-config-file` or `-w`  restarts on config file change by default.
 
 - `--dry-run` or `-d` would disable all execution, used for checking and making sure all the commands are accurate.
 
-- `--verbose` or `-v` would show all the command in their full form.
+- `--verbose,-v` ( also  `-vv`)  would show all the command in their full form.
 
-- `rsync:false` disables rsync.
+- `-l,--list` to see all the different commands from the command line itself.
 
 ##### 🔴 Bugs
 
 - [same object ref doesn't work #6](https://github.com/arthurlacoste/tampa/issues/6)
 
-For now it's not possible for `remotemon` to do two levels of referencing in config file, as `remotemon` uses `tampex`, and the issue is with `tampex`, write your config files to work around the issue ( for now ).
+For now it's not possible for `remotemon` to do two levels of referencing in config file, as `remotemon` uses `tampax`, and the issue is with `tampax`, write your config files to work around the issue ( for now ).
 
 
 ##### 🟡 changelog
+
+`1.2.2`
+
+- `rsync` accepts multiple values, which means it can be called on multiple destination folder.
+
+- `remotemon` only accepts a single command.
+
+- `-vv` multiple level of verbose logging.
+
+- multiple config files can be used.
+
+- `-l,--list` to see all the different commands from the command line itself.
 
 `1.1.2`
 

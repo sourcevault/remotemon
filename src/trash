@@ -138,3 +138,75 @@ l lit do
 
 
 # module.exports = entry
+
+
+
+# start_shell = ->
+
+#   rl = readline.createInterface {input:process.stdin}
+
+#   shell = child_process.spawn 'sh',[],{detached:true,env:process.env}
+
+#   bash = {}
+
+#   bash.terminal = most_create (add,end,error) !->
+
+#     shell.stdout.on \data,(data) !-> add data.toString!
+#     shell.stderr.on \data,(data) !-> add data.toString!
+
+#   bash.user = most_create (add,end,error) !->
+
+#     rl.on \line,(input) !-> add input
+
+#   bash.close = !->
+
+#     rl.close!
+#     shell.kill \SIGHUP
+
+#   bash.write = (str) -> shell.stdin.write "#{str}\n"
+
+#   bash
+
+# ----------------------------------------------------------------------------
+
+# com.start_shell = start_shell
+
+# ----------------------------------------------------------------------------
+
+# bash = start_shell!
+
+# bash.user
+# .map (line) ->
+
+#   z [line]
+
+#   bash.write line + "\n"
+
+# .drain!
+
+
+# most.just "sudo -S apt-get update"
+
+# .chain (str) ->
+
+#   bash.write str
+
+#   bash.terminal
+
+# .map (x) ->
+
+#   z [x]
+
+# .drain!
+
+
+
+# rl.on \line,(input) !->
+
+#   process.stdout.write input + "\n"
+
+#   process.stdin.write input + "\n"
+
+# do
+
+#   <- wait 1000

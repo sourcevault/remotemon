@@ -6,17 +6,19 @@ core = require "./core"
 
 {l,z,j,R} = com.hoplon.utils
 
-#----------------------------------------------------
+#----------------------------------------------------------
 
-{read-json,exec,fs,tampax,most_create,most,metadata} = com
+{read-json,exec,fs,tampax,most_create,most,metadata,c,lit} = com
 
-{zj,j,lit,c,optionator,R} = com.hoplon.utils
+{zj,j,lit,c,R,noop} = com.hoplon.utils
 
 be = com.hoplon.types
 
-maybe = be.maybe
+log = (x) -> l x
 
-log = (x) -> l x ; x
+tlog = be.tap log
+
+maybe = be.maybe
 
 ME     = {}
 
@@ -24,75 +26,55 @@ rm     = {}
 
 util   = {}
 
-#----------------------------------------------------
+#----------------------------------------------------------
 
 filter-for-config-file = R.pipe do
   R.split "\n"
   R.filter (str) -> (str is ".#{metadata.name}.yaml")
 
+sdir = (dirname) ->
+
+  out = " ls -lAh #{dirname} | grep -v '^d' | awk 'NR>1 {print $NF}'"
+  |> exec
+  |> R.split "\n"
+  |> R.filter (str) -> str is ".#{metadata.name}.yaml"
+  |> R.map (x) -> dirname + "/" + x
+
+get_all_yaml_files = (custom) ->
+
+  fin = []
+
+  if (fs.existsSync custom)
+
+    fin.push custom
+
+  fin.push ...sdir process.cwd!
+
+  upper-path = (R.init ((process.cwd!).split "/")).join "/"
+
+  fin.push ...sdir upper-path
+
+  fin
+
 ME.findfile = (filename) ->
 
-  switch R.type filename
-  | \String =>
+  allfiles = get_all_yaml_files filename
 
-    if not (fs.existsSync filename)
-
-      l lit do
-        [ "[#{metadata.name}]","[Error]"," cannot find configuration file ","#{filename}","."]
-        [c.er3,c.er1,c.warn,c.er1]
-
-      return false
-
-    return filename
-
-  | \Undefined,\Null =>
-
-    name = metadata.name
-
-    raw = exec " ls -lAh . | grep -v '^d' | awk 'NR>1 {print $NF}'"
-
-    isthere = filter-for-config-file raw
-
-    if isthere.length is 1
-
-      l lit do
-        ["[#{name}] using ", (process.cwd! + "/.#{name}.yaml")]
-        [c.ok,c.warn]
-
-      return isthere[0]
-
-    raw = exec " ls -lAh .. | grep -v '^d' | awk 'NR>1 {print $NF}'"
-
-    isthere = filter-for-config-file raw
-
-    if isthere.length is 1
-
-      l lit do
-        ["[#{name}]"," using ",(((R.init ((process.cwd!).split "/")).join "/") + "/.#{name}.yaml")]
-        [c.ok,c.grey,c.warn]
-
-      return ("../" + isthere[0])
-
-    middle = " - " + (c.pink ".#{name}.yaml") + " or " + (c.pink "/../.#{name}.yaml") + " not present.\n"
+  if (allfiles.length is 0)
 
     l lit do
-      [
-        "[#{name}][Error]\n"
-        middle
-        " - custom config file is also not provided."
-      ]
-      [c.er3,0,c.grey]
+      ["[#{metadata.name}]","[Error]"," cannot find ANY configuration file."]
+      [c.er3,c.er1,c.warn]
 
     return false
 
-  | otherwise =>
+  filenames =  (c.er1 "[ ") + ([(c.warn I) for I in allfiles].join c.er1 " ][ ") + (c.er1 " ]")
 
-    l lit do
-      [ "[#{name}][Error] .config can only be string type."]
-      [c.er1,c.warn,c.er1]
+  l lit do
+    ["[#{metadata.name}]"," using ",filenames]
+    [c.ok,c.grey,null]
 
-    return false
-
+  return allfiles
 
 # #----------------------------------------------------
 
@@ -149,10 +131,6 @@ ME.recursive_str_list = be.arr
 
   "not string or string list."
 
-replace_single_qoute = (list)->
-
-  [I.replace /'/g,"'\''" for I in list]
-
 ME.strlist = (F) ->
 
   ME.recursive_str_list
@@ -163,7 +141,7 @@ ME.strlist.empty       = ME.strlist -> []
 
 ME.strlist.dot         = ME.strlist -> ["."]
 
-ME.strlist.undef       = ME.strlist void
+ME.strlist.false       = ME.strlist false
 
 unu                    = be.undefnull.cont void
 
@@ -190,60 +168,6 @@ is_true = (x) -> x is true
 is_false = (x) -> x is false
 
 ME.rsync = {}
-
-ME.rsync.string = (str) ->
-
-  if not (data.rsync.bool.has str)
-
-    return [
-      false
-      [
-        \:rsync,[2,["#{str}"," not a valid boolean rsync option."]]
-      ]
-    ]
-
-
-  true
-
-ME.rsync.object = be.obj
-.and (ob,__) ->
-
-  keys = Object.keys ob
-
-  if not ((keys.length) is 1)
-
-    return [
-      false
-      [
-        \:rsync,[1,["object can only have singular attribute."]]
-      ]
-    ]
-
-  k = keys[0]
-
-  if not ((data.rsync.compound.has k) or (k in [\src,\des]))
-    return [
-      false
-      [
-        \:rsync,[2,[k," not a valid compound rsync option."]]
-      ]
-    ]
-
-  val = ob[k]
-
-  if k in [\des,\src]
-
-    if not (((R.type val)) is \String)
-
-      return [
-        false
-        [
-          \:rsync,[2,[k," can only be string type."]]
-        ]
-      ]
-
-
-  true
 
 grouparr = R.pipe do
   R.unnest
@@ -358,7 +282,7 @@ organize-rsync = (list) ->
 
         switch R.type val
         | \String,\Number  =>
-          fin.obnormal.push [k,val]
+          fin.obnormal.push [k,(val.replace /'/g,"'\\''")]
         | \Undefined,\Null => void
         | otherwise =>
 
@@ -399,27 +323,8 @@ organize-rsync = (list) ->
 
   fin
 
-ME.rsync.strarr = be.arr.map be.str
-.or be.str.cont (s) -> [s]
-.or be.undefnull.cont []
 
-ME.watch = ME.strlist.undef
-.or (be is_true).cont ["."]
-.or is_false
-
-ME.rsync.user = be.arr
-.or be.undefnull.cont void
-.alt be.bool.cont (val) ->
-
-  if (val is true)
-
-    rsync = &3.origin.rsync
-
-    if rsync then return rsync
-    else return data.def.rsync.concat (des:&3.origin.remotefold)
-
-  else then false
-
+ME.rsync.core = be.arr
 
 .edit organize-rsync
 
@@ -427,15 +332,49 @@ ME.rsync.user = be.arr
 
 .cont (fin) ->
 
-  if not fin.des[0]
+  state = R.last arguments
 
-    fin.des.push &3.origin.remotefold
+  if (not fin.des[0])
+
+    (fin.des.push state.origin.remotefold)
 
   if (fin.src.length is 0)
 
     fin.src.push "."
 
   fin
+
+
+ME.rsync.main = be is_true
+
+.cont ->
+
+  state = R.last arguments
+  data.def.rsync.concat (des:state.origin.remotefold)
+
+.or be.arr.map ME.rsync.core
+
+.and ME.rsync.core
+
+.alt ME.rsync.core
+
+.cont (data) -> [data]
+
+.or is_false
+
+.or be.undefnull.cont false
+
+#----------------------------------------------------
+
+ME.rsync.strarr = be.arr.map be.str
+.or be.str.cont (s) -> [s]
+.or be.undefnull.cont []
+
+#----------------------------------------------------
+
+ME.execlist = ME.strlist.empty
+
+.cont (strlist) -> [str.replace /'/g,"'\''" for str in strlist]
 
 #----------------------------------------------------
 
@@ -456,6 +395,19 @@ ME.chokidar = be.obj
   [\interval \binaryInterval \depth]
   ME.maybe.num
 
+# ----------------------------------------
+
+ME.watch = (undef,on_true) ->
+
+  ME.recursive_str_list
+  .or be.undefnull.cont undef
+  .or is_false
+  .or (be is_true).cont on_true
+  .cont (data) ->
+    if (data.length is 0) then return false
+    data
+
+# ----------------------------------------
 
 ME.user = be.obj
 
@@ -465,29 +417,21 @@ ME.user = be.obj
 
 .and be.restricted data.selected_keys.arr
 
+.alt do
+  ME.strlist.empty
+  .cont (list) -> {'exec-locale':list}
+
 .on \initialize    , ME.maybe.bool
 
-.on \watch         , do
-  ME.strlist.undef
-  .or (be is_true).cont ["."]
-  .or is_false
+.on \watch         , ME.watch false,void
 
+.on \ssh          , be.str.or unu
 
-.on \ssh           , be.str.or unu
-
-.on [\exec-remote,\exec-locale,\exec-finale] , do
-
-  ME.strlist.undef.cont replace_single_qoute
+.on [\exec-remote,\exec-locale,\exec-finale],ME.execlist
 
 .on \chokidar     , ME.chokidar.or unu
 
-.on \rsync        , ME.rsync.user
-
-.or unu
-
-.or do
-  ME.strlist.empty
-  .cont (list) -> {'exec-locale':list,rsync:false}
+.on \rsync        , ME.rsync.main
 
 # ----------------------------------------
 
@@ -499,17 +443,12 @@ ME.origin = be.obj.alt be.undefnull.cont -> {}
 
 .on \initialize  , be.bool.or be.undefnull.cont true
 
-.on \watch       , do
-  ME.strlist.dot
-  .or (be is_true).cont ["."]
-  .or is_false
+.on \watch       , ME.watch ["."],["."]
 
 .on \ssh         , do
   be.str.or be.undefnull.cont data.def.ssh
 
-.on [\exec-locale,\exec-finale,\exec-remote], do
-
-  ME.strlist.empty.cont replace_single_qoute
+.on [\exec-locale,\exec-finale,\exec-remote],ME.execlist
 
 .on \chokidar , ME.chokidar.or be.undefnull.cont data.def.chokidar
 
@@ -523,31 +462,7 @@ ME.origin = be.obj.alt be.undefnull.cont -> {}
 
     data
 
-.on \rsync do
-
-  be.arr
-
-  .alt be.undefnull.cont -> data.def.rsync.concat (des:&3.origin.remotefold)
-
-  .alt (be (x) -> x is true).cont (val) -> (data.def.rsync.concat (des:&3.origin.remotefold))
-
-  .edit organize-rsync
-
-  .and ME.rsync.check_if_error
-
-  .cont (fin) ->
-
-      if fin
-
-        if not fin.des[0] then (fin.des.push &3.origin.remotefold)
-
-        if (fin.src.length is 0)
-
-          fin.src.push "."
-
-      fin
-
-  .or is_false
+.on \rsync,ME.rsync.main
 
 .map (value,key,__,state) ->
 
@@ -571,15 +486,6 @@ ME.origin = be.obj.alt be.undefnull.cont -> {}
 
   true
 
-.and (raw,__,state) ->
-
-  for I in state.cmd
-
-    if (raw[I] is undefined)
-      return [false,[\:usercmd_not_defined,I]]
-
-  true
-
 # ----------------------------------------
 
 mergeF = (a,b)->
@@ -591,50 +497,43 @@ mergeF = (a,b)->
 ME.main = be.obj
 
 .on \cmd do
-  be.arr.map (x) -> not data.selected_keys.set.has x
-  .err (x,id,__,state) -> [\:in_selected_key,[state.cmd[id],state.commandline]]
+
+  be.str.and (x) ->
+    not data.selected_keys.set.has x
+  .err (x,id,__,state) ->
+    [\:in_selected_key,[state.cmd,state.commandline]]
+  .or be.undef
 
 .on \origin,ME.origin
+
+.and (raw) ->
+
+  if (raw.cmd isnt undefined) and (raw.user[raw.cmd] is undefined)
+
+    return [false,[\:usercmd_not_defined,[raw.all_filenames,raw.cmd]]]
+
+  true
+
 
 # ----------------------------------------
 
 .err be.flatato
 
-.err (all,path,state)  ->
-
-  [topmsg] = all
-
-  [loc,Error] = topmsg
-
-  F = switch loc
-  | \:in_selected_key     => print.in_selected_key      # done checking
-  | \:req                 => print.reqError             # | not to rm |
-  | \:res                 => print.resError             # | not to rm |
-  | \:usercmd_not_defined => print.usercmd_not_defined  # done checking
-  | \:rsync               => print.rsyncError           # mostly okay
-  | \:ob_in_str_list      => print.ob_in_str_list       #
-  | \:custom_build        => print.custom_build
-  | otherwise             =>
-
-    [Error] = all
-
-    print.basicError
-
-  F Error,path,state.filename,all # topmsg is not really needed, but put anyway.
-
-  \error.validate
-
 .edit (__,state) ->
 
   {user,def} = state
 
-  nuser = {}
+  for cmdname,value of user
 
-  for key,value of user
+    for I in [\watch,\remotehost,\remotefold,\chokidar,\ssh,\initialize,\global]
 
-    nuser[key] = R.mergeDeepWith mergeF,def,value
+      if (value[I] is undefined)
 
-  state.user = nuser
+        user[cmdname][I] = def[I]
+
+      else
+
+        user[cmdname][I] = value[I]
 
   state.origin = void
 
@@ -746,7 +645,7 @@ isref = /\s*\w*:\s*(&\w+\s*){0,1}/
 
 vars.edit = ([index,all],vars,tokens) ->
 
-  for name,txt of vars
+  for [name,txt] in vars
 
     for I from 1 til all.length
 
@@ -760,7 +659,7 @@ vars.edit = ([index,all],vars,tokens) ->
 
         old_txt = current[0].txt
 
-        current[0].txt = isr[0] + " " + txt
+        current[0].txt = isr[0] + txt
 
         all[I] = [current[0]]
 
@@ -780,65 +679,183 @@ vars.stringify = (tokens) ->
 
   str
 
-# # --------------------------------------------------------------------
+# --------------------------------------------------------------------
 
+modify-yaml = (filename,cmdargs) ->
+
+  data = filename |> fs.readFileSync |> R.toString
+
+  tokens = yaml_tokenize data
+
+  torna = vars.get tokens
+
+  torna = vars.edit torna,cmdargs,tokens
+
+  torna = R.flatten torna
+
+  yaml_text = vars.stringify torna
+
+  yaml_text
+
+# --------------------------------------------------------------------
+
+$tampax-parse = (filename,yaml_text,cmdargs) ->
+
+  $ = do
+
+    (add,end,error) <- most_create
+
+    (err,raw-json) <- tampax.yamlParseString yaml_text,[...cmdargs]
+
+    if err
+
+      print.failed_in_tampax_parsing filename,err
+
+      error \error.validator.tampaxparsing
+
+      return
+
+    add [filename,raw-json]
+
+    end!
+
+  $
+
+handle_error = ({message,path,value}) !->
+
+  [topmsg] = message
+
+  [loc,Error] = topmsg
+
+  F = switch loc
+
+  | \:in_selected_key      => print.in_selected_key      # done checking
+
+  | \:req                  => print.reqError             # | not to rm |
+
+  | \:res                  => print.resError             # | not to rm |
+
+  | \:usercmd_not_defined  => print.could_not_find_custom_cmd
+
+  | \:rsync                => print.rsyncError           # mostly okay
+
+  | \:ob_in_str_list       => print.ob_in_str_list       #
+
+  | \:custom_build         => print.custom_build
+
+  | otherwise              =>
+
+    [Error] = message
+
+    print.basicError
+
+  F Error,path,value.filename,message
+
+
+rmdef = R.reject (x) -> data.selected_keys.set.has x
+
+exec_list_option = (alldata) ->
+
+  for [filename,data] in R.reverse alldata
+
+    l lit ['> FILE ',filename],[c.pink,c.blue]
+
+    keys = Object.keys data
+
+    user_ones = rmdef keys
+
+    for I in user_ones
+
+      l lit [" • ",I],[c.warn,c.ok]
+
+
+main = (info) -> (alldata) ->
+
+  for I in alldata
+
+    if I in [\error.validator.tampaxparsing]
+
+      return most.just I
+
+  if info.options.list
+
+    exec_list_option alldata
+
+    return most.just \ok
+
+
+  if info.cmdname
+
+    for [filename,data] in alldata
+
+      state =
+        commandline   : info.commandline
+        options       : info.options
+        filename      : filename
+        all_filenames : info.filenames
+        cmd           : info.cmdname
+        origin        : data
+        def           : {}
+        user          : {}
+
+      torna = ME.main.auth state,state
+
+      if torna.continue then return torna.value
+
+      if not ((torna.message[0][0]) is \:usercmd_not_defined)
+        break
+
+  else
+
+    state =
+      commandline : info.commandline
+      options     : info.options
+      filename    : alldata[0][0]
+      cmd         : info.cmdname
+      origin      : alldata[0][1]
+      def         : {}
+      user        : {}
+
+    torna = ME.main.auth state,state
+
+  if torna.error
+
+    handle_error torna
+
+    return most.just \error.validator.main
+
+  most.just \ok
 
 entry = (info) -> # validator
 
-  try
+  $all = []
 
-    FILENAME = process.cwd! + "/" + info.filename
+  for I in info.filenames
 
-    data = FILENAME |> fs.readFileSync |> R.toString
+    try
 
-    tokens = yaml_tokenize data
+      yaml-text = modify-yaml I,info.vars
 
-    torna = vars.get tokens
+    catch E
 
-    torna = vars.edit torna,info.vars,tokens
+      print.failed_in_custom_parser I,E
 
-    torna = R.flatten torna
+      return most.just \error.validator.modify-yaml
 
-    yaml_text = vars.stringify torna
+    $all.push $tampax-parse I,yaml-text,info.cmdargs
 
-    $ = do
+  # --------------------------------------------------
 
-      (add,end,error) <- most_create
+  parsed = most.mergeArray $all
+  .recoverWith (x) -> most.just x
+  .reduce do
+    (accum,data) -> (accum.push data); accum
+    []
 
-      (err,raw-json) <- tampax.yamlParseString yaml_text,{...info.vars}
+  P = parsed
+  .then main info
 
-      if err
-
-        l err
-
-        print.failed_in_tampex_parsing info.filename
-
-        add {continue:false,message:\error.parse}
-
-        return
-
-      state =
-        commandline : info.commandline
-        options     : info.options
-        filename    : info.filename
-        cmd         : info.cmd
-        origin      : raw-json
-        def         : {}
-        user        : {}
-
-      add ME.main.auth state,state
-
-      end!
-
-    return $
-
-  catch Er
-
-    print.unable-to-read-config-yaml info.filename
-
-    l Er
-
-    return most.just {continue:false,message:\error.read.parse}
+  most.fromPromise P
 
 
 module.exports =

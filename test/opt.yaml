@@ -1,33 +1,47 @@
 global:
   file: dist/main.js
   proj: utils
+  sshport: 45
 
-remotehost: pi@192.162.92.1
+remotehost: pi@192.168.43.47
+# remotehost: pi@192.168.43.41
 
-# rm-dist:
-#   exec-locale:
-#     - rm -rf dist/*
+remotefold: ~/router
 
 watch: package.json
 
+# ssh: -tt -o 'RequestTTY no' -p 45
+
+ssh: -tt -o LogLevel=QUIET -p {{global.sshport}}
 
 pkg:
-  exec-locale: &pkg
-    - yaml2json src/package.yaml > package.json
+  # rsync:
+  #   - rsh: ssh -p {{global.sshport}}
+  #   - verbose
+  #   - recursive
+  #   - exclude:
+  #     - .git
+  #     - node_modules
+  exec-locale:
+    - echo 'really long ass sentence, I like ukrainian girls'
+  # exec-remote:
+  #   - sudo apt-get update
+  # watch: true
+
 
 # compile.all:
-#   exec-finale:
+  # exec-finale:
 #     - echo
     # - *pkg
     # - lsc -bco dist src
-    # - lsc -bc test
+  # - lsc -bc test
     # - node {{global.file}}
 
     # - lsc -bco dist/{{global.proj}} src/{{global.proj}}
     # - lsc -bc test/{{global.proj}}
     # - node {{global.file}}
 
-foo:
-  - |-
-    echo 'first line' ; exit 0
+# foo:
+#   - |-
+#     echo {{0}}
 

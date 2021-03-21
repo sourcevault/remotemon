@@ -1,13 +1,27 @@
-var ext, com, print, data, metadata, readJson, readYaml, hoplon, fs, most, most_create, spawn, exec, chokidar, ref$, c, R, lit, l, z, j, zj, oxo, create_rsync_cmd, to_bool, execFinale, create_continue, create_proc, wait, diff, sanatize_cmd, main, disp, entry;
+var ext, com, print, data, metadata, readJson, readYaml, hoplon, fs, most, most_create, exec, chokidar, spawn, readline, ref$, c, R, lit, l, z, j, zj, oxo, be, sanatize_cmd_internal, sanatize_cmd, create_rsync_cmd, execFinale, init_continuation, create_proc, diff, main, entry;
 ext = require("./data");
 com = ext.com, print = ext.print, data = ext.data;
 metadata = com.metadata;
-readJson = com.readJson, readYaml = com.readYaml, hoplon = com.hoplon, fs = com.fs, most = com.most, most_create = com.most_create, spawn = com.spawn, exec = com.exec, chokidar = com.chokidar;
+readJson = com.readJson, readYaml = com.readYaml, hoplon = com.hoplon, fs = com.fs, most = com.most, most_create = com.most_create, exec = com.exec, chokidar = com.chokidar, spawn = com.spawn;
+readline = com.readline;
 ref$ = hoplon.utils, c = ref$.c, R = ref$.R, lit = ref$.lit, l = ref$.l, z = ref$.z, j = ref$.j, zj = ref$.zj;
 oxo = hoplon.guard;
-create_rsync_cmd = function(data){
-  var rsync, txt, str, obnormal, obarr, des, src, i$, len$, I, ref$, key, val, cmd;
-  rsync = data.rsync;
+be = hoplon.types;
+sanatize_cmd_internal = be.str.cont(function(cmd){
+  if (cmd.split('\n').length > 1) {
+    return '\n' + cmd;
+  }
+  if (cmd.length > 45) {
+    return '\n' + cmd;
+  } else {
+    return cmd;
+  }
+}).fix('<< program screwed up >>');
+sanatize_cmd = function(txt){
+  return sanatize_cmd_internal.auth(txt).value;
+};
+create_rsync_cmd = function(rsync, remotehost){
+  var txt, str, obnormal, obarr, des, src, i$, len$, I, ref$, key, val, cmd;
   txt = "";
   str = rsync.str, obnormal = rsync.obnormal, obarr = rsync.obarr, des = rsync.des, src = rsync.src;
   for (i$ = 0, len$ = str.length; i$ < len$; ++i$) {
@@ -16,13 +30,13 @@ create_rsync_cmd = function(data){
   }
   for (i$ = 0, len$ = obnormal.length; i$ < len$; ++i$) {
     ref$ = obnormal[i$], key = ref$[0], val = ref$[1];
-    txt += key + "='" + val + "' ";
+    txt += "--" + key + "='" + val + "' ";
   }
   for (key in obarr) {
     val = obarr[key];
     txt += ("--" + key + "={") + (fn$()).join(',') + "} ";
   }
-  cmd = "rsync " + txt + src.join(" ") + " " + (data.remotehost + ":" + des[0]);
+  cmd = "rsync " + txt + src.join(" ") + " " + (remotehost + ":" + des[0]);
   return cmd;
   function fn$(){
     var i$, ref$, len$, results$ = [];
@@ -33,31 +47,24 @@ create_rsync_cmd = function(data){
     return results$;
   }
 };
-to_bool = function(x){
-  if (x) {
-    return true;
-  } else {
-    return false;
-  }
-};
-execFinale = function*(data, logger, cont){
+execFinale = function*(data, log, cont){
   var postscript, i$, len$, cmd, results$ = [];
   postscript = data['exec-finale'];
-  logger(postscript.length, 'ok', " exec-finale ");
+  log.normal(postscript.length, 'ok', " exec-finale ", c.warn(" (" + postscript.length + ") "));
   for (i$ = 0, len$ = postscript.length; i$ < len$; ++i$) {
     cmd = postscript[i$];
-    logger('verbose', cmd);
+    log.verbose(cmd);
     results$.push((yield cont(cmd)));
   }
   return results$;
 };
-create_continue = function(dryRun, buildname){
-  return function(txt){
+init_continuation = function(buildname, dryRun){
+  return function(cmd){
     var status;
     if (dryRun) {
       status = 0;
     } else {
-      status = spawn(txt).status;
+      status = spawn(cmd).status;
     }
     switch (status) {
     case 0:
@@ -66,39 +73,43 @@ create_continue = function(dryRun, buildname){
       });
     default:
       return new Promise(function(resolve, reject){
-        return reject([txt, buildname]);
+        return reject([cmd, buildname]);
       });
     }
   };
 };
-create_proc = function(data, logger, cont, options){
+create_proc = function(data, options, log, cont){
   return function*(){
-    var locale, i$, len$, cmd, disp, remotetask, E, I;
+    var locale, i$, len$, cmd, remotehost, ref$, each, disp, remotetask, E, I;
     locale = data['exec-locale'];
-    logger(locale.length, 'ok', " exec-locale ");
+    log.normal(locale.length, 'ok', " exec-locale ", c.warn(" (" + locale.length + ") "));
     for (i$ = 0, len$ = locale.length; i$ < len$; ++i$) {
       cmd = locale[i$];
-      logger('verbose', cmd);
+      log.verbose(cmd);
       (yield cont(cmd));
     }
     if (!data.remotehost) {
       if (!data['exec-remote'].length) {
-        (yield* execFinale(data, logger, cont));
+        (yield* execFinale(data, log, cont));
       }
-      (yield 'done');
+      (yield 'error.core.no_remotehost');
       return;
     }
     if (data.rsync) {
-      cmd = create_rsync_cmd(data);
-      disp = [" ", data.rsync.src.join(" "), " ~> ", data.remotehost, ":", data.rsync.des].join("");
-      logger('ok', lit([" rsync", " start "], [0, c.warn]), disp);
-      logger('verbose', cmd);
-      (yield cont(cmd));
-      logger('ok', lit([" rsync", "    ✔️ "], [0, c.ok]));
+      remotehost = data.remotehost;
+      for (i$ = 0, len$ = (ref$ = data.rsync).length; i$ < len$; ++i$) {
+        each = ref$[i$];
+        cmd = create_rsync_cmd(each, remotehost);
+        disp = [" ", each.src.join(" "), " ~> ", remotehost, ":", each.des].join("");
+        log.normal('ok', lit([" rsync", " start "], [0, c.warn]), disp);
+        log.verbose("....", cmd);
+        (yield cont(cmd));
+        log.normal('ok', lit([" rsync ", "✔️ ok "], [0, c.ok]));
+      }
     }
-    disp = " " + data.remotehost + ":" + data.remotefold;
     remotetask = data['exec-remote'];
-    logger(remotetask.length, 'ok', " exec.remote ", disp);
+    disp = c.warn(" (" + remotetask.length + ") ") + data.remotehost + ":" + data.remotefold;
+    log.normal(remotetask.length, 'ok', " exec.remote ", disp);
     if (remotetask.length && !options.dryRun) {
       cmd = "ssh " + data.ssh + " " + data.remotehost + " 'ls " + data.remotefold + "'";
       try {
@@ -113,59 +124,45 @@ create_proc = function(data, logger, cont, options){
     for (i$ = 0, len$ = remotetask.length; i$ < len$; ++i$) {
       I = remotetask[i$];
       cmd = ("ssh " + data.ssh + " ") + data.remotehost + " '" + ("cd " + data.remotefold + ";") + I + "'";
-      logger('verbose', cmd);
+      log.verbose(I, cmd);
       (yield cont(cmd));
     }
-    (yield* execFinale(data, logger, cont));
-    (yield 'done');
+    (yield* execFinale(data, log, cont));
+    (yield 'done.core.exit');
   };
-};
-wait = function(f, t){
-  return setTimeout(f, t);
 };
 diff = R.pipe(R.aperture(2), R.map(function(arg$){
   var x, y;
   x = arg$[0], y = arg$[1];
   return y - x;
 }));
-sanatize_cmd = function(cmd){
-  if (cmd.split('\n').length > 1) {
-    return '\n' + cmd;
-  } else {
-    return cmd;
-  }
-};
-main = function(data, buildname, options){
-  var logger, cont, is_watch, I, proc, $file_watch, $proc;
-  logger = print.create_logger(buildname, options.verbose);
-  cont = create_continue(options.dryRun, buildname);
+main = function(data, options, log, handle_cmd){
+  var I, proc, $file_watch, $proc;
   if (!data.remotehost && data['exec-remote'].length) {
-    logger('warn', lit([" ⛔    ", " warn "], [c.er1, c.er1]), " remotehost address not defined for task.");
+    log.normal('warn', lit([" ⛔    ", " warn "], [c.er1, c.er1]), " remotehost address not defined for task.");
   }
-  is_watch = to_bool(data.watch && !options.noWatch);
-  logger(is_watch, 'ok', "    watching ", c.grey("[ working directory ] → " + process.cwd()));
-  logger(is_watch, "> " + (function(){
+  log.normal(data.watch, 'ok', c.ok(" ↓ watching "), c.grey(" { working directory } → " + process.cwd()), " " + (function(){
     var i$, ref$, len$, results$ = [];
     for (i$ = 0, len$ = (ref$ = data.watch).length; i$ < len$; ++i$) {
       I = ref$[i$];
-      results$.push(c.warn(I));
+      results$.push(c.blue(I));
     }
     return results$;
   }()).join(c.pink(" | ")));
-  proc = create_proc(data, logger, cont, options);
+  proc = create_proc(data, options, log, handle_cmd);
   $file_watch = most_create(function(add, end, error){
     var watcher;
     if (data.initialize) {
       add('init');
     }
-    if (data.watch && !options.noWatch) {
+    if (data.watch) {
       watcher = chokidar.watch(data.watch, data.chokidar);
       watcher.on('change', add);
       return function(){
         watcher.close();
         end();
       };
-    } else {}
+    }
   });
   $proc = $file_watch.timestamp().loop(function(db, ob){
     var ref$, first, second, fin;
@@ -184,110 +181,48 @@ main = function(data, buildname, options){
     return fin;
   }, [0, 0, 0]).map(function(status){
     if (status === 'err') {
-      return most.just('done');
+      return most.just('error.core.infinteloop');
     }
     return most.generate(proc).recoverWith(function(arg$){
-      var cmdtxt, buildname;
+      var cmdtxt, buildname, txt;
       cmdtxt = arg$[0], buildname = arg$[1];
-      l(lit(["[" + metadata.name + "]" + buildname, "[ ", "⚡️", "    error ", "] ", sanatize_cmd(cmdtxt)], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1]));
-      return most.just('done');
+      txt = sanatize_cmd(cmdtxt);
+      if (cmdtxt === undefined) {
+        buildname = " << program screwed up >> ";
+      }
+      l(lit(["[" + metadata.name + "]" + buildname, "[ ", "⚡️", "    error ", "] ", txt], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1]));
+      return most.just('error.core.cmd');
     });
   });
   return $proc.switchLatest();
 };
-disp = {};
-disp.single = oxo.ma(function(data, signal){
-  if (signal !== 'done') {
-    return false;
-  }
-  if (data.options.noWatch) {
-    return false;
-  }
-  if (data.def.watch === false) {
-    return 'only_config';
-  }
-  return true;
-}, function(type, data, signal){
-  switch (type) {
-  case 'only_config':
-    return l(lit(["[" + metadata.name + "]", " .. only watching config file ", data.filename + ""], [c.ok, c.warn, c.blue]));
-  default:
-    return l(c.ok("[" + metadata.name + "] .. returning to watch .."));
-  }
-}).def();
-disp.multiple = oxo.ma(function(arg$, signal){
-  var count, data, ws, res$, i$, ref$, len$, I, torna;
-  count = arg$[0], data = arg$[1];
-  if (signal !== 'done') {
-    return false;
-  }
-  if (count !== data.cmd.length) {
-    return false;
-  }
-  if (data.options.noWatch === true) {
-    return false;
-  }
-  res$ = [];
-  for (i$ = 0, len$ = (ref$ = data.cmd).length; i$ < len$; ++i$) {
-    I = ref$[i$];
-    res$.push(data.user[I].watch);
-  }
-  ws = res$;
-  if (R.sum(ws) === 0) {
-    return 'only_config';
-  }
-  torna = R.zipWith(function(cmd, ws){
-    if (ws) {
-      return cmd;
-    } else {}
-  }, data.cmd, ws);
-  return R.without([void 8], torna);
-}, function(torna, arg$){
-  var count, data, txt;
-  count = arg$[0], data = arg$[1];
-  switch (torna) {
-  case 'only_config':
-    l(lit(["[" + metadata.name + "]", " .. only watching config file ", data.filename + ""], [c.ok, c.warn, c.blue]));
-    break;
-  default:
-    txt = "[" + torna.join("][") + "]";
-    l(lit(["[" + metadata.name + "]", txt, " .. returning to watch .."], [c.ok, c.er1, c.ok]));
-  }
-  return {
-    seed: [1, data]
-  };
-}).def(function(arg$, signal){
-  var count, data;
-  count = arg$[0], data = arg$[1];
-  if (signal === 'done') {
-    return {
-      seed: [count + 1, data]
-    };
+entry = function(data, state){
+  var buildname, configs, opts, logger, handle_cmd, rl;
+  if (data.cmd === undefined) {
+    buildname = "";
+    configs = data.def;
   } else {
-    return {
-      seed: [count, data]
-    };
+    buildname = "[" + data.cmd + "]";
+    configs = data.user[data.cmd];
   }
-});
-entry = oxo.wh(function(data){
-  return data.cmd.length === 0;
-}, function(data){
-  var $, $fin;
-  $ = main(data.def, "", data.options);
-  $fin = $;
-  $fin = $.tap(function(signal){
-    return disp.single(data, signal);
+  opts = data.options;
+  logger = print.create_logger(buildname, opts.verbose);
+  handle_cmd = init_continuation(buildname, opts.dryRun);
+  rl = readline.createInterface({
+    input: process.stdin
   });
-  return $fin;
-}).def(function(data){
-  var user, allstreams, i$, ref$, len$, key, $;
-  user = data.user;
-  allstreams = [];
-  for (i$ = 0, len$ = (ref$ = data.cmd).length; i$ < len$; ++i$) {
-    key = ref$[i$];
-    $ = main(user[key], "[" + key + "]", data.options);
-    allstreams.push($);
-  }
-  return most.mergeArray(allstreams).loop(disp.multiple, [1, data]);
-});
+  rl.on('line', function(input){
+    process.stdout.write(input + "\n");
+  });
+  return main(configs, opts, logger, handle_cmd).tap(function(signal){
+    if (signal === undefined) {
+      return;
+    }
+    if (configs.watch) {
+      return l(c.ok("[" + metadata.name + "] .. returning to watch .."));
+    } else {
+      return rl.close();
+    }
+  });
+};
 module.exports = entry;

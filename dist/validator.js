@@ -1,53 +1,62 @@
-var ext, core, com, print, data, metadata, ref$, l, z, j, R, readJson, exec, fs, tampax, most_create, most, zj, lit, c, optionator, be, maybe, log, ME, rm, util, filterForConfigFile, replace_single_qoute, unu, rm_all_undef, is_true, is_false, grouparr, organizeRsync, mergeF, vre, yaml_tokenize, vars, isref, entry;
+var ext, core, com, print, data, metadata, ref$, l, z, j, R, readJson, exec, fs, tampax, most_create, most, c, lit, zj, noop, be, log, tlog, maybe, ME, rm, util, filterForConfigFile, sdir, get_all_yaml_files, unu, rm_all_undef, is_true, is_false, grouparr, organizeRsync, mergeF, vre, yaml_tokenize, vars, isref, modifyYaml, $tampaxParse, handle_error, rmdef, exec_list_option, main, entry, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ext = require("./data");
 core = require("./core");
 com = ext.com, print = ext.print, data = ext.data, metadata = ext.metadata;
 ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, j = ref$.j, R = ref$.R;
-readJson = com.readJson, exec = com.exec, fs = com.fs, tampax = com.tampax, most_create = com.most_create, most = com.most, metadata = com.metadata;
-ref$ = com.hoplon.utils, zj = ref$.zj, j = ref$.j, lit = ref$.lit, c = ref$.c, optionator = ref$.optionator, R = ref$.R;
+readJson = com.readJson, exec = com.exec, fs = com.fs, tampax = com.tampax, most_create = com.most_create, most = com.most, metadata = com.metadata, c = com.c, lit = com.lit;
+ref$ = com.hoplon.utils, zj = ref$.zj, j = ref$.j, lit = ref$.lit, c = ref$.c, R = ref$.R, noop = ref$.noop;
 be = com.hoplon.types;
-maybe = be.maybe;
 log = function(x){
-  l(x);
-  return x;
+  return l(x);
 };
+tlog = be.tap(log);
+maybe = be.maybe;
 ME = {};
 rm = {};
 util = {};
 filterForConfigFile = R.pipe(R.split("\n"), R.filter(function(str){
   return str === "." + metadata.name + ".yaml";
 }));
+sdir = function(dirname){
+  var out;
+  return out = R.map(function(x){
+    return dirname + "/" + x;
+  })(
+  R.filter(function(str){
+    return str === "." + metadata.name + ".yaml";
+  })(
+  R.split("\n")(
+  exec(
+  " ls -lAh " + dirname + " | grep -v '^d' | awk 'NR>1 {print $NF}'"))));
+};
+get_all_yaml_files = function(custom){
+  var fin, upperPath;
+  fin = [];
+  if (fs.existsSync(custom)) {
+    fin.push(custom);
+  }
+  fin.push.apply(fin, sdir(process.cwd()));
+  upperPath = R.init(process.cwd().split("/")).join("/");
+  fin.push.apply(fin, sdir(upperPath));
+  return fin;
+};
 ME.findfile = function(filename){
-  var name, raw, isthere, middle;
-  switch (R.type(filename)) {
-  case 'String':
-    if (!fs.existsSync(filename)) {
-      l(lit(["[" + metadata.name + "]", "[Error]", " cannot find configuration file ", filename + "", "."], [c.er3, c.er1, c.warn, c.er1]));
-      return false;
-    }
-    return filename;
-  case 'Undefined':
-  case 'Null':
-    name = metadata.name;
-    raw = exec(" ls -lAh . | grep -v '^d' | awk 'NR>1 {print $NF}'");
-    isthere = filterForConfigFile(raw);
-    if (isthere.length === 1) {
-      l(lit(["[" + name + "] using ", process.cwd() + ("/." + name + ".yaml")], [c.ok, c.warn]));
-      return isthere[0];
-    }
-    raw = exec(" ls -lAh .. | grep -v '^d' | awk 'NR>1 {print $NF}'");
-    isthere = filterForConfigFile(raw);
-    if (isthere.length === 1) {
-      l(lit(["[" + name + "]", " using ", R.init(process.cwd().split("/")).join("/") + ("/." + name + ".yaml")], [c.ok, c.grey, c.warn]));
-      return "../" + isthere[0];
-    }
-    middle = " - " + c.pink("." + name + ".yaml") + " or " + c.pink("/../." + name + ".yaml") + " not present.\n";
-    l(lit(["[" + name + "][Error]\n", middle, " - custom config file is also not provided."], [c.er3, 0, c.grey]));
-    return false;
-  default:
-    l(lit(["[" + name + "][Error] .config can only be string type."], [c.er1, c.warn, c.er1]));
+  var allfiles, filenames, I;
+  allfiles = get_all_yaml_files(filename);
+  if (allfiles.length === 0) {
+    l(lit(["[" + metadata.name + "]", "[Error]", " cannot find ANY configuration file."], [c.er3, c.er1, c.warn]));
     return false;
   }
+  filenames = c.er1("[ ") + (function(){
+    var i$, ref$, len$, results$ = [];
+    for (i$ = 0, len$ = (ref$ = allfiles).length; i$ < len$; ++i$) {
+      I = ref$[i$];
+      results$.push(c.warn(I));
+    }
+    return results$;
+  }()).join(c.er1(" ][ ")) + c.er1(" ]");
+  l(lit(["[" + metadata.name + "]", " using ", filenames], [c.ok, c.grey, null]));
+  return allfiles;
 };
 ME.recursive_str_list = be.arr.map(be.arr.and(function(arr){
   var ret;
@@ -95,14 +104,6 @@ ME.recursive_str_list = be.arr.map(be.arr.and(function(arr){
   }
   return "not string or string list.";
 });
-replace_single_qoute = function(list){
-  var i$, len$, I, results$ = [];
-  for (i$ = 0, len$ = list.length; i$ < len$; ++i$) {
-    I = list[i$];
-    results$.push(I.replace(/'/g, "'''"));
-  }
-  return results$;
-};
 ME.strlist = function(F){
   return ME.recursive_str_list.or(be.undefnull.cont(F));
 };
@@ -112,7 +113,7 @@ ME.strlist.empty = ME.strlist(function(){
 ME.strlist.dot = ME.strlist(function(){
   return ["."];
 });
-ME.strlist.undef = ME.strlist(void 8);
+ME.strlist['false'] = ME.strlist(false);
 unu = be.undefnull.cont(void 8);
 ME.maybe = {};
 ME.maybe.bool = be.bool.or(unu);
@@ -130,30 +131,6 @@ is_false = function(x){
   return x === false;
 };
 ME.rsync = {};
-ME.rsync.string = function(str){
-  if (!data.rsync.bool.has(str)) {
-    return [false, [':rsync', [2, [str + "", " not a valid boolean rsync option."]]]];
-  }
-  return true;
-};
-ME.rsync.object = be.obj.and(function(ob, __){
-  var keys, k, val;
-  keys = Object.keys(ob);
-  if (!(keys.length === 1)) {
-    return [false, [':rsync', [1, ["object can only have singular attribute."]]]];
-  }
-  k = keys[0];
-  if (!(data.rsync.compound.has(k) || (k === 'src' || k === 'des'))) {
-    return [false, [':rsync', [2, [k, " not a valid compound rsync option."]]]];
-  }
-  val = ob[k];
-  if (k === 'des' || k === 'src') {
-    if (!(R.type(val) === 'String')) {
-      return [false, [':rsync', [2, [k, " can only be string type."]]]];
-    }
-  }
-  return true;
-});
 grouparr = R.pipe(R.unnest, R.groupBy(function(v){
   return v[0];
 }), R.map(R.map(function(x){
@@ -239,7 +216,7 @@ organizeRsync = function(list){
         switch (R.type(val)) {
         case 'String':
         case 'Number':
-          fin.obnormal.push([k, val]);
+          fin.obnormal.push([k, val.replace(/'/g, "'\\''")]);
           break;
         case 'Undefined':
         case 'Null':
@@ -281,45 +258,56 @@ organizeRsync = function(list){
     return results$;
   }
 };
-ME.rsync.strarr = be.arr.map(be.str).or(be.str.cont(function(s){
-  return [s];
-})).or(be.undefnull.cont([]));
-ME.watch = ME.strlist.undef.or(be(is_true).cont(["."])).or(is_false);
-ME.rsync.user = be.arr.or(be.undefnull.cont(void 8)).alt(be.bool.cont(function(val){
-  var rsync;
-  if (val === true) {
-    rsync = arguments[3].origin.rsync;
-    if (rsync) {
-      return rsync;
-    } else {
-      return data.def.rsync.concat({
-        des: arguments[3].origin.remotefold
-      });
-    }
-  } else {
-    return false;
-  }
-})).edit(organizeRsync).and(ME.rsync.check_if_error).cont(function(fin){
+ME.rsync.core = be.arr.edit(organizeRsync).and(ME.rsync.check_if_error).cont(function(fin){
+  var state;
+  state = R.last(arguments);
   if (!fin.des[0]) {
-    fin.des.push(arguments[3].origin.remotefold);
+    fin.des.push(state.origin.remotefold);
   }
   if (fin.src.length === 0) {
     fin.src.push(".");
   }
   return fin;
 });
+ME.rsync.main = be(is_true).cont(function(){
+  var state;
+  state = R.last(arguments);
+  return data.def.rsync.concat({
+    des: state.origin.remotefold
+  });
+}).or(be.arr.map(ME.rsync.core)).and(ME.rsync.core).alt(ME.rsync.core).cont(function(data){
+  return [data];
+}).or(is_false).or(be.undefnull.cont(false));
+ME.rsync.strarr = be.arr.map(be.str).or(be.str.cont(function(s){
+  return [s];
+})).or(be.undefnull.cont([]));
+ME.execlist = ME.strlist.empty.cont(function(strlist){
+  var i$, len$, str, results$ = [];
+  for (i$ = 0, len$ = strlist.length; i$ < len$; ++i$) {
+    str = strlist[i$];
+    results$.push(str.replace(/'/g, "'''"));
+  }
+  return results$;
+});
 ME.chokidar = be.obj.on(data.chokidar.bools, ME.maybe.bool).on(['ignored', 'cwd'], ME.maybe.str).on('awaitWriteFinish', ME.maybe.obj.on(['stabilityThreshold', 'pollInterval'], ME.maybe.num).or(be.bool)).on(['interval', 'binaryInterval', 'depth'], ME.maybe.num);
+ME.watch = function(undef, on_true){
+  return ME.recursive_str_list.or(be.undefnull.cont(undef)).or(is_false).or(be(is_true).cont(on_true)).cont(function(data){
+    if (data.length === 0) {
+      return false;
+    }
+    return data;
+  });
+};
 ME.user = be.obj.err([':custom_build']).or(be.undefnull.cont(function(){
   return {};
-}).err(void 8)).and(be.restricted(data.selected_keys.arr)).on('initialize', ME.maybe.bool).on('watch', ME.strlist.undef.or(be(is_true).cont(["."])).or(is_false)).on('ssh', be.str.or(unu)).on(['exec-remote', 'exec-locale', 'exec-finale'], ME.strlist.undef.cont(replace_single_qoute)).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync.user).or(unu).or(ME.strlist.empty.cont(function(list){
+}).err(void 8)).and(be.restricted(data.selected_keys.arr)).alt(ME.strlist.empty.cont(function(list){
   return {
-    'exec-locale': list,
-    rsync: false
+    'exec-locale': list
   };
-}));
+})).on('initialize', ME.maybe.bool).on('watch', ME.watch(false, void 8)).on('ssh', be.str.or(unu)).on(['exec-remote', 'exec-locale', 'exec-finale'], ME.execlist).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync.main);
 ME.origin = be.obj.alt(be.undefnull.cont(function(){
   return {};
-})).on('remotehost', be.str.or(unu)).on('remotefold', be.str.or(unu.cont("~"))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.strlist.dot.or(be(is_true).cont(["."])).or(is_false)).on('ssh', be.str.or(be.undefnull.cont(data.def.ssh))).on(['exec-locale', 'exec-finale', 'exec-remote'], ME.strlist.empty.cont(replace_single_qoute)).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).and(be(function(data){
+})).on('remotehost', be.str.or(unu)).on('remotefold', be.str.or(unu.cont("~"))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.watch(["."], ["."])).on('ssh', be.str.or(be.undefnull.cont(data.def.ssh))).on(['exec-locale', 'exec-finale', 'exec-remote'], ME.execlist).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).and(be(function(data){
   if (data.remotehost) {
     return true;
   } else {
@@ -328,27 +316,7 @@ ME.origin = be.obj.alt(be.undefnull.cont(function(){
 }).fix(function(data){
   data.rsync = false;
   return data;
-})).on('rsync', be.arr.alt(be.undefnull.cont(function(){
-  return data.def.rsync.concat({
-    des: arguments[3].origin.remotefold
-  });
-})).alt(be(function(x){
-  return x === true;
-}).cont(function(val){
-  return data.def.rsync.concat({
-    des: arguments[3].origin.remotefold
-  });
-})).edit(organizeRsync).and(ME.rsync.check_if_error).cont(function(fin){
-  if (fin) {
-    if (!fin.des[0]) {
-      fin.des.push(arguments[3].origin.remotefold);
-    }
-    if (fin.src.length === 0) {
-      fin.src.push(".");
-    }
-  }
-  return fin;
-}).or(is_false)).map(function(value, key, __, state){
+})).on('rsync', ME.rsync.main).map(function(value, key, __, state){
   var put;
   switch (data.selected_keys.set.has(key)) {
   case true:
@@ -363,15 +331,6 @@ ME.origin = be.obj.alt(be.undefnull.cont(function(){
     }
   }
   return true;
-}).and(function(raw, __, state){
-  var i$, ref$, len$, I;
-  for (i$ = 0, len$ = (ref$ = state.cmd).length; i$ < len$; ++i$) {
-    I = ref$[i$];
-    if (raw[I] === undefined) {
-      return [false, [':usercmd_not_defined', I]];
-    }
-  }
-  return true;
 });
 mergeF = function(a, b){
   if (b === void 8) {
@@ -379,46 +338,29 @@ mergeF = function(a, b){
   }
   return b;
 };
-ME.main = be.obj.on('cmd', be.arr.map(function(x){
+ME.main = be.obj.on('cmd', be.str.and(function(x){
   return !data.selected_keys.set.has(x);
 }).err(function(x, id, __, state){
-  return [':in_selected_key', [state.cmd[id], state.commandline]];
-})).on('origin', ME.origin).err(be.flatato).err(function(all, path, state){
-  var topmsg, loc, Error, F;
-  topmsg = all[0];
-  loc = topmsg[0], Error = topmsg[1];
-  F = (function(){
-    switch (loc) {
-    case ':in_selected_key':
-      return print.in_selected_key;
-    case ':req':
-      return print.reqError;
-    case ':res':
-      return print.resError;
-    case ':usercmd_not_defined':
-      return print.usercmd_not_defined;
-    case ':rsync':
-      return print.rsyncError;
-    case ':ob_in_str_list':
-      return print.ob_in_str_list;
-    case ':custom_build':
-      return print.custom_build;
-    default:
-      Error = all[0];
-      return print.basicError;
-    }
-  }());
-  F(Error, path, state.filename, all);
-  return 'error.validate';
-}).edit(function(__, state){
-  var user, def, nuser, key, value;
-  user = state.user, def = state.def;
-  nuser = {};
-  for (key in user) {
-    value = user[key];
-    nuser[key] = R.mergeDeepWith(mergeF, def, value);
+  return [':in_selected_key', [state.cmd, state.commandline]];
+}).or(be.undef)).on('origin', ME.origin).and(function(raw){
+  if (raw.cmd !== undefined && raw.user[raw.cmd] === undefined) {
+    return [false, [':usercmd_not_defined', [raw.all_filenames, raw.cmd]]];
   }
-  state.user = nuser;
+  return true;
+}).err(be.flatato).edit(function(__, state){
+  var user, def, cmdname, value, i$, ref$, len$, I;
+  user = state.user, def = state.def;
+  for (cmdname in user) {
+    value = user[cmdname];
+    for (i$ = 0, len$ = (ref$ = ['watch', 'remotehost', 'remotefold', 'chokidar', 'ssh', 'initialize', 'global']).length; i$ < len$; ++i$) {
+      I = ref$[i$];
+      if (value[I] === undefined) {
+        user[cmdname][I] = def[I];
+      } else {
+        user[cmdname][I] = value[I];
+      }
+    }
+  }
   state.origin = void 8;
   return state;
 }).cont(core);
@@ -491,18 +433,18 @@ vars.get = function(tokens){
 };
 isref = /\s*\w*:\s*(&\w+\s*){0,1}/;
 vars.edit = function(arg$, vars, tokens){
-  var index, all, name, txt, i$, to$, I, current, firstline, isr, old_txt;
+  var index, all, i$, len$, ref$, name, txt, j$, to$, I, current, firstline, isr, old_txt;
   index = arg$[0], all = arg$[1];
-  for (name in vars) {
-    txt = vars[name];
-    for (i$ = 1, to$ = all.length; i$ < to$; ++i$) {
-      I = i$;
+  for (i$ = 0, len$ = vars.length; i$ < len$; ++i$) {
+    ref$ = vars[i$], name = ref$[0], txt = ref$[1];
+    for (j$ = 1, to$ = all.length; j$ < to$; ++j$) {
+      I = j$;
       current = all[I];
       if (current[0].name === name) {
         firstline = current[0];
         isr = isref.exec(firstline.txt);
         old_txt = current[0].txt;
-        current[0].txt = isr[0] + " " + txt;
+        current[0].txt = isr[0] + txt;
         all[I] = [current[0]];
       }
     }
@@ -521,61 +463,158 @@ vars.stringify = function(tokens){
   }
   return str;
 };
-entry = function(info){
-  var FILENAME, data, tokens, torna, yaml_text, $, Er;
-  try {
-    FILENAME = process.cwd() + "/" + info.filename;
-    data = R.toString(
-    fs.readFileSync(
-    FILENAME));
-    tokens = yaml_tokenize(data);
-    torna = vars.get(tokens);
-    torna = vars.edit(torna, info.vars, tokens);
-    torna = R.flatten(torna);
-    yaml_text = vars.stringify(torna);
-    $ = most_create(function(add, end, error){
-      return tampax.yamlParseString(yaml_text, (import$({}, info.vars)), function(err, rawJson){
-        var state;
-        if (err) {
-          l(err);
-          print.failed_in_tampex_parsing(info.filename);
-          add({
-            'continue': false,
-            message: 'error.parse'
-          });
-          return;
-        }
+modifyYaml = function(filename, cmdargs){
+  var data, tokens, torna, yaml_text;
+  data = R.toString(
+  fs.readFileSync(
+  filename));
+  tokens = yaml_tokenize(data);
+  torna = vars.get(tokens);
+  torna = vars.edit(torna, cmdargs, tokens);
+  torna = R.flatten(torna);
+  yaml_text = vars.stringify(torna);
+  return yaml_text;
+};
+$tampaxParse = function(filename, yaml_text, cmdargs){
+  var $;
+  $ = most_create(function(add, end, error){
+    return tampax.yamlParseString(yaml_text, arrayFrom$(cmdargs), function(err, rawJson){
+      if (err) {
+        print.failed_in_tampax_parsing(filename, err);
+        error('error.validator.tampaxparsing');
+        return;
+      }
+      add([filename, rawJson]);
+      return end();
+    });
+  });
+  return $;
+};
+handle_error = function(arg$){
+  var message, path, value, topmsg, loc, Error, F;
+  message = arg$.message, path = arg$.path, value = arg$.value;
+  topmsg = message[0];
+  loc = topmsg[0], Error = topmsg[1];
+  F = (function(){
+    switch (loc) {
+    case ':in_selected_key':
+      return print.in_selected_key;
+    case ':req':
+      return print.reqError;
+    case ':res':
+      return print.resError;
+    case ':usercmd_not_defined':
+      return print.could_not_find_custom_cmd;
+    case ':rsync':
+      return print.rsyncError;
+    case ':ob_in_str_list':
+      return print.ob_in_str_list;
+    case ':custom_build':
+      return print.custom_build;
+    default:
+      Error = message[0];
+      return print.basicError;
+    }
+  }());
+  F(Error, path, value.filename, message);
+};
+rmdef = R.reject(function(x){
+  return data.selected_keys.set.has(x);
+});
+exec_list_option = function(alldata){
+  var i$, ref$, len$, ref1$, filename, data, lresult$, keys, user_ones, j$, len1$, I, results$ = [];
+  for (i$ = 0, len$ = (ref$ = R.reverse(alldata)).length; i$ < len$; ++i$) {
+    ref1$ = ref$[i$], filename = ref1$[0], data = ref1$[1];
+    lresult$ = [];
+    l(lit(['> FILE ', filename], [c.pink, c.blue]));
+    keys = Object.keys(data);
+    user_ones = rmdef(keys);
+    for (j$ = 0, len1$ = user_ones.length; j$ < len1$; ++j$) {
+      I = user_ones[j$];
+      lresult$.push(l(lit([" • ", I], [c.warn, c.ok])));
+    }
+    results$.push(lresult$);
+  }
+  return results$;
+};
+main = function(info){
+  return function(alldata){
+    var i$, len$, I, ref$, filename, data, state, torna;
+    for (i$ = 0, len$ = alldata.length; i$ < len$; ++i$) {
+      I = alldata[i$];
+      if (I === 'error.validator.tampaxparsing') {
+        return most.just(I);
+      }
+    }
+    if (info.options.list) {
+      exec_list_option(alldata);
+      return most.just('ok');
+    }
+    if (info.cmdname) {
+      for (i$ = 0, len$ = alldata.length; i$ < len$; ++i$) {
+        ref$ = alldata[i$], filename = ref$[0], data = ref$[1];
         state = {
           commandline: info.commandline,
           options: info.options,
-          filename: info.filename,
-          cmd: info.cmd,
-          origin: rawJson,
+          filename: filename,
+          all_filenames: info.filenames,
+          cmd: info.cmdname,
+          origin: data,
           def: {},
           user: {}
         };
-        add(ME.main.auth(state, state));
-        return end();
-      });
-    });
-    return $;
-  } catch (e$) {
-    Er = e$;
-    print.unableToReadConfigYaml(info.filename);
-    l(Er);
-    return most.just({
-      'continue': false,
-      message: 'error.read.parse'
-    });
+        torna = ME.main.auth(state, state);
+        if (torna['continue']) {
+          return torna.value;
+        }
+        if (!(torna.message[0][0] === ':usercmd_not_defined')) {
+          break;
+        }
+      }
+    } else {
+      state = {
+        commandline: info.commandline,
+        options: info.options,
+        filename: alldata[0][0],
+        cmd: info.cmdname,
+        origin: alldata[0][1],
+        def: {},
+        user: {}
+      };
+      torna = ME.main.auth(state, state);
+    }
+    if (torna.error) {
+      handle_error(torna);
+      return most.just('error.validator.main');
+    }
+    return most.just('ok');
+  };
+};
+entry = function(info){
+  var $all, i$, ref$, len$, I, yamlText, E, parsed, P;
+  $all = [];
+  for (i$ = 0, len$ = (ref$ = info.filenames).length; i$ < len$; ++i$) {
+    I = ref$[i$];
+    try {
+      yamlText = modifyYaml(I, info.vars);
+    } catch (e$) {
+      E = e$;
+      print.failed_in_custom_parser(I, E);
+      return most.just('error.validator.modify-yaml');
+    }
+    $all.push($tampaxParse(I, yamlText, info.cmdargs));
   }
+  parsed = most.mergeArray($all).recoverWith(function(x){
+    return most.just(x);
+  }).reduce(function(accum, data){
+    accum.push(data);
+    return accum;
+  }, []);
+  P = parsed.then(main(info));
+  return most.fromPromise(P);
 };
 module.exports = {
   validator: entry,
   findfile: ME.findfile,
   ext: ext
 };
-function import$(obj, src){
-  var own = {}.hasOwnProperty;
-  for (var key in src) if (own.call(src, key)) obj[key] = src[key];
-  return obj;
-}

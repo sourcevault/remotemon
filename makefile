@@ -17,11 +17,20 @@ compile:
 	lsc --no-header -cbo dist src
 	lsc -cb test
 	make pkg
-	remotemon --config ./test/opt.yaml foo -n
+
+#	remotemon --config
+
+# 	remotemon --config test/opt.yaml pkg -l
+	remotemon -h
+
+
+#	remotemon --config test/opt.yaml
+
+# 	file=hello foo bar
 
 w.compile:
-# 	nodemon  --exec "make compile || exit 1" ${SRC_FILES} ${TEST_FILES}
-	nodemon  --exec "make compile || exit 1" ${SRC_FILES}
+	nodemon  --exec "make compile || exit 1" ${SRC_FILES} ${TEST_FILES}
+# 	nodemon  --exec "make compile || exit 1" ${SRC_FILES}
 
 .ONESHELL:
 SHELL = /bin/bash
@@ -43,3 +52,6 @@ w.testy:
 	nodemon --exec "make testy" ${TEST_FILES} ${SRC_FILES}
 
 nothing:
+
+w.sudo:
+	nodemon  --exec "sudo apt-get update"

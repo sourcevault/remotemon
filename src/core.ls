@@ -1,20 +1,43 @@
 ext = require "./data"
 
-#---------------------------------------------------
+#--------------------------------------------------------------------------------------
 
 {com,print,data} = ext
 
 metadata = com.metadata
 
-{read-json,read-yaml,hoplon,fs,most,most_create,spawn,exec,chokidar}  = com
+{read-json,read-yaml,hoplon,fs,most,most_create,exec,chokidar,spawn}    = com
 
-{c,R,lit,l,z,j,zj}                                                    = hoplon.utils
+{readline}                                                              = com
+
+{c,R,lit,l,z,j,zj}                                                      = hoplon.utils
+
+
+#---------------------------------------------------------------------------------------
 
 oxo = hoplon.guard
 
-create_rsync_cmd = (data) ->
+be  = hoplon.types
 
-  rsync = data.rsync
+# break bash command into multiple lines
+
+sanatize_cmd_internal = be.str
+
+.cont (cmd) ->
+
+  if ((cmd.split '\n').length > 1) then return ('\n' + cmd)
+
+  if (cmd.length > 45) then return ('\n' + cmd)
+
+  else then return cmd
+
+.fix '<< program screwed up >>'
+
+sanatize_cmd = (txt) -> (sanatize_cmd_internal.auth txt).value
+
+#---------------------------------------------------------------------------------------
+
+create_rsync_cmd = (rsync,remotehost) ->
 
   txt = ""
 
@@ -26,38 +49,33 @@ create_rsync_cmd = (data) ->
 
   for [key,val] in obnormal
 
-    txt += "#{key}='#{val}' "
+    txt += "--#{key}='#{val}' "
 
   for key,val of obarr
 
     txt += "--#{key}={" + (["\'#{I}\'" for I in val].join ',') + "} "
 
-  cmd = "rsync " + txt + (src.join " ") + " " + (data.remotehost + ":" + des[0])
+  cmd = "rsync " + txt + (src.join " ") + " " + (remotehost + ":" + des[0])
 
   cmd
 
-to_bool = (x) ->
-
-  if x then return true
-  else then return false
-
-exec-finale = (data,logger,cont) ->*
+exec-finale = (data,log,cont) ->*
 
   postscript = data['exec-finale']
 
-  logger do
+  log.normal do
     postscript.length
     \ok
     " exec-finale "
+    c.warn " (#{postscript.length}) "
 
   for cmd in postscript
 
-    logger \verbose,cmd
+    log.verbose cmd
 
     yield cont cmd
 
-
-create_continue = (dryRun,buildname) -> (txt) ->
+init_continuation = (buildname,dryRun) -> (cmd) ->
 
   if dryRun
 
@@ -65,61 +83,67 @@ create_continue = (dryRun,buildname) -> (txt) ->
 
   else
 
-    {status} = spawn txt
+    {status} = spawn cmd
 
   switch status
   | 0         => new Promise (resolve) -> setTimeout resolve,0
-  | otherwise => new Promise (resolve,reject) -> reject [txt,buildname]
+  | otherwise => new Promise (resolve,reject) -> reject [cmd,buildname]
 
-create_proc = (data,logger,cont,options) -> ->*
+create_proc = (data,options,log,cont) -> ->*
 
   locale = data['exec-locale']
 
-  logger do
+  log.normal do
     locale.length
     \ok
     " exec-locale "
+    c.warn " (#{locale.length}) "
 
   for cmd in locale
 
-    logger \verbose,cmd
+    log.verbose cmd
 
     yield cont cmd
 
   if (not data.remotehost)
 
-    if not (data['exec-remote'].length)
+    if not data['exec-remote'].length
 
-      yield from exec-finale data,logger,cont
+      yield from exec-finale data,log,cont
 
-    yield \done
+    yield \error.core.no_remotehost
 
     return
 
   if data.rsync
 
-    cmd = create_rsync_cmd data
+    remotehost = data.remotehost
 
-    disp   = [" ",(data.rsync.src.join " ")," ~> ",data.remotehost,":",data.rsync.des].join ""
+    for each in data.rsync
 
-    logger do
-      \ok
-      lit [" rsync"," start "],[0,c.warn]
-      disp
+      cmd = create_rsync_cmd each,remotehost
 
-    logger \verbose,cmd
+      disp   = [" ",(each.src.join " ")," ~> ",remotehost,":",each.des].join ""
 
-    yield cont cmd
+      log.normal do
+        \ok
+        lit [" rsync"," start "],[0,c.warn]
+        disp
 
-    logger do
-      \ok
-      lit [" rsync","    ✔️ "],[0,c.ok]
+      log.verbose "....",cmd
 
-  disp = " " + data.remotehost + ":" + data.remotefold
+      yield cont cmd
+
+      log.normal do
+        \ok
+        lit [" rsync ","✔️ ok "],[0,c.ok]
+
 
   remotetask = data['exec-remote']
 
-  logger do
+  disp = (c.warn " (#{remotetask.length}) ") + data.remotehost + ":" + data.remotefold
+
+  log.normal do
     remotetask.length
     \ok
     " exec.remote "
@@ -147,53 +171,37 @@ create_proc = (data,logger,cont,options) -> ->*
 
     cmd = "ssh #{data.ssh} " + data.remotehost + " '" + "cd #{data.remotefold};" + I + "'"
 
-    logger \verbose, cmd
+    log.verbose I,cmd
 
     yield cont cmd
 
-  yield from exec-finale data,logger,cont
+  yield from exec-finale data,log,cont
 
-  yield \done
+  yield \done.core.exit
 
   return
-
-wait = (f,t) -> setTimeout f,t
 
 diff = R.pipe do
   R.aperture 2
   R.map ([x,y]) -> y - x
 
-sanatize_cmd = (cmd) ->
-
-  if ((cmd.split '\n').length > 1) then return ('\n' + cmd)
-  else then return cmd
-
-main = (data,buildname,options) ->
-
-  logger = print.create_logger buildname,options.verbose
-
-  cont = create_continue options.dryRun,buildname
+main = (data,options,log,handle_cmd) ->
 
   if (not data.remotehost) and data['exec-remote'].length
 
-    logger do
+    log.normal do
       \warn
       lit [" ⛔    "," warn "],[c.er1,c.er1]
       " remotehost address not defined for task."
 
-  is_watch = to_bool ((data.watch) and not (options.noWatch))
-
-  logger do
-    is_watch
+  log.normal do
+    data.watch
     \ok
-    "    watching "
-    c.grey "[ working directory ] → #{process.cwd!}"
+    c.ok " ↓ watching "
+    c.grey " { working directory } → #{process.cwd!}"
+    " " + [(c.blue I) for I in data.watch].join (c.pink " | ")
 
-  logger do
-    is_watch
-    "> " + [(c.warn I) for I in data.watch].join (c.pink " | ")
-
-  proc = create_proc data,logger,cont,options
+  proc = create_proc data,options,log,handle_cmd
 
   $file_watch =  most_create (add,end,error) ->
 
@@ -201,7 +209,7 @@ main = (data,buildname,options) ->
 
       add \init
 
-    if ((data.watch) and not (options.noWatch))
+    if data.watch
 
       watcher = chokidar.watch data.watch,data.chokidar
 
@@ -209,9 +217,6 @@ main = (data,buildname,options) ->
 
       !-> watcher.close!; end!
 
-    else
-
-      return void
 
   $proc = $file_watch
   .timestamp!
@@ -250,139 +255,70 @@ main = (data,buildname,options) ->
 
   .map (status) ->
 
-    if status is \err then return most.just \done
+    if status is \err then return most.just \error.core.infinteloop
 
     most.generate proc
     .recoverWith ([cmdtxt,buildname]) ->
 
+      txt = sanatize_cmd cmdtxt
+
+      if (cmdtxt is undefined)
+
+        buildname = " << program screwed up >> "
+
       l lit do
-        ["[#{metadata.name}]#{buildname}","[ ","⚡️","    error ","] ",(sanatize_cmd cmdtxt)]
+        ["[#{metadata.name}]#{buildname}","[ ","⚡️","    error ","] ",txt]
         [c.er1,c.er2,c.er3,c.er2,c.er2,c.er1]
 
-      most.just \done
+      most.just \error.core.cmd
 
 
   $proc.switchLatest!
 
-disp = {}
+# ---------
 
-disp.single = oxo
+entry = (data,state) ->
 
-.ma do
+  if (data.cmd is undefined)
 
-  (data,signal) ->
+    buildname = ""
 
-    if (signal isnt \done) then return false
+    configs = data.def
 
-    if data.options.noWatch then return false
+  else
 
-    if ((data.def.watch) is false) then return \only_config
+    buildname = "[#{data.cmd}]"
 
-    true
+    configs = data.user[data.cmd]
 
-  (type,data,signal) ->
+  #----------------------------------
 
-    switch type
-    | \only_config =>
+  opts = data.options
 
-      l lit do
-        ["[#{metadata.name}]"," .. only watching config file ","#{data.filename}"]
-        [c.ok,c.warn,c.blue]
+  logger = print.create_logger buildname,opts.verbose
 
-    | otherwise    =>
+  handle_cmd = init_continuation buildname,opts.dryRun
+
+  rl = readline.createInterface {input:process.stdin}
+
+  rl.on \line,(input) !->
+
+    process.stdout.write input + "\n"
+
+  #----------------------------------
+
+  main configs,opts,logger,handle_cmd
+
+  .tap (signal) ->
+
+    if (signal is undefined) then return
+
+    if configs.watch
 
       l c.ok "[#{metadata.name}] .. returning to watch .."
 
-.def!
+    else
 
-disp.multiple = oxo
-
-.ma do
-
-  ([count,data],signal) ->
-
-    if (signal isnt \done) then return false
-
-    if (count isnt data.cmd.length) then return false
-
-    if ((data.options.noWatch) is true) then return false
-
-    ws = [data.user[I].watch for I in data.cmd]
-
-    if ((R.sum ws) is 0) then return \only_config
-
-    torna = R.zipWith do
-      (cmd,ws) ->
-        if ws then return cmd
-        else return void
-      data.cmd
-      ws
-
-    R.without [void],torna
-
-  (torna,[count,data]) ->
-
-    switch torna
-    | \only_config =>
-
-      l lit do
-        ["[#{metadata.name}]"," .. only watching config file ","#{data.filename}"]
-        [c.ok,c.warn,c.blue]
-
-    | otherwise    =>
-
-      txt = "[" + (torna.join "][") + "]"
-
-      l lit do
-        ["[#{metadata.name}]",txt," .. returning to watch .."]
-        [c.ok,c.er1,c.ok]
-
-    {seed:[1,data]}
-
-.def ([count,data],signal) ->
-
-  if signal is \done
-    seed:[(count + 1), data]
-  else
-    seed:[count,data]
-
-entry = oxo
-
-.wh do
-
-  (data) -> data.cmd.length is 0
-
-  (data) ->
-
-    $ = main do
-      data.def
-      ""
-      data.options
-
-    $fin = $
-
-    $fin = $.tap (signal) -> disp.single data,signal
-
-    $fin
-
-
-.def (data) ->
-
-  user = data.user
-
-  allstreams = []
-
-  for key in data.cmd
-
-    $ = main do
-      user[key]
-      "[#{key}]"
-      data.options
-
-    allstreams.push $
-
-  most.mergeArray allstreams
-  .loop disp.multiple,[1,data]
-
+      rl.close!
 
 module.exports = entry

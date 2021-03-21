@@ -7,93 +7,45 @@ bani = require "./validator"
 
 {com,print} = ext
 
-#---------------------------------------------------
+#--------------------------------------------
 
-{read-json,most,j,optionator,exec,chokidar,most_create,updateNotifier,fs,metadata} = com
+{read-json,most,j,exec,chokidar,most_create,updateNotifier,fs,metadata,optionParser} = com
 
-{l,z,j,R,lit,c} = com.hoplon.utils
+{l,z,zj,j,R,lit,c} = com.hoplon.utils
 
 be = com.hoplon.types
 
-#---------------------------------------------------
+#--------------------------------------------
 
-cmd_options =
+parser = new optionParser!
 
-  prepend: "Usage: remotemon [ command name ]"
+parser.addOption \h,'help',null,\help
 
-  append : metadata.version
+parser.addOption \v,'verbose',null,\verbose
 
-  options:
+parser.addOption \V,'version',null,\version
 
-     *option: 'help'
-      alias: 'h'
-      type: 'Boolean'
-      description: 'displays help'
+parser.addOption \d,'dry-run',null,\dryRun
 
-     *option: 'config'
-      alias: 'c'
-      type: 'String'
-      description: 'path to configuration file'
+parser.addOption \w,'watch-config-file',null,\watch_config_file
 
-     *option: 'verbose'
-      alias: 'v'
-      type: 'Boolean'
-      description: 'verbose messages'
+parser.addOption \c,'config',null,\config
+.argument \FILE
 
-     *option: 'version'
-      alias: 'V'
-      type: 'Boolean'
-      description: 'displays version number'
+parser.addOption \l,'list',null,\list
 
-     *option: 'dry-run'
-      alias: 'd'
-      type: 'Boolean'
-      description: 'perform a trial run without making any changes'
-
-     *option: 'no-watch'
-      alias: 'n'
-      type: 'Boolean'
-      description: 'disable all watches ( globally ), watches don\'t get created.'
-
-cmdparser = optionator cmd_options
 
 if not (metadata.name) then return false
 
 try
 
-  opt = cmdparser.parseArgv process.argv
+  rest = parser.parse!
 
 catch E
 
   l E.toString!
 
   return
-
-if opt.help
-
-  l cmdparser.generateHelp!
-
-  str =
-    """
-
-    By default remotemon will look for .remotemon.yaml in current directory and one level up (only).
-
-    using --config <filename>.yaml option will direct remotemon to use <filename>.yaml as config file :
-
-    > remotemon --config custom.yaml
-    > remotemon --config custom.yaml --verbose
-
-    values for internal variables can be changed using '=' (similar to makefiles) :
-
-    > remotemon --config custom.yaml --verbose file=dist/main.js
-
-    documentation @ [ https://github.com/sourcevault/remotemon ]
-
-    """
-
-  l str
-
-  return 0
 
 try
 
@@ -103,75 +55,102 @@ try
 
   notifier.notify!
 
-#---------------------------------------------------
+if (parser.help.count!) > 0
 
-split_by_var = (rest) ->
+  str =
+    """
+    remotemon version #{metadata.version}
 
-  fin = {cmd:[],vars:[]}
+    options:
 
-  for I in rest
+      -v --verbose            more detail
 
-    which = I.split "="
+      -vv                     much more detail
 
-    switch which.length
-    | 1 =>
-      fin.cmd.push which[0]
-    | 2 =>
-      fin.vars.push which
+      -h --help               display help message
 
+      -V --version            displays version number
 
-  vars = {}
+      -d --dry-run            perform a trial run without making any changes
 
-  for I in fin.vars
+      -w --watch-config-file  restart on config file change by default.
 
-    vars[I[0]] = I[1]
+      -c --config             path to YAML configuration file
 
-  fin.vars = vars
+      -l --list               list all user commands
 
-  fin
+    By default remotemon will look for .remotemon.yaml in current directory and one level up (only).
 
+    using --config <filename>.yaml option will direct remotemon to use <filename>.yaml as config file :
 
-#---------------------------------------------------
+    > remotemon --config custom.yaml
+    > remotemon --config custom.yaml -v
+
+    values for internal variables (using .global object) can be changed using '=' (similar to makefiles) :
+
+    > remotemon --config custom.yaml --verbose file=dist/main.js
+
+    [ documentation ] @ [ https://github.com/sourcevault/remotemon\#readme.md ]
+
+    """
+
+  l str
+
+  return
 
 print.show-header!
 
-if opt.version
+if parser.version.count! > 0
+  return
 
-  return 0
+isvar = R.test /\=/
+
+vars = rest
+|> R.filter isvar
+|> R.map R.split '='
+
+args = R.reject isvar,rest
 
 #-------------[looking for 'makefile']--------------
 
-filename = opt.config
+filename = parser.config.value!
 
-filename = findfile filename
+filenames = findfile filename
 
-if not filename then return null
+if not filenames then return void
 
-info_from_user = split_by_var opt._
+if (parser.list.count! > 0)
+
+  wcf = 0
+
+else
+
+  wcf = parser.watch_config_file.count!
+
 
 data = {}
-  ..cmd         = info_from_user.cmd
-  ..vars        = info_from_user.vars
-  ..filename    = filename
+
+  ..cmdname     = args[0]
+  ..cmdargs     = R.drop 1,args
+  ..vars        = vars
+  ..filenames   = filenames
 
   ..commandline = R.drop 2,process.argv
 
   ..options     = {}
-    ..verbose     = opt.verbose
-    ..dryRun      = opt.dryRun
-    ..noWatch     = opt.noWatch
+    ..verbose           = parser.verbose.count!
+    ..dryRun            = parser.dryRun.count!
+    ..watch_config_file = wcf
+    ..list              = parser.list.count!
+
 
 $ = do
 
   most_create (add,end,error) ->
 
-    if data.options.noWatch
+    if data.options.watch_config_file
 
-      setTimeout add,0
-
-    else
-
-      watcher = (chokidar.watch filename,{awaitWriteFinish:true})
+      watcher = (chokidar.watch filenames,{awaitWriteFinish:true})
 
       watcher.on \change,add
 
@@ -179,6 +158,14 @@ $ = do
 
       return -> watcher.close!;end!
 
+    else
+
+      setTimeout add,0
+
+dot_pat_main = be.str.edit R.split "."
+.or be.undef.cont []
+
+dotpat = (x)-> (dot_pat_main.auth x).value
 
 $.skip 1
 
@@ -190,24 +177,30 @@ $.skip 1
 
 .drain!
 
+#---------------------------
+
 $.chain ->
 
-  validator data
+  torna = validator data
 
-.map (vo) ->
-
-  if vo.continue then return vo.value
-
-  switch vo.message
-  |  \error.validate,\error.parse =>
-    print.show do
-      not data.options.noWatch
-      lit do
-        [".. returning to watching broken config file, make sure to fix your errors .."]
-        [c.er1]
-
-  most.empty!
+  torna
 
 .switchLatest!
-.drain!
 
+.tap (signal) ->
+
+  epath = dotpat signal
+
+  [state,loc] = epath
+
+  switch state
+  | \error =>
+    switch loc
+    | \validator =>
+      print.show do
+        data.options.watch_config_file
+        lit do
+          [".. returning to watching broken config file(s), make sure to fix your errors .."]
+          [c.er1]
+
+.drain!

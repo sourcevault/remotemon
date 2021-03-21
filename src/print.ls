@@ -7,31 +7,52 @@ com = {}
 
 com.fs               = require \fs
 
-com.most             = require \most
+most                 = require \most
+
+com.most             = most
 
 com.chokidar         = require \chokidar
 
-com.optionator       = require \optionator
-
 hoplon               = require \hoplon
+
+{z,wait}             = hoplon.utils
 
 com.hoplon           = hoplon
 
-com.most_create      = (require "@most/create").create
+most_create          = (require "@most/create").create
 
-child_process        = require \child_process
-
-com.child_process    = child_process
-
-com.tampax           = require \tampax
+com.most_create      = most_create
 
 com.updateNotifier   = require \update-notifier
 
-com.spawn            = (cmd) ->
+child_process        = require \child_process
 
-  child_process.spawnSync cmd,{shell:true,stdio:"inherit"}
+readline             = require \readline
 
-com.exec             = (cmd) -> (child_process.execSync cmd).toString!
+com.optionParser     = require \option-parser
+
+com.tampax           = require \tampax
+
+com.child_process    = child_process
+
+cp                   = child_process
+
+be                   = hoplon.types
+
+com.readline         = readline
+
+# ----------------------------------------------------------------------------
+
+com.spawn = (cmd) ->
+
+  cp.spawnSync do
+    cmd
+    []
+    {shell:'bash',stdio:'inherit',windowsVerbatimArguments:true}
+
+# ----------------------------------------------------------------------------
+
+com.exec = (cmd) -> (child_process.execSync cmd).toString!
 
 com.read-json = (filename) ->
 
@@ -74,7 +95,7 @@ __dirname + \/../package.json
 
     l c.er2 "- | unable to locate or parse package.json of module."
 
-    show_stack!
+    show_stack new Error!
 
 # ----------------------------------------------------------------
 
@@ -105,7 +126,7 @@ clean_path = R.pipe do
 
 show_body = (path,msg) ->
 
-  [init,last] =  clean_path path
+  [init,last] = clean_path path
 
   txt =
     [
@@ -117,27 +138,9 @@ show_body = (path,msg) ->
   if msg
     txt.push "\n\n #{msg}","  "
 
-  l lit do
+  lit do
     txt
     [c.warn,c.er3,c.er2,c.pink]
-
-print.unable-to-read-config-yaml = (filename) ->
-
-  l lit do
-    ["[#{metadata.name}]","[parseError]"]
-    [c.warn,c.er1]
-
-  l "\n  " + c.er2 filename
-
-  emsg = [
-    "\n"
-    c.pink "  make sure :\n\n"
-    c.blue "   - correct path is provided.\n"
-    c.blue "   - .yaml file can be parsed without error.\n"
-    c.blue "   - .yaml file has no duplicate field."
-    ]
-
-  l c.grey emsg.join ""
 
 
 print.rsyncError = (msg,path,filename,type) ->
@@ -150,7 +153,7 @@ print.rsyncError = (msg,path,filename,type) ->
 
   switch itype
   | \duo =>
-    l lit ["\n  ",("."+ imsg[0]),imsg[1]],[0,c.er3,c.pink]
+    l lit ["\n  ",("."+ imsg[0] + " "),imsg[1]],[0,c.er3,c.pink]
   | \uno =>
     l lit ["\n  ",imsg],[0,c.er1]
 
@@ -205,17 +208,33 @@ print.ob_in_str_list = ([type],path,filename) ->
     path
     txt
 
-print.failed_in_tampex_parsing = (filename) ->
+print.failed_in_custom_parser = (filename,E) ->
 
   l lit do
-    ["[#{metadata.name}]","[parseError]"]
-    [c.warn,c.er1]
+    ["[#{metadata.name}]","[parseError]"," unable to modify global variable in YAML file."]
+    [c.warn,c.er3,c.er1]
 
-  l "\n  " + c.er2 filename
+  l "\n  " + c.er2 filename + "\n"
+
+  l c.grey E
+
+
+print.failed_in_tampax_parsing = (filename,E) ->
+
+  l lit do
+    ["[#{metadata.name}]","[parseError]"," yaml/tampex parsing error."]
+    [c.warn,c.er2,c.er1]
+
+  l "\n  " + c.er2 filename + "\n"
+
+  l c.grey E
 
   emsg = [
     "\n"
-    c.pink "  yaml/tampex parsing error."
+    c.pink "  make sure :\n\n"
+    c.blue "   - correct path is provided.\n"
+    c.blue "   - .yaml file can be parsed without error.\n"
+    c.blue "   - .yaml file has no duplicate field."
     ]
 
   l c.grey emsg.join ""
@@ -252,13 +271,16 @@ print.resError = (props,path,filename) ->
     ].join "\n  "
 
 
-print.usercmd_not_defined = (msg,path,filename) ->
+print.could_not_find_custom_cmd = ([filenames,cmdname]) ->
 
-  show_name filename
+  colored = (c.er3 "[ ") + ([(c.er1 I) for I in filenames].join c.er3 " ][ ") + (c.er3 " ]")
+
+  show_name colored
 
   l lit do
-    ["  #{msg}"," is not a valid user defined task."]
-    [c.warn,c.er2]
+    ["  unable to locate ","#{cmdname}"," task in config file(s)."]
+    [c.pink,c.warn,c.pink]
+
 
 print.custom_build = (msg,path,filename)->
 
@@ -273,7 +295,6 @@ print.custom_build = (msg,path,filename)->
       c.pink "- object with restricted keys :"
       c.warn "\n  - "+ data.selected_keys.arr.join "\n  - "
     ].join "\n "
-
 
 
 # ----------------------------------------------------------------
@@ -300,66 +321,99 @@ print.no_match_for_arguments = ->
 
 # ----------------------------------------------------------------
 
-create_logger = (buildname,verbose) ->
 
-  ob = {buildname,verbose}
-
-  -> show arguments,ob
-
-
-show = hoplon.guard.unary
+normal_internal = hoplon.guard.unary
 
 .wh do
 
-  ([type]) -> (typeof type) in [\boolean \number]
+  ([type]) -> (typeof type) isnt \string
 
   (args,state) ->
 
     if args[0]
 
-      show (R.drop 1,args),state
+      normal_internal (R.drop 1,args),state
 
     else then return void
 
+.ar 1,([txt]) -> l txt
 
-.ar 3,([type,procname,buildtxt],state) ->
+.ar 2,([type,txt_1],state) -> normal_internal [type,txt_1,''],state
+
+.ar 3,([type,txt_1,txt_2],state) ->
 
   buildname = state.buildname
 
   switch type
   | \ok            =>
 
-    procname = (c.ok "[") + (c.pink "#{procname}") + (c.ok "]")
+    procname = (c.ok "[") + (c.pink "#{txt_1}") + (c.ok "]")
 
   | \warn          =>
 
-    procname = lit ["[","#{procname}","]"],[c.pink,null,c.pink]
-
-  | \no_buildname  =>
-
-    buildname = ""
+    procname = lit ["[","#{txt_1}","]"],[c.pink,null,c.pink]
 
   l lit do
-    ["[#{metadata.name}]",buildname,"#{procname}",buildtxt]
-    [c.ok,c.er1,c.ok,c.grey]
+      ["[#{metadata.name}]",buildname,"#{procname}",txt_2]
+      [c.ok,c.er1,c.ok,c.grey]
 
 
-.ar 2,
-  ([type,txt],state) ->
-    switch type
-    | \verbose =>
+.ar 4,([type,txt_1,txt_2,txt_3],state) !->
 
-      if state.verbose
-        l ("> " + txt)
+  normal_internal [type,txt_1,txt_2],state
 
-    | otherwise =>
-
-      show [type,txt,""],state
-
-
-.ar 1,([txt]) -> l txt
+  l " " + txt_3
 
 .def!
+
+# ----------------------------------------------------------------
+
+verbose_internal = hoplon.guard.unary
+
+.ar 2,([txt_1,txt_2],state) ->
+
+  switch state.verbose_level
+
+  | 1 =>
+
+    disp = txt_1.replace /\'''/g,"'"
+
+  | 2 =>
+
+    disp = txt_2.replace /\'''/g,"'"
+
+  | otherwise =>
+
+    return
+
+  l "> " + disp
+
+.ar 1,([txt_1]) ->
+
+  disp = txt_1.replace /\'''/g,"'"
+
+  l "> " + disp
+
+.def!
+
+show = {}
+
+show.normal  = !-> normal_internal arguments,@
+
+show.verbose = !-> verbose_internal arguments,@
+
+
+# ----------------------------------------------------------------
+
+create_logger = (buildname,verbose) ->
+
+  instance                = Object.create show
+
+  instance.buildname      = buildname
+
+  instance.verbose_level  = verbose
+
+  instance
 
 # ----------------------------------------------------------------
 
@@ -398,4 +452,5 @@ print.show = (disp,txt) !->
     | otherwise =>
 
       l (c.ok "[#{metadata.name}]"),txt
+
 
