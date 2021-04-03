@@ -1,4 +1,4 @@
-var x$, com, y$, hoplon, child_process, print, ref$, c, l, lit, j, readJson, R, z, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, create_logger, show, print_wrap, I, key, out$ = typeof exports != 'undefined' && exports || this;
+var x$, com, y$, most, hoplon, ref$, z, wait, most_create, child_process, readline, cp, be, print, c, l, lit, j, readJson, R, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, normal_internal, verbose_internal, show, create_logger, print_wrap, I, key, out$ = typeof exports != 'undefined' && exports || this;
 x$ = com = {};
 y$ = x$.metadata = {};
 y$.name = null;
@@ -6,20 +6,28 @@ y$.repourl = null;
 y$.homepage = null;
 y$.version = null;
 com.fs = require('fs');
-com.most = require('most');
+most = require('most');
+com.most = most;
 com.chokidar = require('chokidar');
-com.optionator = require('optionator');
 hoplon = require('hoplon');
+ref$ = hoplon.utils, z = ref$.z, wait = ref$.wait;
 com.hoplon = hoplon;
-com.most_create = require("@most/create").create;
-child_process = require('child_process');
-com.child_process = child_process;
-com.tampax = require('tampax');
+most_create = require("@most/create").create;
+com.most_create = most_create;
 com.updateNotifier = require('update-notifier');
+child_process = require('child_process');
+readline = require('readline');
+com.optionParser = require('option-parser');
+com.tampax = require('tampax');
+com.child_process = child_process;
+cp = child_process;
+be = hoplon.types;
+com.readline = readline;
 com.spawn = function(cmd){
-  return child_process.spawnSync(cmd, {
-    shell: true,
-    stdio: "inherit"
+  return cp.spawnSync(cmd, [], {
+    shell: 'bash',
+    stdio: 'inherit',
+    windowsVerbatimArguments: true
   });
 };
 com.exec = function(cmd){
@@ -46,7 +54,7 @@ R.tryCatch(function(filename){
   com.metadata = pj;
 }, function(){
   l(c.er2("- | unable to locate or parse package.json of module."));
-  show_stack();
+  show_stack(new Error());
 })(
 __dirname + '/../package.json');
 metadata = com.metadata;
@@ -70,14 +78,7 @@ show_body = function(path, msg){
   if (msg) {
     txt.push("\n\n " + msg, "  ");
   }
-  return l(lit(txt, [c.warn, c.er3, c.er2, c.pink]));
-};
-print.unableToReadConfigYaml = function(filename){
-  var emsg;
-  l(lit(["[" + metadata.name + "]", "[parseError]"], [c.warn, c.er1]));
-  l("\n  " + c.er2(filename));
-  emsg = ["\n", c.pink("  make sure :\n\n"), c.blue("   - correct path is provided.\n"), c.blue("   - .yaml file can be parsed without error.\n"), c.blue("   - .yaml file has no duplicate field.")];
-  return l(c.grey(emsg.join("")));
+  return lit(txt, [c.warn, c.er3, c.er2, c.pink]);
 };
 print.rsyncError = function(msg, path, filename, type){
   var itype, imsg;
@@ -86,7 +87,7 @@ print.rsyncError = function(msg, path, filename, type){
   itype = msg[0], imsg = msg[1];
   switch (itype) {
   case 'duo':
-    l(lit(["\n  ", "." + imsg[0], imsg[1]], [0, c.er3, c.pink]));
+    l(lit(["\n  ", "." + imsg[0] + " ", imsg[1]], [0, c.er3, c.pink]));
     break;
   case 'uno':
     l(lit(["\n  ", imsg], [0, c.er1]));
@@ -121,11 +122,17 @@ print.ob_in_str_list = function(arg$, path, filename){
   }());
   return l(show_body(path, txt));
 };
-print.failed_in_tampex_parsing = function(filename){
+print.failed_in_custom_parser = function(filename, E){
+  l(lit(["[" + metadata.name + "]", "[parseError]", " unable to modify global variable in YAML file."], [c.warn, c.er3, c.er1]));
+  l("\n  " + c.er2(filename + "\n"));
+  return l(c.grey(E));
+};
+print.failed_in_tampax_parsing = function(filename, E){
   var emsg;
-  l(lit(["[" + metadata.name + "]", "[parseError]"], [c.warn, c.er1]));
-  l("\n  " + c.er2(filename));
-  emsg = ["\n", c.pink("  yaml/tampex parsing error.")];
+  l(lit(["[" + metadata.name + "]", "[parseError]", " yaml/tampex parsing error."], [c.warn, c.er2, c.er1]));
+  l("\n  " + c.er2(filename + "\n"));
+  l(c.grey(E));
+  emsg = ["\n", c.pink("  make sure :\n\n"), c.blue("   - correct path is provided.\n"), c.blue("   - .yaml file can be parsed without error.\n"), c.blue("   - .yaml file has no duplicate field.")];
   return l(c.grey(emsg.join("")));
 };
 print.in_selected_key = function(arg$, path, filename, topmsg){
@@ -141,9 +148,19 @@ print.resError = function(props, path, filename){
   key = R.last(path);
   return l(show_body(path, [c.grey("unrecognized config key") + c.er3(" " + key) + "\n", c.grey("only acceptable keys are :\n"), c.pink("- " + props.join(" \n  - "))].join("\n  ")));
 };
-print.usercmd_not_defined = function(msg, path, filename){
-  show_name(filename);
-  return l(lit(["  " + msg, " is not a valid user defined task."], [c.warn, c.er2]));
+print.could_not_find_custom_cmd = function(arg$){
+  var filenames, cmdname, colored, I;
+  filenames = arg$[0], cmdname = arg$[1];
+  colored = c.er3("[ ") + (function(){
+    var i$, ref$, len$, results$ = [];
+    for (i$ = 0, len$ = (ref$ = filenames).length; i$ < len$; ++i$) {
+      I = ref$[i$];
+      results$.push(c.er1(I));
+    }
+    return results$;
+  }()).join(c.er3(" ][ ")) + c.er3(" ]");
+  show_name(colored);
+  return l(lit(["  unable to locate ", cmdname + "", " task in config file(s)."], [c.pink, c.warn, c.pink]));
 };
 print.custom_build = function(msg, path, filename){
   show_name(filename);
@@ -160,56 +177,74 @@ print.basicError = function(msg, path, filename, all){
 print.no_match_for_arguments = function(){
   return l(lit(["[" + metadata.name + "]", "[argumentError]\n\n", "   match for arguments failed.\n\n", "   " + j(arguments)], [c.er2, c.er3, c.warn, c.pink]));
 };
-create_logger = function(buildname, verbose){
-  var ob;
-  ob = {
-    buildname: buildname,
-    verbose: verbose
-  };
-  return function(){
-    return show(arguments, ob);
-  };
-};
-show = hoplon.guard.unary.wh(function(arg$){
-  var type, ref$;
+normal_internal = hoplon.guard.unary.wh(function(arg$){
+  var type;
   type = arg$[0];
-  return (ref$ = typeof type) === 'boolean' || ref$ === 'number';
+  return typeof type !== 'string';
 }, function(args, state){
   if (args[0]) {
-    return show(R.drop(1, args), state);
+    return normal_internal(R.drop(1, args), state);
   } else {}
-}).ar(3, function(arg$, state){
-  var type, procname, buildtxt, buildname;
-  type = arg$[0], procname = arg$[1], buildtxt = arg$[2];
-  buildname = state.buildname;
-  switch (type) {
-  case 'ok':
-    procname = c.ok("[") + c.pink(procname + "") + c.ok("]");
-    break;
-  case 'warn':
-    procname = lit(["[", procname + "", "]"], [c.pink, null, c.pink]);
-    break;
-  case 'no_buildname':
-    buildname = "";
-  }
-  return l(lit(["[" + metadata.name + "]", buildname, procname + "", buildtxt], [c.ok, c.er1, c.ok, c.grey]));
-}).ar(2, function(arg$, state){
-  var type, txt;
-  type = arg$[0], txt = arg$[1];
-  switch (type) {
-  case 'verbose':
-    if (state.verbose) {
-      return l("> " + txt);
-    }
-    break;
-  default:
-    return show([type, txt, ""], state);
-  }
 }).ar(1, function(arg$){
   var txt;
   txt = arg$[0];
   return l(txt);
+}).ar(2, function(arg$, state){
+  var type, txt_1;
+  type = arg$[0], txt_1 = arg$[1];
+  return normal_internal([type, txt_1, ''], state);
+}).ar(3, function(arg$, state){
+  var type, txt_1, txt_2, buildname, procname;
+  type = arg$[0], txt_1 = arg$[1], txt_2 = arg$[2];
+  buildname = state.buildname;
+  switch (type) {
+  case 'ok':
+    procname = c.ok("[") + c.pink(txt_1 + "") + c.ok("]");
+    break;
+  case 'warn':
+    procname = lit(["[", txt_1 + "", "]"], [c.pink, null, c.pink]);
+  }
+  return l(lit(["[" + metadata.name + "]", buildname, procname + "", txt_2], [c.ok, c.er1, c.ok, c.grey]));
+}).ar(4, function(arg$, state){
+  var type, txt_1, txt_2, txt_3;
+  type = arg$[0], txt_1 = arg$[1], txt_2 = arg$[2], txt_3 = arg$[3];
+  normal_internal([type, txt_1, txt_2], state);
+  l(" " + txt_3);
 }).def();
+verbose_internal = hoplon.guard.unary.ar(2, function(arg$, state){
+  var txt_1, txt_2, disp;
+  txt_1 = arg$[0], txt_2 = arg$[1];
+  switch (state.verbose_level) {
+  case 1:
+    disp = txt_1.replace(/\'''/g, "'");
+    break;
+  case 2:
+    disp = txt_2.replace(/\'''/g, "'");
+    break;
+  default:
+    return;
+  }
+  return l("> " + disp);
+}).ar(1, function(arg$){
+  var txt_1, disp;
+  txt_1 = arg$[0];
+  disp = txt_1.replace(/\'''/g, "'");
+  return l("> " + disp);
+}).def();
+show = {};
+show.normal = function(){
+  normal_internal(arguments, this);
+};
+show.verbose = function(){
+  verbose_internal(arguments, this);
+};
+create_logger = function(buildname, verbose){
+  var instance;
+  instance = Object.create(show);
+  instance.buildname = buildname;
+  instance.verbose_level = verbose;
+  return instance;
+};
 print_wrap = function(f){
   return function(){
     f.apply(null, arguments);

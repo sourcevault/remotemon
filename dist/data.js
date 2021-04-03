@@ -1,6 +1,7 @@
-var ext, ref$, l, z, j, R, data, x$, out$ = typeof exports != 'undefined' && exports || this;
+var ext, hoplon, ref$, l, z, j, R, data, x$, out$ = typeof exports != 'undefined' && exports || this;
 ext = require("./print");
-ref$ = ext.com, l = ref$.l, z = ref$.z, j = ref$.j, R = ref$.R;
+hoplon = ext.com.hoplon;
+ref$ = hoplon.utils, l = ref$.l, z = ref$.z, j = ref$.j, R = ref$.R;
 data = {};
 ref$ = out$;
 ref$.com = ext.com;
@@ -21,7 +22,7 @@ data.def.rsync = [
     src: '.'
   }, 'recursive', 'quiet'
 ];
-data.def.ssh = "-tt -o LogLevel=error";
+data.def.ssh = "-tt -o LogLevel=QUIET";
 data.def.chokidar = {
   awaitWriteFinish: true
 };
