@@ -425,6 +425,8 @@ ME.user = be.obj
 
 .on \watch         , ME.watch false,void
 
+.on \verbose     , be.num.or unu
+
 .on \ssh          , be.str.or unu
 
 .on [\exec-remote,\exec-locale,\exec-finale],ME.execlist
@@ -437,9 +439,11 @@ ME.user = be.obj
 
 ME.origin = be.obj.alt be.undefnull.cont -> {}
 
-.on \remotehost,be.str.or unu
+.on \remotehost  , be.str.or unu
 
-.on \remotefold,be.str.or unu.cont "~"
+.on \remotefold  , be.str.or unu.cont "~"
+
+.on \verbose     , be.num.or unu.cont false
 
 .on \initialize  , be.bool.or be.undefnull.cont true
 
@@ -525,7 +529,7 @@ ME.main = be.obj
 
   for cmdname,value of user
 
-    for I in [\watch,\remotehost,\remotefold,\chokidar,\ssh,\initialize,\global]
+    for I in [\watch,\remotehost,\remotefold,\chokidar,\ssh,\initialize,\global,\verbose]
 
       if (value[I] is undefined)
 
@@ -764,9 +768,15 @@ exec_list_option = (alldata) ->
 
     user_ones = rmdef keys
 
+    if user_ones.length is 0
+
+      l lit ["  --- ","< EMPTY >"," ---"],[c.pink,c.warn,c.pink]
+
     for I in user_ones
 
       l lit [" • ",I],[c.warn,c.ok]
+
+
 
 
 main = (info) -> (alldata) ->
@@ -782,7 +792,6 @@ main = (info) -> (alldata) ->
     exec_list_option alldata
 
     return most.just \ok
-
 
   if info.cmdname
 

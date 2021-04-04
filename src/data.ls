@@ -45,6 +45,7 @@ data.selected_keys = {}
 
   ..arr =
      \watch
+     \verbose
      \remotehost
      \remotefold
      \chokidar

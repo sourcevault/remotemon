@@ -388,11 +388,13 @@ verbose_internal = hoplon.guard.unary
 
   l "> " + disp
 
-.ar 1,([txt_1]) ->
+.ar 1,([txt_1],state) ->
 
-  disp = txt_1.replace /\'''/g,"'"
+  if state.verbose_level
 
-  l "> " + disp
+    disp = txt_1.replace /\'''/g,"'"
+
+    l "> " + disp
 
 .def!
 
@@ -432,6 +434,7 @@ for I,key of print
   print[I] = print_wrap key
 
 print.show-header = -> l lit do
+
   ["[#{metadata.name}]"," v#{metadata.version}"]
   [c.ok,c.grey,c.grey]
 

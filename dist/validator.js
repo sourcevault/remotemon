@@ -304,10 +304,10 @@ ME.user = be.obj.err([':custom_build']).or(be.undefnull.cont(function(){
   return {
     'exec-locale': list
   };
-})).on('initialize', ME.maybe.bool).on('watch', ME.watch(false, void 8)).on('ssh', be.str.or(unu)).on(['exec-remote', 'exec-locale', 'exec-finale'], ME.execlist).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync.main);
+})).on('initialize', ME.maybe.bool).on('watch', ME.watch(false, void 8)).on('verbose', be.num.or(unu)).on('ssh', be.str.or(unu)).on(['exec-remote', 'exec-locale', 'exec-finale'], ME.execlist).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync.main);
 ME.origin = be.obj.alt(be.undefnull.cont(function(){
   return {};
-})).on('remotehost', be.str.or(unu)).on('remotefold', be.str.or(unu.cont("~"))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.watch(["."], ["."])).on('ssh', be.str.or(be.undefnull.cont(data.def.ssh))).on(['exec-locale', 'exec-finale', 'exec-remote'], ME.execlist).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).and(be(function(data){
+})).on('remotehost', be.str.or(unu)).on('remotefold', be.str.or(unu.cont("~"))).on('verbose', be.num.or(unu.cont(false))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.watch(["."], ["."])).on('ssh', be.str.or(be.undefnull.cont(data.def.ssh))).on(['exec-locale', 'exec-finale', 'exec-remote'], ME.execlist).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).and(be(function(data){
   if (data.remotehost) {
     return true;
   } else {
@@ -352,7 +352,7 @@ ME.main = be.obj.on('cmd', be.str.and(function(x){
   user = state.user, def = state.def;
   for (cmdname in user) {
     value = user[cmdname];
-    for (i$ = 0, len$ = (ref$ = ['watch', 'remotehost', 'remotefold', 'chokidar', 'ssh', 'initialize', 'global']).length; i$ < len$; ++i$) {
+    for (i$ = 0, len$ = (ref$ = ['watch', 'remotehost', 'remotefold', 'chokidar', 'ssh', 'initialize', 'global', 'verbose']).length; i$ < len$; ++i$) {
       I = ref$[i$];
       if (value[I] === undefined) {
         user[cmdname][I] = def[I];
@@ -529,6 +529,9 @@ exec_list_option = function(alldata){
     l(lit(['> FILE ', filename], [c.pink, c.blue]));
     keys = Object.keys(data);
     user_ones = rmdef(keys);
+    if (user_ones.length === 0) {
+      l(lit(["  --- ", "< EMPTY >", " ---"], [c.pink, c.warn, c.pink]));
+    }
     for (j$ = 0, len1$ = user_ones.length; j$ < len1$; ++j$) {
       I = user_ones[j$];
       lresult$.push(l(lit([" • ", I], [c.warn, c.ok])));

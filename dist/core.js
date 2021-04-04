@@ -197,7 +197,7 @@ main = function(data, options, log, handle_cmd){
   return $proc.switchLatest();
 };
 entry = function(data, state){
-  var buildname, configs, opts, logger, handle_cmd, rl;
+  var buildname, configs, opts, verbose, logger, handle_cmd, rl;
   if (data.cmd === undefined) {
     buildname = "";
     configs = data.def;
@@ -206,7 +206,12 @@ entry = function(data, state){
     configs = data.user[data.cmd];
   }
   opts = data.options;
-  logger = print.create_logger(buildname, opts.verbose);
+  if (configs.verbose) {
+    verbose = configs.verbose;
+  } else {
+    verbose = opts.verbose;
+  }
+  logger = print.create_logger(buildname, verbose);
   handle_cmd = init_continuation(buildname, opts.dryRun);
   rl = readline.createInterface({
     input: process.stdin

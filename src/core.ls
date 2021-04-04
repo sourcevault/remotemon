@@ -295,7 +295,15 @@ entry = (data,state) ->
 
   opts = data.options
 
-  logger = print.create_logger buildname,opts.verbose
+  if configs.verbose
+
+    verbose = configs.verbose
+
+  else
+
+    verbose = opts.verbose
+
+  logger = print.create_logger buildname,verbose
 
   handle_cmd = init_continuation buildname,opts.dryRun
 

@@ -225,11 +225,13 @@ verbose_internal = hoplon.guard.unary.ar(2, function(arg$, state){
     return;
   }
   return l("> " + disp);
-}).ar(1, function(arg$){
+}).ar(1, function(arg$, state){
   var txt_1, disp;
   txt_1 = arg$[0];
-  disp = txt_1.replace(/\'''/g, "'");
-  return l("> " + disp);
+  if (state.verbose_level) {
+    disp = txt_1.replace(/\'''/g, "'");
+    return l("> " + disp);
+  }
 }).def();
 show = {};
 show.normal = function(){

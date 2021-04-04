@@ -8,13 +8,19 @@ remotehost: pi@192.168.43.47
 
 remotefold: ~/router
 
+
 watch: package.json
+
+verbose: 0
 
 # ssh: -tt -o 'RequestTTY no' -p 45
 
 ssh: -tt -o LogLevel=QUIET -p {{global.sshport}}
 
 pkg:
+  verbose: 1
+  exec-locale:
+    - echo 'really long ass sentence, I like ukrainian girls'
   # rsync:
   #   - rsh: ssh -p {{global.sshport}}
   #   - verbose
@@ -22,8 +28,6 @@ pkg:
   #   - exclude:
   #     - .git
   #     - node_modules
-  exec-locale:
-    - echo 'really long ass sentence, I like ukrainian girls'
   # exec-remote:
   #   - sudo apt-get update
   # watch: true
