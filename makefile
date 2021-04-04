@@ -18,8 +18,9 @@ compile:
 	lsc -cb test
 	make pkg
 
-	remotemon --config test/opt.yaml pkg
-# 	remotemon -l
+	remotemon -l --config test/opt.yaml
+
+# 	remotemon --config test/opt.yaml pkg
 
 
 #	remotemon --config test/opt.yaml

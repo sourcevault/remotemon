@@ -158,6 +158,7 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 - `exec-finale` - command to execute after `exec-remote` returns `exit 0`.
 - `ssh`         - custom `ssh` config options, default is `-tt -o LogLevel=QUIET`.
 - `verbose`     - hardcode verbose level of printing for command.
+- `description` - provide a brief description of what the command does.
 
 - `chokidar`- options to use for ![chokidar](https://github.com/paulmillr/chokidar) module :
   - `awaitWriteFinish`
@@ -219,6 +220,10 @@ this way we can edit the values of our makefile without opening either `.remotem
 For now it's not possible for `remotemon` to do two levels of referencing in config file, as `remotemon` uses `tampax`, and the issue is with `tampax`, write your config files to work around the issue ( for now ).
 
 ##### 🟡 changelog
+
+`1.2.4`
+
+- `description` field added for usercmd.
 
 `1.2.3`
 

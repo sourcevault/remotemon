@@ -425,9 +425,9 @@ ME.user = be.obj
 
 .on \watch         , ME.watch false,void
 
-.on \verbose     , be.num.or unu
+.on \verbose       , be.num.or unu
 
-.on \ssh          , be.str.or unu
+.on \ssh           , be.str.or unu
 
 .on [\exec-remote,\exec-locale,\exec-finale],ME.execlist
 
@@ -758,11 +758,17 @@ handle_error = ({message,path,value}) !->
 
 rmdef = R.reject (x) -> data.selected_keys.set.has x
 
+only_str_interal = be.str.cont (str) -> " - " + str
+
+.fix ""
+
+only_str = (str) -> (only_str_interal.auth str).value
+
 exec_list_option = (alldata) ->
 
   for [filename,data] in R.reverse alldata
 
-    l lit ['> FILE ',filename],[c.pink,c.blue]
+    l lit ['> FILE ',filename],[c.warn,c.blue]
 
     keys = Object.keys data
 
@@ -774,7 +780,9 @@ exec_list_option = (alldata) ->
 
     for I in user_ones
 
-      l lit [" • ",I],[c.warn,c.ok]
+      des = only_str data[I].description
+
+      l lit [" • ",I,des],[c.warn,c.ok,c.pink]
 
 
 
