@@ -1,4 +1,4 @@
-var ext, core, com, print, data, metadata, ref$, l, z, j, R, readJson, exec, fs, tampax, most_create, most, c, lit, zj, noop, be, log, tlog, maybe, ME, rm, util, filterForConfigFile, sdir, get_all_yaml_files, unu, rm_all_undef, is_true, is_false, grouparr, organizeRsync, mergeF, vre, yaml_tokenize, vars, isref, modifyYaml, $tampaxParse, handle_error, rmdef, exec_list_option, main, entry, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ext, core, com, print, data, metadata, ref$, l, z, j, R, readJson, exec, fs, tampax, most_create, most, c, lit, zj, noop, be, log, tlog, maybe, ME, rm, util, filterForConfigFile, sdir, get_all_yaml_files, unu, rm_all_undef, is_true, is_false, grouparr, organizeRsync, mergeF, vre, yaml_tokenize, vars, isref, modifyYaml, $tampaxParse, handle_error, rmdef, only_str_interal, only_str, exec_list_option, main, entry, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ext = require("./data");
 core = require("./core");
 com = ext.com, print = ext.print, data = ext.data, metadata = ext.metadata;
@@ -521,12 +521,18 @@ handle_error = function(arg$){
 rmdef = R.reject(function(x){
   return data.selected_keys.set.has(x);
 });
+only_str_interal = be.str.cont(function(str){
+  return " - " + str;
+}).fix("");
+only_str = function(str){
+  return only_str_interal.auth(str).value;
+};
 exec_list_option = function(alldata){
-  var i$, ref$, len$, ref1$, filename, data, lresult$, keys, user_ones, j$, len1$, I, results$ = [];
+  var i$, ref$, len$, ref1$, filename, data, lresult$, keys, user_ones, j$, len1$, I, des, results$ = [];
   for (i$ = 0, len$ = (ref$ = R.reverse(alldata)).length; i$ < len$; ++i$) {
     ref1$ = ref$[i$], filename = ref1$[0], data = ref1$[1];
     lresult$ = [];
-    l(lit(['> FILE ', filename], [c.pink, c.blue]));
+    l(lit(['> FILE ', filename], [c.warn, c.blue]));
     keys = Object.keys(data);
     user_ones = rmdef(keys);
     if (user_ones.length === 0) {
@@ -534,7 +540,8 @@ exec_list_option = function(alldata){
     }
     for (j$ = 0, len1$ = user_ones.length; j$ < len1$; ++j$) {
       I = user_ones[j$];
-      lresult$.push(l(lit([" • ", I], [c.warn, c.ok])));
+      des = only_str(data[I].description);
+      lresult$.push(l(lit([" • ", I, des], [c.warn, c.ok, c.pink])));
     }
     results$.push(lresult$);
   }
