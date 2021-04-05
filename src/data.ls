@@ -47,6 +47,7 @@ data.selected_keys = {}
      \watch
      \verbose
      \remotehost
+     \description
      \remotefold
      \chokidar
      \rsync
