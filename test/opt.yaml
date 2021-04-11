@@ -6,7 +6,7 @@ global:
 # remotehost: pi@192.168.43.50
 remotehost: pi@192.168.43.48
 
-remotefold: /etc/joy
+remotefold: ~/test
 
 watch: true
 
@@ -19,24 +19,25 @@ ssh: -tt -o LogLevel=QUIET -p {{global.sshport}}
 pkg:
   # verbose: 1
   # description: writes a long sentence.
-  # exec-locale:
-  #   - echo 'really long ass sentence, I like ukrainian girls'
-  # rsync:
-  #   - rsh: ssh -p {{global.sshport}}
-  #   - verbose
-  #   - recursive
-  #   - exclude:
-  #     - .git
-  #     - node_modules
+  exec-locale:
+    - echo 'really long ass sentence, I like ukrainian girls'
+  rsync:
+    - rsh: ssh -p {{global.sshport}}
+    - verbose
+    - recursive
+    - exclude:
+      - .git
+      - node_modules
   # exec-locale:
   #   - exit 1
 
   exec-remote:
     - echo 'hello world'
     - sudo rm -rf {{remotefold}}
-  verbose: 1
 
-  watch: false
+  # verbose: 0
+
+  # watch: false
 
 # compile.all:
   # exec-finale:

@@ -1,7 +1,7 @@
 ``#!/usr/bin/env node
 ``
 
-bani = require "./validator"
+bani = require "./core"
 
 {ext,validator,findfile} = bani
 
@@ -38,6 +38,8 @@ parser.addOption \c,'config',null,\config
 
 parser.addOption \l,'list',null,\list
 
+parser.addOption \m,'auto-make-directory',null,\auto_make_directory
+
 
 if not (metadata.name) then return false
 
@@ -67,21 +69,23 @@ if (parser.help.count!) > 0
 
     options:
 
-      -v --verbose            more detail
+      -v --verbose               more detail
 
-      -vv                     much more detail
+      -vv                        much more detail
 
-      -h --help               display help message
+      -h --help                  display help message
 
-      -V --version            displays version number
+      -V --version               displays version number
 
-      -d --dry-run            perform a trial run without making any changes
+      -d --dry-run               perform a trial run without making any changes
 
-      -w --watch-config-file  restart on config file change by default.
+      -w --watch-config-file     restart on config file change by default.
 
-      -c --config             path to YAML configuration file
+      -c --config                path to YAML configuration file
 
-      -l --list               list all user commands
+      -l --list                  list all user commands
+
+      -m --auto-make-directory   make remote directory if it doesn't exist.
 
     By default remotemon will look for .remotemon.yaml in current directory and one level up (only).
 
@@ -142,106 +146,10 @@ data = {}
   ..commandline = R.drop 2,process.argv
 
   ..options     = {}
-    ..verbose           = parser.verbose.count!
-    ..dryRun            = parser.dryRun.count!
-    ..watch_config_file = wcf
-    ..list              = parser.list.count!
-
-
+    ..verbose             = parser.verbose.count!
+    ..dryRun              = parser.dryRun.count!
+    ..watch_config_file   = wcf
+    ..list                = parser.list.count!
+    ..auto_make_directory = parser.auto_make_directory.count!
 
 validator data
-
-
-# $ = do
-
-#   most_create (add,end,error) ->
-
-#     if data.options.watch_config_file
-
-#       watcher = (chokidar.watch filenames,{awaitWriteFinish:true})
-
-#       watcher.on \change,add
-
-#       setTimeout add,0
-
-#       return -> watcher.close!;end!
-
-#     else
-
-#       setTimeout add,0
-
-# $.skip 1
-
-# .tap !->
-
-#   l lit do
-#       ["\n[#{metadata.name}]"," configuration file ","#{filename}"," itself has changed, restarting watch.."]
-#       [c.ok,c.pink,c.warn,c.pink]
-
-
-# .drain!
-
-# #---------------------------
-
-# # all the diff errors
-
-
-# \error.validator.tampaxparsing    # config file issue.
-# \error.validator.main             # config file validation failed.
-# \error.validator.modify-yaml      # config file issue.
-# \error.validator.no_remotehost    # ok
-
-# \error.core.unable_to_ssh         # config file issue ( ssh address is wrong ).
-# \error.core.cmd                   # ok
-# \error.core.infinteloop           # ok
-
-# \done.core.exit.closed            # ok
-# \done.core.exit.open              # ok
-# \done.core.exit.open_only_config  # ok
-
-
-
-# #---------------------------
-
-# handleE = ([signal,log]) ->
-
-#   [status,type,which,watch] = dotpat signal
-
-#   wcf = data.options.watch_config_file
-
-#   if wcf and ("#{status}.#{type}" is \error.validator)
-
-#     msg = lit ["{"," returning to watching broken config file(s), make sure to fix your errors. ","}"],[c.er1,c.grey,c.er1]
-
-#     l lit do
-#       ["[#{metadata.name}] ",msg]
-#       [c.warn,null]
-
-#   switch watch
-#   | \open             =>
-#     msg = c.grey "returning to watch"
-#   | \open_only_config =>
-#     msg = c.grey "returning to watching config file(s)."
-#   | \closed => return
-
-#   switch status
-#   | \error =>
-#     log.normal \warn,msg
-#   | \done  =>
-#     log.normal \ok,msg
-
-
-
-
-
-# $.chain ->
-
-#   torna = validator data
-
-#   torna
-
-# .switchLatest!
-
-# .observe handleE
-
-# .catch handleE

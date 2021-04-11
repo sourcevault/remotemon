@@ -20,7 +20,7 @@ compile:
 
 #	remotemon -l --config test/opt.yaml
 
-	remotemon --config test/opt.yaml pkg -vv
+	remotemon --config test/opt.yaml pkg
 
 
 # 	remotemon --config test/opt.yaml pkg
