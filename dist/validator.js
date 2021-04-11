@@ -1,9 +1,10 @@
-var ext, core, com, print, data, metadata, ref$, l, z, j, R, readJson, exec, fs, tampax, most_create, most, c, lit, zj, noop, be, log, tlog, maybe, ME, rm, util, filterForConfigFile, sdir, get_all_yaml_files, unu, rm_all_undef, is_true, is_false, grouparr, organizeRsync, mergeF, vre, yaml_tokenize, vars, isref, modifyYaml, $tampaxParse, handle_error, rmdef, only_str_interal, only_str, exec_list_option, main, entry, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ext, core, com, print, data, metadata, ref$, l, z, j, R, readJson, exec, fs, tampax, most_create, most, c, lit, chokidar, spawn, readline, dotpat, zj, noop, be, log, tlog, maybe, ME, rm, util, filterForConfigFile, sdir, get_all_yaml_files, unu, rm_all_undef, is_true, is_false, grouparr, organizeRsync, mergeF, vre, yaml_tokenize, vars, isref, modifyYaml, $tampaxParse, handle_error, rmdef, only_str_interal, only_str, exec_list_option, main_all, main_single, reparse_config_file, create_rsync_cmd, execFinale, prime_process, improve_signal, resolve_signal, print_final_message, diff, init_user_watch, init_continuation, entry, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ext = require("./data");
 core = require("./core");
 com = ext.com, print = ext.print, data = ext.data, metadata = ext.metadata;
 ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, j = ref$.j, R = ref$.R;
-readJson = com.readJson, exec = com.exec, fs = com.fs, tampax = com.tampax, most_create = com.most_create, most = com.most, metadata = com.metadata, c = com.c, lit = com.lit;
+readJson = com.readJson, exec = com.exec, fs = com.fs, tampax = com.tampax, most_create = com.most_create, most = com.most, metadata = com.metadata, c = com.c, lit = com.lit, chokidar = com.chokidar, spawn = com.spawn, readline = com.readline;
+dotpat = com.dotpat;
 ref$ = com.hoplon.utils, zj = ref$.zj, j = ref$.j, lit = ref$.lit, c = ref$.c, R = ref$.R, noop = ref$.noop;
 be = com.hoplon.types;
 log = function(x){
@@ -363,7 +364,7 @@ ME.main = be.obj.on('cmd', be.str.and(function(x){
   }
   state.origin = void 8;
   return state;
-}).cont(core);
+});
 vre = /(\s*#\s*){0,1}(\s*)(\S*):/;
 yaml_tokenize = function(data){
   var lines, all, i$, len$, I, torna, __, iscommeted, spaces, name, asbool, acc, temp, to$, current;
@@ -547,18 +548,18 @@ exec_list_option = function(alldata){
   }
   return results$;
 };
-main = function(info){
+main_all = function(info){
   return function(alldata){
     var i$, len$, I, ref$, filename, data, state, torna;
     for (i$ = 0, len$ = alldata.length; i$ < len$; ++i$) {
       I = alldata[i$];
       if (I === 'error.validator.tampaxparsing') {
-        return most.just(I);
+        return;
       }
     }
     if (info.options.list) {
       exec_list_option(alldata);
-      return most.just('ok');
+      return;
     }
     if (info.cmdname) {
       for (i$ = 0, len$ = alldata.length; i$ < len$; ++i$) {
@@ -575,9 +576,8 @@ main = function(info){
         };
         torna = ME.main.auth(state, state);
         if (torna['continue']) {
-          return torna.value;
-        }
-        if (!(torna.message[0][0] === ':usercmd_not_defined')) {
+          break;
+        } else if (torna.message[0][0] !== ':usercmd_not_defined') {
           break;
         }
       }
@@ -595,13 +595,348 @@ main = function(info){
     }
     if (torna.error) {
       handle_error(torna);
-      return most.just('error.validator.main');
+      return;
     }
-    return most.just('ok');
+    return core(torna.value, info);
   };
 };
+main_single = function(info){
+  return function(raw_data){
+    var state, torna;
+    if (raw_data === 'error.validator.tampaxparsing') {
+      return;
+    }
+    state = {
+      commandline: info.commandline,
+      options: info.options,
+      filename: info.filename,
+      all_filenames: [info.filename],
+      cmd: info.cmdname,
+      origin: raw_data,
+      def: {},
+      user: {}
+    };
+    torna = ME.main.auth(state, state);
+    if (torna.error) {
+      handle_error(torna);
+      return;
+    }
+    return core(torna.value, info);
+  };
+};
+reparse_config_file = function(info){
+  var filename, yamlText, E, $parsed;
+  filename = info.filename;
+  try {
+    yamlText = modifyYaml(filename, info.vars);
+  } catch (e$) {
+    E = e$;
+    print.failed_in_custom_parser(filename, E);
+    return;
+  }
+  $parsed = $tampaxParse(filename, yamlText, info.cmdargs);
+  return $parsed.map(main_single(info));
+};
+create_rsync_cmd = function(rsync, remotehost){
+  var txt, str, obnormal, obarr, des, src, i$, len$, I, ref$, key, val, cmd;
+  txt = "";
+  str = rsync.str, obnormal = rsync.obnormal, obarr = rsync.obarr, des = rsync.des, src = rsync.src;
+  for (i$ = 0, len$ = str.length; i$ < len$; ++i$) {
+    I = str[i$];
+    txt += "--" + I + " ";
+  }
+  for (i$ = 0, len$ = obnormal.length; i$ < len$; ++i$) {
+    ref$ = obnormal[i$], key = ref$[0], val = ref$[1];
+    txt += "--" + key + "='" + val + "' ";
+  }
+  for (key in obarr) {
+    val = obarr[key];
+    txt += ("--" + key + "={") + (fn$()).join(',') + "} ";
+  }
+  cmd = "rsync " + txt + src.join(" ") + " " + (remotehost + ":" + des[0]);
+  return cmd;
+  function fn$(){
+    var i$, ref$, len$, results$ = [];
+    for (i$ = 0, len$ = (ref$ = val).length; i$ < len$; ++i$) {
+      I = ref$[i$];
+      results$.push("'" + I + "'");
+    }
+    return results$;
+  }
+};
+execFinale = function*(data, log, cont){
+  var postscript, i$, len$, cmd, results$ = [];
+  postscript = data['exec-finale'];
+  log.normal(postscript.length, 'ok', " exec-finale ", c.warn(" (" + postscript.length + ") "));
+  for (i$ = 0, len$ = postscript.length; i$ < len$; ++i$) {
+    cmd = postscript[i$];
+    log.verbose(cmd);
+    results$.push((yield cont(cmd)));
+  }
+  return results$;
+};
+prime_process = function(data, options, log, cont, rl){
+  return function*(){
+    var locale, i$, len$, cmd, remotehost, ref$, each, disp, status, remotetask, tryToSSH, checkDir, mkdir, E, userinput, I;
+    locale = data['exec-locale'];
+    log.normal(locale.length, 'ok', " exec-locale ", c.warn(" (" + locale.length + ") "));
+    for (i$ = 0, len$ = locale.length; i$ < len$; ++i$) {
+      cmd = locale[i$];
+      log.verbose(cmd);
+      (yield* cont(cmd));
+    }
+    if (data.rsync) {
+      remotehost = data.remotehost;
+      for (i$ = 0, len$ = (ref$ = data.rsync).length; i$ < len$; ++i$) {
+        each = ref$[i$];
+        cmd = create_rsync_cmd(each, remotehost);
+        disp = [" ", each.src.join(" "), " ~> ", remotehost, ":", each.des].join("");
+        log.normal('ok', lit([" rsync", " start "], [0, c.warn]), disp);
+        log.verbose("....", cmd);
+        status = (yield* cont(cmd, 'sync'));
+        if (status !== 'ok') {
+          log.normal('warn', lit([" rsync", " break "], [c.pink, c.er3]), "");
+          (yield new Promise(fn$));
+        }
+      }
+    }
+    remotetask = data['exec-remote'];
+    disp = lit([" (" + remotetask.length + ") ", data.remotehost + ":" + data.remotefold], [c.warn, c.grey]);
+    log.normal(remotetask.length, 'ok', " exec.remote ", disp);
+    if (remotetask.length && !options.dryRun) {
+      tryToSSH = "ssh " + data.ssh + " " + data.remotehost + " 'ls'";
+      checkDir = "ssh " + data.ssh + " " + data.remotehost + " 'ls " + data.remotefold + "'";
+      mkdir = "ssh " + data.ssh + " " + data.remotehost + " 'sudo mkdir " + data.remotefold + "'";
+      try {
+        exec(tryToSSH);
+      } catch (e$) {
+        E = e$;
+        l(lit(["[" + metadata.name + "]", " unable to ssh to remote address ", data.remotehost, "."], [c.er2, c.warn, c.er3, c.grey]));
+        (yield 'error.core.unable_to_ssh');
+        return;
+      }
+      try {
+        exec(checkDir);
+      } catch (e$) {
+        E = e$;
+        userinput = (yield new Promise(function(resolve){
+          var Q;
+          Q = lit(["[" + metadata.name + "]", " " + data.remotefold, " does not exist on remote, do you want to create directory ", data.remotehost + ":" + data.remotefold, " ? [y/n] "], [c.ok, c.warn, c.grey, c.warn, c.grey]);
+          return rl.question(Q, function(answer){
+            if (answer === 'y' || answer === 'Y') {
+              resolve(true);
+              return;
+            }
+            resolve(false);
+          });
+        }));
+        if (userinput) {
+          (yield* cont(mkdir));
+          log.normal('ok', " exec.remote ", lit(['[✔️ ok ]', " " + data.remotehost + ":" + data.remotefold + " ", "created."], [c.ok, c.warn, c.ok]));
+        }
+      }
+    }
+    for (i$ = 0, len$ = remotetask.length; i$ < len$; ++i$) {
+      I = remotetask[i$];
+      cmd = ("ssh " + data.ssh + " ") + data.remotehost + " '" + ("cd " + data.remotefold + ";") + I + "'";
+      log.verbose(I, cmd);
+      (yield* cont(cmd));
+    }
+    (yield* execFinale(data, log, cont));
+    (yield 'done.core.exit');
+    function fn$(resolve, reject){
+      return reject(status);
+    }
+  };
+};
+improve_signal = function(signal, config, log, rl, opts){
+  var all_watches_are_closed, en;
+  all_watches_are_closed = !(config.watch || opts.watch_config_file);
+  if (!config.watch) {
+    rl.close();
+  }
+  if (all_watches_are_closed) {
+    return most.throwError(signal + ".closed");
+  }
+  if (opts.watch_config_file && !config.watch) {
+    en = ".open_only_config";
+  } else {
+    en = '.open';
+  }
+  return most.just(signal + en);
+};
+resolve_signal = be.arr.on(1, be.str.fix(' << program screwed up >> ')).on(0, be.str.fix('<< program screwed up >>').cont(function(cmd){
+  cmd = cmd.replace(/'''/g, "'");
+  if (cmd.split('\n').length > 1) {
+    return '\n' + cmd;
+  }
+  if (cmd.length > 45) {
+    return '\n' + cmd;
+  } else {
+    return cmd;
+  }
+})).cont(function(arg$){
+  var cmdtxt, buildname;
+  cmdtxt = arg$[0], buildname = arg$[1];
+  l(lit(["[" + metadata.name + "]" + buildname, "[ ", "⚡️", "    error ", "] ", cmdtxt], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1]));
+  return 'error.core.cmd';
+}).alt(be.str).cont(improve_signal).fix(most.empty());
+print_final_message = function(log){
+  return function(signal){
+    var ref$, status, type, which, watch, msg;
+    ref$ = dotpat(signal), status = ref$[0], type = ref$[1], which = ref$[2], watch = ref$[3];
+    switch (watch) {
+    case 'open':
+      msg = c.grey("returning to watch");
+      break;
+    case 'open_only_config':
+      msg = c.grey("returning to watching only config file.");
+      break;
+    case 'closed':
+      return;
+    }
+    switch (status) {
+    case 'error':
+      return log.normal('warn', msg);
+    case 'done':
+      return log.normal('ok', msg);
+    }
+  };
+};
+diff = R.pipe(R.aperture(2), R.map(function(arg$){
+  var x, y;
+  x = arg$[0], y = arg$[1];
+  return y - x;
+}));
+init_user_watch = function(data, options, log, handle_cmd, rl){
+  return function(){
+    var I, $init_file_watch, exec_all_user_cmds, $file_watch, pfm;
+    log.normal(data.watch, 'ok', c.ok("  ↓ watching "), c.grey(" { working directory } → " + process.cwd()), " " + (function(){
+      var i$, ref$, len$, results$ = [];
+      for (i$ = 0, len$ = (ref$ = data.watch).length; i$ < len$; ++i$) {
+        I = ref$[i$];
+        results$.push(c.blue(I));
+      }
+      return results$;
+    }()).join(c.pink(" | ")));
+    $init_file_watch = most_create(function(add, end, error){
+      var watcher;
+      if (data.initialize) {
+        add('init');
+      }
+      if (data.watch) {
+        watcher = chokidar.watch(data.watch, data.chokidar);
+        watcher.on('change', add);
+        return function(){
+          watcher.close();
+          end();
+        };
+      }
+    });
+    exec_all_user_cmds = prime_process(data, options, log, handle_cmd, rl);
+    $file_watch = $init_file_watch.timestamp().loop(function(db, ob){
+      var ref$, first, second, fin;
+      db.shift();
+      db.push(Math.floor(ob.time / 2000));
+      ref$ = diff(db), first = ref$[0], second = ref$[1];
+      fin = {
+        seed: db
+      };
+      if (first === second) {
+        l(lit(["[" + metadata.name + "]", "[ ", "⚡️", "    error ", "] ", "infinite loop detected ", ob.value, " is offending file, ignoring event."], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1, c.warn, c.er1]));
+        fin.value = 'err';
+      } else {
+        fin.value = 'ok';
+      }
+      return fin;
+    }, [0, 0, 0]).map(function(status){
+      if (status === 'err') {
+        return most.just('error.core.infinteloop');
+      }
+      return most.generate(exec_all_user_cmds);
+    });
+    pfm = print_final_message(log);
+    return $file_watch.switchLatest().recoverWith(function(signal){
+      return most.just(signal);
+    }).chain(function(signal){
+      return resolve_signal.auth(signal, data, log, rl, options).value;
+    }).observe(pfm)['catch'](pfm);
+  };
+};
+init_continuation = function(buildname, dryRun){
+  return function*(cmd, type){
+    var status;
+    type == null && (type = 'async');
+    if (dryRun) {
+      status = 0;
+    } else {
+      status = spawn(cmd).status;
+    }
+    if (status !== 0) {
+      switch (type) {
+      case 'async':
+        (yield new Promise(function(resolve, reject){
+          return reject([cmd, buildname]);
+        }));
+        break;
+      case 'sync':
+        return [cmd, buildname];
+      }
+    }
+    return 'ok';
+  };
+};
+core = function(data, info){
+  var buildname, configs, verbose, log, handle_cmd, rl, $configWatch;
+  if (data.cmd === undefined) {
+    buildname = "";
+    configs = data.def;
+  } else {
+    buildname = "[" + data.cmd + "]";
+    configs = data.user[data.cmd];
+  }
+  if (configs.verbose) {
+    verbose = configs.verbose;
+  } else {
+    verbose = data.options.verbose;
+  }
+  log = print.create_logger(buildname, verbose);
+  if (!configs.remotehost && configs['exec-remote'].length) {
+    log.normal('warn', c.er2(" ⚡️     error "), c.er1(" remotehost address not defined for task."));
+    return;
+  }
+  handle_cmd = init_continuation(buildname, data.options.dryRun);
+  rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
+  });
+  rl.on('line', function(input){
+    process.stdout.write(input);
+  });
+  $configWatch = most_create(function(add, end, error){
+    var watcher;
+    if (data.options.watch_config_file) {
+      watcher = chokidar.watch(data.filename, {
+        awaitWriteFinish: true
+      });
+      watcher.on('change', add);
+      setTimeout(add, 0);
+      return function(){
+        watcher.close();
+        return end();
+      };
+    } else {
+      return setTimeout(add, 0);
+    }
+  });
+  $configWatch.skip(1).tap(function(){
+    l(lit(["\n[" + metadata.name + "]", " configuration file ", filename + "", " itself has changed, restarting watch.."], [c.ok, c.pink, c.warn, c.pink]));
+  });
+  return $configWatch.tap(init_user_watch(configs, data.options, log, handle_cmd, rl)).drain();
+};
 entry = function(info){
-  var $all, i$, ref$, len$, I, yamlText, E, parsed, P;
+  var $all, i$, ref$, len$, I, yamlText, E, parsed;
   $all = [];
   for (i$ = 0, len$ = (ref$ = info.filenames).length; i$ < len$; ++i$) {
     I = ref$[i$];
@@ -610,7 +945,7 @@ entry = function(info){
     } catch (e$) {
       E = e$;
       print.failed_in_custom_parser(I, E);
-      return most.just('error.validator.modify-yaml');
+      return;
     }
     $all.push($tampaxParse(I, yamlText, info.cmdargs));
   }
@@ -620,8 +955,7 @@ entry = function(info){
     accum.push(data);
     return accum;
   }, []);
-  P = parsed.then(main(info));
-  return most.fromPromise(P);
+  return parsed.then(main_all(info));
 };
 module.exports = {
   validator: entry,

@@ -64,7 +64,4 @@ data.def.rsync = [(src:\.),\recursive,\quiet]
 
 data.def.ssh = "-tt -o LogLevel=QUIET"
 
-# data.def.ssh = "-T -o 'RequestTTY yes'"
-
-
 data.def.chokidar = {awaitWriteFinish:true}

@@ -3,25 +3,24 @@ global:
   proj: utils
   sshport: 45
 
-remotehost: pi@192.168.43.47
-# remotehost: pi@192.168.43.41
+# remotehost: pi@192.168.43.50
+remotehost: pi@192.168.43.48
 
-remotefold: ~/router
+remotefold: /etc/joy
 
+watch: true
 
-watch: package.json
-
-verbose: 0
+# verbose: 0
 
 # ssh: -tt -o 'RequestTTY no' -p 45
 
 ssh: -tt -o LogLevel=QUIET -p {{global.sshport}}
 
 pkg:
-  verbose: 1
-  description: writes a long sentence.
-  exec-locale:
-    - echo 'really long ass sentence, I like ukrainian girls'
+  # verbose: 1
+  # description: writes a long sentence.
+  # exec-locale:
+  #   - echo 'really long ass sentence, I like ukrainian girls'
   # rsync:
   #   - rsh: ssh -p {{global.sshport}}
   #   - verbose
@@ -29,10 +28,15 @@ pkg:
   #   - exclude:
   #     - .git
   #     - node_modules
-  # exec-remote:
-  #   - sudo apt-get update
-  # watch: true
+  # exec-locale:
+  #   - exit 1
 
+  exec-remote:
+    - echo 'hello world'
+    - sudo rm -rf {{remotefold}}
+  verbose: 1
+
+  watch: false
 
 # compile.all:
   # exec-finale:
@@ -50,3 +54,18 @@ pkg:
 #   - |-
 #     echo {{0}}
 
+# exec-remote:
+#   - echo 'hello world'
+#   - rm -rf {{remotefold}}
+
+# exec-locale:
+#   - echo 'hello world'
+
+
+# rsync:
+#   - rsh: ssh
+#   - verbose
+#   - recursive
+#   - exclude:
+#     - .git
+#     - node_modules

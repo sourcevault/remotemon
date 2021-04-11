@@ -8,7 +8,9 @@ core = require "./core"
 
 #----------------------------------------------------------
 
-{read-json,exec,fs,tampax,most_create,most,metadata,c,lit} = com
+{read-json,exec,fs,tampax,most_create,most,metadata,c,lit,chokidar,spawn,readline} = com
+
+{dotpat} = com
 
 {zj,j,lit,c,R,noop} = com.hoplon.utils
 
@@ -447,7 +449,7 @@ ME.origin = be.obj.alt be.undefnull.cont -> {}
 
 .on \initialize  , be.bool.or be.undefnull.cont true
 
-.on \watch       , ME.watch ["."],["."]
+.on \watch       , (ME.watch ["."],["."])
 
 .on \ssh         , do
   be.str.or be.undefnull.cont data.def.ssh
@@ -542,8 +544,6 @@ ME.main = be.obj
   state.origin = void
 
   state
-
-.cont core
 
 # ------ [handle vars parsing gets really messy, be careful ] ------
 
@@ -787,19 +787,18 @@ exec_list_option = (alldata) ->
 
 
 
-main = (info) -> (alldata) ->
+main_all = (info) -> (alldata) ->
 
   for I in alldata
 
     if I in [\error.validator.tampaxparsing]
-
-      return most.just I
+      return
 
   if info.options.list
 
     exec_list_option alldata
 
-    return most.just \ok
+    return
 
   if info.cmdname
 
@@ -817,9 +816,10 @@ main = (info) -> (alldata) ->
 
       torna = ME.main.auth state,state
 
-      if torna.continue then return torna.value
 
-      if not ((torna.message[0][0]) is \:usercmd_not_defined)
+      if torna.continue
+        break
+      else if ((torna.message[0][0]) isnt \:usercmd_not_defined)
         break
 
   else
@@ -835,13 +835,465 @@ main = (info) -> (alldata) ->
 
     torna = ME.main.auth state,state
 
+
   if torna.error
 
     handle_error torna
 
-    return most.just \error.validator.main
+    return
 
-  most.just \ok
+  core torna.value,info
+
+
+main_single = (info) -> (raw_data) ->
+
+  if raw_data is \error.validator.tampaxparsing then return
+
+  state =
+    commandline   : info.commandline
+    options       : info.options
+    filename      : info.filename
+    all_filenames : [info.filename]
+    cmd           : info.cmdname
+    origin        : raw_data
+    def           : {}
+    user          : {}
+
+  torna = ME.main.auth state,state
+
+
+  if torna.error
+
+    handle_error torna
+
+    return
+
+  core torna.value,info
+
+
+reparse_config_file = (info)->
+
+  filename = info.filename
+
+  try
+
+    yaml-text = modify-yaml filename,info.vars
+
+  catch E
+
+    print.failed_in_custom_parser filename,E
+
+    return
+
+  $parsed = $tampax-parse filename,yaml-text,info.cmdargs
+
+  $parsed
+  .map main_single info
+
+
+#---------------------------------------------------------------------------------------
+
+create_rsync_cmd = (rsync,remotehost) ->
+
+  txt = ""
+
+  {str,obnormal,obarr,des,src} = rsync
+
+  for I in str
+
+    txt += "--" + I + " "
+
+  for [key,val] in obnormal
+
+    txt += "--#{key}='#{val}' "
+
+  for key,val of obarr
+
+    txt += "--#{key}={" + (["\'#{I}\'" for I in val].join ',') + "} "
+
+  cmd = "rsync " + txt + (src.join " ") + " " + (remotehost + ":" + des[0])
+
+  cmd
+
+exec-finale = (data,log,cont) ->*
+
+  postscript = data['exec-finale']
+
+  log.normal do
+    postscript.length
+    \ok
+    " exec-finale "
+    c.warn " (#{postscript.length}) "
+
+  for cmd in postscript
+
+    log.verbose cmd
+
+    yield cont cmd
+
+prime_process = (data,options,log,cont,rl) -> ->*
+
+  locale = data['exec-locale']
+
+  log.normal do
+    locale.length
+    \ok
+    " exec-locale "
+    c.warn " (#{locale.length}) "
+
+  for cmd in locale
+
+    log.verbose cmd
+
+    yield from cont cmd
+
+
+  if data.rsync
+
+    remotehost = data.remotehost
+
+    for each in data.rsync
+
+      cmd = create_rsync_cmd each,remotehost
+
+      disp   = [" ",(each.src.join " ")," ~> ",remotehost,":",each.des].join ""
+
+      log.normal do
+        \ok
+        lit [" rsync"," start "],[0,c.warn]
+        disp
+
+      log.verbose "....",cmd
+
+      status = yield from cont cmd,\sync
+
+      if status isnt \ok
+
+        log.normal do
+          \warn
+          lit [" rsync"," break "],[c.pink,c.er3]
+          ""
+
+        yield new Promise (resolve,reject) -> reject status
+
+  remotetask = data['exec-remote']
+
+  disp = lit [(" (#{remotetask.length}) "),(data.remotehost + ":" + data.remotefold)],[c.warn,c.grey]
+
+  log.normal do
+    remotetask.length
+    \ok
+    " exec.remote "
+    disp
+
+  if remotetask.length and (not options.dryRun)
+
+    tryToSSH = "ssh #{data.ssh} #{data.remotehost} 'ls'"
+
+    checkDir = "ssh #{data.ssh} #{data.remotehost} 'ls #{data.remotefold}'"
+
+    mkdir = "ssh #{data.ssh} #{data.remotehost} 'sudo mkdir #{data.remotefold}'"
+
+    try
+
+      exec tryToSSH
+
+    catch E
+
+      l lit do
+          ["[#{metadata.name}]"," unable to ssh to remote address ",data.remotehost,"."]
+          [c.er2,c.warn,c.er3,c.grey]
+
+      yield \error.core.unable_to_ssh
+
+      return
+
+    try
+
+      exec checkDir
+
+    catch E
+
+      userinput = yield new Promise (resolve) ->
+
+        Q = lit do
+          ["[#{metadata.name}]"," #{data.remotefold}"," does not exist on remote, do you want to create directory ","#{data.remotehost}:#{data.remotefold}"," ? [y/n] "]
+          [c.ok,c.warn,c.grey,c.warn,c.grey]
+
+        rl.question Q,(answer) !->
+
+          if answer in [\y,\Y]
+            (resolve true)
+            return
+
+          resolve false
+
+      if userinput
+
+        yield from cont mkdir
+
+        log.normal do
+          \ok
+          " exec.remote "
+          lit ['[✔️ ok ]'," #{data.remotehost}:#{data.remotefold} ", "created."],[c.ok,c.warn,c.ok]
+
+  for I in remotetask
+
+    cmd = "ssh #{data.ssh} " + data.remotehost + " '" + "cd #{data.remotefold};" + I + "'"
+
+    log.verbose I,cmd
+
+    yield from cont cmd
+
+  yield from exec-finale data,log,cont
+
+  yield \done.core.exit
+
+  return
+
+# ---------
+
+improve_signal = (signal,config,log,rl,opts) ->
+
+  all_watches_are_closed = not (config.watch or opts.watch_config_file)
+
+  if not config.watch
+
+    rl.close!
+
+  if all_watches_are_closed
+
+    return most.throwError signal + ".closed"
+
+  if ((opts.watch_config_file) and not config.watch)
+
+    en = ".open_only_config"
+
+  else
+
+    en = '.open'
+
+  most.just signal + en
+
+
+resolve_signal = be.arr
+.on 1,be.str.fix ' << program screwed up >> '
+.on 0,
+  be.str.fix '<< program screwed up >>'
+  .cont (cmd) ->
+
+    cmd = cmd.replace /'''/g,"'"
+
+    if ((cmd.split '\n').length > 1) then return ('\n' + cmd)
+    if (cmd.length > 45) then return ('\n' + cmd)
+    else then return cmd
+
+.cont ([cmdtxt,buildname])->
+
+  l lit do
+      ["[#{metadata.name}]#{buildname}","[ ","⚡️","    error ","] ",cmdtxt]
+      [c.er1,c.er2,c.er3,c.er2,c.er2,c.er1]
+
+  \error.core.cmd
+
+.alt be.str
+.cont improve_signal
+
+.fix most.empty!
+
+# ---------
+
+print_final_message = (log) -> (signal) ->
+
+  [status,type,which,watch] = dotpat signal
+
+  switch watch
+  | \open             =>
+    msg = c.grey "returning to watch"
+  | \open_only_config =>
+    msg = c.grey "returning to watching only config file."
+  | \closed => return
+
+  switch status
+  | \error =>
+    log.normal \warn,msg
+  | \done  =>
+    log.normal \ok,msg
+
+
+diff = R.pipe do
+  R.aperture 2
+  R.map ([x,y]) -> y - x
+
+init_user_watch = (data,options,log,handle_cmd,rl) -> ->
+
+  log.normal do
+    data.watch
+    \ok
+    c.ok "  ↓ watching "
+    c.grey " { working directory } → #{process.cwd!}"
+    " " + [(c.blue I) for I in data.watch].join (c.pink " | ")
+
+
+  $init_file_watch =  most_create (add,end,error) ->
+
+    if data.initialize
+
+      add \init
+
+    if data.watch
+
+      watcher = chokidar.watch data.watch,data.chokidar
+
+      watcher.on \change,add
+
+      !-> watcher.close!; end!
+
+
+  exec_all_user_cmds = prime_process data,options,log,handle_cmd,rl
+
+  $file_watch = $init_file_watch
+  .timestamp!
+  .loop do
+    (db,ob) ->
+
+      db.shift!
+
+      db.push Math.floor (ob.time/2000)
+
+      [first,second] = diff db
+
+      fin = {seed:db}
+
+      if (first is second)
+
+        l lit do
+          [
+            "[#{metadata.name}]"
+            "[ ","⚡️","    error ","] "
+            "infinite loop detected "
+            ob.value
+            " is offending file, ignoring event."
+          ]
+          [c.er1,c.er2,c.er3,c.er2,c.er2,c.er1,c.warn,c.er1]
+
+        fin.value = \err
+
+      else
+
+        fin.value = \ok
+
+      return fin
+
+    [0,0,0]
+
+  .map (status) ->
+
+    if status is \err then return most.just \error.core.infinteloop
+
+    most.generate exec_all_user_cmds
+
+  pfm = print_final_message log
+
+  $file_watch.switchLatest!
+
+  .recoverWith (signal) -> most.just signal
+
+  .chain (signal)-> (resolve_signal.auth signal,data,log,rl,options).value
+
+  .observe pfm
+  .catch pfm
+
+
+
+init_continuation = (buildname,dryRun) -> (cmd,type = \async) ->*
+
+  if dryRun
+
+    status = 0
+
+  else
+
+    {status} = spawn cmd
+
+  if (status isnt 0)
+
+    switch type
+    | \async => yield new Promise (resolve,reject) -> reject [cmd,buildname]
+    | \sync  => return [cmd,buildname]
+
+  return \ok
+
+
+core = (data,info) ->
+
+  if (data.cmd is undefined)
+
+    buildname = ""
+
+    configs = data.def
+
+  else
+
+    buildname = "[#{data.cmd}]"
+
+    configs = data.user[data.cmd]
+
+  if configs.verbose
+
+    verbose = configs.verbose
+
+  else
+
+    verbose = data.options.verbose
+
+  log = print.create_logger buildname,verbose
+
+  if ((not configs.remotehost) and (configs['exec-remote'].length))
+
+    log.normal do
+      \warn
+      c.er2 " ⚡️     error "
+      c.er1 " remotehost address not defined for task."
+
+    return
+
+  handle_cmd = init_continuation buildname,data.options.dryRun
+
+  rl = readline.createInterface {input:process.stdin,output:process.stdout,terminal:false}
+
+  rl.on \line,(input) !-> process.stdout.write input
+
+  $config-watch = do
+
+    most_create (add,end,error) ->
+
+      if data.options.watch_config_file
+
+        watcher = (chokidar.watch data.filename,{awaitWriteFinish:true})
+
+        watcher.on \change,add
+
+        setTimeout add,0
+
+        return -> watcher.close!;end!
+
+      else
+
+        setTimeout add,0
+
+  $config-watch.skip 1
+
+  .tap !->
+
+    l lit do
+        ["\n[#{metadata.name}]"," configuration file ","#{filename}"," itself has changed, restarting watch.."]
+        [c.ok,c.pink,c.warn,c.pink]
+
+  $config-watch
+  .tap init_user_watch configs,data.options,log,handle_cmd,rl
+  .drain!
+
 
 entry = (info) -> # validator
 
@@ -857,9 +1309,11 @@ entry = (info) -> # validator
 
       print.failed_in_custom_parser I,E
 
-      return most.just \error.validator.modify-yaml
+      return
+
 
     $all.push $tampax-parse I,yaml-text,info.cmdargs
+
 
   # --------------------------------------------------
 
@@ -869,10 +1323,9 @@ entry = (info) -> # validator
     (accum,data) -> (accum.push data); accum
     []
 
-  P = parsed
-  .then main info
+  parsed
+  .then main_all info
 
-  most.fromPromise P
 
 
 module.exports =

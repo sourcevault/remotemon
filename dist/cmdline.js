@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 
-var bani, ext, validator, findfile, com, print, readJson, most, j, exec, chokidar, most_create, updateNotifier, fs, metadata, optionParser, ref$, l, z, zj, R, lit, c, be, parser, rest, E, pkg, notifier, str, isvar, vars, args, filename, filenames, wcf, x$, data, y$, $, dot_pat_main, dotpat;
+var bani, ext, validator, findfile, com, print, readJson, most, j, exec, chokidar, most_create, updateNotifier, fs, metadata, optionParser, dotpat, ref$, l, z, zj, R, lit, c, be, noop, parser, rest, E, pkg, notifier, str, isvar, vars, args, filename, filenames, wcf, x$, data, y$;
 bani = require("./validator");
 ext = bani.ext, validator = bani.validator, findfile = bani.findfile;
 com = ext.com, print = ext.print;
 readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, updateNotifier = com.updateNotifier, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser;
+dotpat = com.dotpat;
 ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, zj = ref$.zj, j = ref$.j, R = ref$.R, lit = ref$.lit, c = ref$.c;
 be = com.hoplon.types;
+noop = function(){};
 parser = new optionParser();
 parser.addOption('h', 'help', null, 'help');
 parser.addOption('v', 'verbose', null, 'verbose');
@@ -67,42 +69,4 @@ y$.verbose = parser.verbose.count();
 y$.dryRun = parser.dryRun.count();
 y$.watch_config_file = wcf;
 y$.list = parser.list.count();
-$ = most_create(function(add, end, error){
-  var watcher;
-  if (data.options.watch_config_file) {
-    watcher = chokidar.watch(filenames, {
-      awaitWriteFinish: true
-    });
-    watcher.on('change', add);
-    setTimeout(add, 0);
-    return function(){
-      watcher.close();
-      return end();
-    };
-  } else {
-    return setTimeout(add, 0);
-  }
-});
-dot_pat_main = be.str.edit(R.split(".")).or(be.undef.cont([]));
-dotpat = function(x){
-  return dot_pat_main.auth(x).value;
-};
-$.skip(1).tap(function(){
-  l(lit(["\n[" + metadata.name + "]", " configuration file ", filename + "", " itself has changed, restarting watch.."], [c.ok, c.pink, c.warn, c.pink]));
-}).drain();
-$.chain(function(){
-  var torna;
-  torna = validator(data);
-  return torna;
-}).switchLatest().tap(function(signal){
-  var epath, state, loc;
-  epath = dotpat(signal);
-  state = epath[0], loc = epath[1];
-  switch (state) {
-  case 'error':
-    switch (loc) {
-    case 'validator':
-      return print.show(data.options.watch_config_file, lit([".. returning to watching broken config file(s), make sure to fix your errors .."], [c.er1]));
-    }
-  }
-}).drain();
+validator(data);

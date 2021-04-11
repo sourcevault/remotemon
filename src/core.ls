@@ -8,7 +8,7 @@ metadata = com.metadata
 
 {read-json,read-yaml,hoplon,fs,most,most_create,exec,chokidar,spawn}    = com
 
-{readline}                                                              = com
+{readline,dotpat}                                                       = com
 
 {c,R,lit,l,z,j,zj}                                                      = hoplon.utils
 
@@ -75,7 +75,7 @@ exec-finale = (data,log,cont) ->*
 
     yield cont cmd
 
-init_continuation = (buildname,dryRun) -> (cmd) ->
+init_continuation = (buildname,dryRun) -> (cmd,type = 'async') ->*
 
   if dryRun
 
@@ -85,11 +85,15 @@ init_continuation = (buildname,dryRun) -> (cmd) ->
 
     {status} = spawn cmd
 
-  switch status
-  | 0         => new Promise (resolve) -> setTimeout resolve,0
-  | otherwise => new Promise (resolve,reject) -> reject [cmd,buildname]
+  if (status isnt 0)
 
-create_proc = (data,options,log,cont) -> ->*
+    switch type
+    | \async => yield new Promise (resolve,reject) -> reject [cmd,buildname]
+    | \sync  => return [cmd,buildname]
+
+  return \ok
+
+create_proc = (data,options,log,cont,rl) -> ->*
 
   locale = data['exec-locale']
 
@@ -103,7 +107,7 @@ create_proc = (data,options,log,cont) -> ->*
 
     log.verbose cmd
 
-    yield cont cmd
+    yield from cont cmd
 
   if (not data.remotehost)
 
@@ -111,7 +115,11 @@ create_proc = (data,options,log,cont) -> ->*
 
       yield from exec-finale data,log,cont
 
-    yield \error.core.no_remotehost
+      yield \done.core.exit
+
+    else
+
+      yield \error.core.no_remotehost
 
     return
 
@@ -132,16 +140,20 @@ create_proc = (data,options,log,cont) -> ->*
 
       log.verbose "....",cmd
 
-      yield cont cmd
+      status = yield from cont cmd,\sync
 
-      log.normal do
-        \ok
-        lit [" rsync ","✔️ ok "],[0,c.ok]
+      if status isnt \ok
 
+        log.normal do
+          \warn
+          lit [" rsync"," break "],[c.pink,c.er3]
+          ""
+
+        yield new Promise (resolve,reject) -> reject status
 
   remotetask = data['exec-remote']
 
-  disp = (c.warn " (#{remotetask.length}) ") + data.remotehost + ":" + data.remotefold
+  disp = lit [(" (#{remotetask.length}) "),(data.remotehost + ":" + data.remotefold)],[c.warn,c.grey]
 
   log.normal do
     remotetask.length
@@ -151,21 +163,54 @@ create_proc = (data,options,log,cont) -> ->*
 
   if remotetask.length and (not options.dryRun)
 
-    cmd = "ssh #{data.ssh} #{data.remotehost} 'ls #{data.remotefold}'"
+    tryToSSH = "ssh #{data.ssh} #{data.remotehost} 'ls'"
+
+    checkDir = "ssh #{data.ssh} #{data.remotehost} 'ls #{data.remotefold}'"
+
+    mkdir = "ssh #{data.ssh} #{data.remotehost} 'mkdir #{data.remotefold}'"
 
     try
 
-      exec cmd
+      exec tryToSSH
 
     catch E
 
       l lit do
-        ["[#{metadata.name}]"," #{data.remotefold}"," does not exist, creating new directory .."]
-        [c.ok,c.warn,c.blue]
+          ["[#{metadata.name}]"," unable to ssh to remote address ",data.remotehost,"."]
+          [c.er2,c.warn,c.er3,c.grey]
 
-      cmd = "ssh #{data.ssh} #{data.remotehost} 'mkdir #{data.remotefold}'"
+      yield \error.validator.unable_to_ssh
 
-      yield cont cmd
+      return
+
+    try
+
+      exec checkDir
+
+    catch E
+
+      userinput = yield new Promise (resolve) ->
+
+        Q = lit do
+          ["[#{metadata.name}]"," #{data.remotefold}"," does not exist on remote, do you want to create directory ","#{data.remotehost}:#{data.remotefold}"," ? [y/n] "]
+          [c.ok,c.warn,c.grey,c.warn,c.grey]
+
+        rl.question Q,(answer) !->
+
+          if answer in [\y,\Y]
+            (resolve true)
+            return
+
+          resolve false
+
+      if userinput
+
+        yield from cont mkdir
+
+        log.normal do
+          \ok
+          " exec.remote "
+          lit ['[✔️ ok ]'," #{data.remotehost}:#{data.remotefold} ", "created."],[c.ok,c.warn,c.ok]
 
   for I in remotetask
 
@@ -173,7 +218,7 @@ create_proc = (data,options,log,cont) -> ->*
 
     log.verbose I,cmd
 
-    yield cont cmd
+    yield from cont cmd
 
   yield from exec-finale data,log,cont
 
@@ -185,23 +230,17 @@ diff = R.pipe do
   R.aperture 2
   R.map ([x,y]) -> y - x
 
-main = (data,options,log,handle_cmd) ->
+main = (data,options,log,handle_cmd,rl) ->
 
-  if (not data.remotehost) and data['exec-remote'].length
-
-    log.normal do
-      \warn
-      lit [" ⛔    "," warn "],[c.er1,c.er1]
-      " remotehost address not defined for task."
 
   log.normal do
     data.watch
     \ok
-    c.ok " ↓ watching "
+    c.ok "  ↓ watching "
     c.grey " { working directory } → #{process.cwd!}"
     " " + [(c.blue I) for I in data.watch].join (c.pink " | ")
 
-  proc = create_proc data,options,log,handle_cmd
+  proc = create_proc data,options,log,handle_cmd,rl
 
   $file_watch =  most_create (add,end,error) ->
 
@@ -258,75 +297,129 @@ main = (data,options,log,handle_cmd) ->
     if status is \err then return most.just \error.core.infinteloop
 
     most.generate proc
-    .recoverWith ([cmdtxt,buildname]) ->
-
-      txt = sanatize_cmd cmdtxt
-
-      if (cmdtxt is undefined)
-
-        buildname = " << program screwed up >> "
-
-      l lit do
-        ["[#{metadata.name}]#{buildname}","[ ","⚡️","    error ","] ",txt]
-        [c.er1,c.er2,c.er3,c.er2,c.er2,c.er1]
-
-      most.just \error.core.cmd
-
 
   $proc.switchLatest!
 
+
 # ---------
+
+$Empty = most.empty!
+
+handle_fin = (signal,config,log,rl,opts) ->
+
+  all_watches_are_closed = not (config.watch or opts.watch_config_file)
+
+  if not config.watch
+
+    rl.close!
+
+  if all_watches_are_closed
+
+    return most.throwError [(signal + ".closed"),log]
+
+  if ((opts.watch_config_file) and not config.watch)
+
+    en = ".open_only_config"
+
+  else
+
+    en = '.open'
+
+  most.just [(signal + en),log]
+
+
+resolve_signal = be.arr
+.on 1,be.str.fix ' << program screwed up >> '
+.on 0,
+  be.str.fix '<< program screwed up >>'
+  .cont (cmd) ->
+
+    cmd = cmd.replace /'''/g,"'"
+
+    if ((cmd.split '\n').length > 1) then return ('\n' + cmd)
+    if (cmd.length > 45) then return ('\n' + cmd)
+    else then return cmd
+
+.cont ([cmdtxt,buildname])->
+
+  l lit do
+      ["[#{metadata.name}]#{buildname}","[ ","⚡️","    error ","] ",cmdtxt]
+      [c.er1,c.er2,c.er3,c.er2,c.er2,c.er1]
+
+  \error.core.cmd
+
+.alt be.str
+.cont handle_fin
+
+.fix $Empty
+
+# ---------
+
 
 entry = (data,state) ->
 
-  if (data.cmd is undefined)
+  z data,state
 
-    buildname = ""
+  # if (data.cmd is undefined)
 
-    configs = data.def
+  #   buildname = ""
 
-  else
+  #   configs = data.def
 
-    buildname = "[#{data.cmd}]"
+  # else
 
-    configs = data.user[data.cmd]
+  #   buildname = "[#{data.cmd}]"
 
-  #----------------------------------
+  #   configs = data.user[data.cmd]
 
-  opts = data.options
+  # #----------------------------------
 
-  if configs.verbose
+  # opts = data.options
 
-    verbose = configs.verbose
+  # if configs.verbose
 
-  else
+  #   verbose = configs.verbose
 
-    verbose = opts.verbose
+  # else
 
-  logger = print.create_logger buildname,verbose
+  #   verbose = opts.verbose
 
-  handle_cmd = init_continuation buildname,opts.dryRun
+  # log = print.create_logger buildname,verbose
 
-  rl = readline.createInterface {input:process.stdin}
+  # #----------------------------------
 
-  rl.on \line,(input) !->
+  # if (not configs.remotehost) and (configs['exec-remote'].length)
 
-    process.stdout.write input + "\n"
+  #   log.normal do
+  #     \warn
+  #     c.er2 " ⚡️     error "
+  #     c.er1 " remotehost address not defined for task."
 
-  #----------------------------------
+  #   return most.just [\error.validator.no_remotehost,log]
 
-  main configs,opts,logger,handle_cmd
+  # #----------------------------------
 
-  .tap (signal) ->
+  # handle_cmd = init_continuation buildname,opts.dryRun
 
-    if (signal is undefined) then return
+  # rl = readline.createInterface {input:process.stdin,output:process.stdout,terminal:false}
 
-    if configs.watch
+  # rl.on \line,(input) !->
 
-      l c.ok "[#{metadata.name}] .. returning to watch .."
+  #   process.stdout.write input
 
-    else
+  # #----------------------------------
 
-      rl.close!
+  # main configs,opts,log,handle_cmd,rl
+
+  # .recoverWith (signal) -> most.just signal
+
+  # .chain (signal) ->
+
+    # (resolve_signal.auth signal,configs,log,rl,opts).value
+
+
+
+
+
 
 module.exports = entry

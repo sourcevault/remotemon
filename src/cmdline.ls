@@ -11,9 +11,13 @@ bani = require "./validator"
 
 {read-json,most,j,exec,chokidar,most_create,updateNotifier,fs,metadata,optionParser} = com
 
+{dotpat} = com
+
 {l,z,zj,j,R,lit,c} = com.hoplon.utils
 
 be = com.hoplon.types
+
+noop = ->
 
 #--------------------------------------------
 
@@ -144,63 +148,100 @@ data = {}
     ..list              = parser.list.count!
 
 
-$ = do
 
-  most_create (add,end,error) ->
+validator data
 
-    if data.options.watch_config_file
 
-      watcher = (chokidar.watch filenames,{awaitWriteFinish:true})
+# $ = do
 
-      watcher.on \change,add
+#   most_create (add,end,error) ->
 
-      setTimeout add,0
+#     if data.options.watch_config_file
 
-      return -> watcher.close!;end!
+#       watcher = (chokidar.watch filenames,{awaitWriteFinish:true})
 
-    else
+#       watcher.on \change,add
 
-      setTimeout add,0
+#       setTimeout add,0
 
-dot_pat_main = be.str.edit R.split "."
-.or be.undef.cont []
+#       return -> watcher.close!;end!
 
-dotpat = (x)-> (dot_pat_main.auth x).value
+#     else
 
-$.skip 1
+#       setTimeout add,0
 
-.tap !->
+# $.skip 1
 
-  l lit do
-      ["\n[#{metadata.name}]"," configuration file ","#{filename}"," itself has changed, restarting watch.."]
-      [c.ok,c.pink,c.warn,c.pink]
+# .tap !->
 
-.drain!
+#   l lit do
+#       ["\n[#{metadata.name}]"," configuration file ","#{filename}"," itself has changed, restarting watch.."]
+#       [c.ok,c.pink,c.warn,c.pink]
 
-#---------------------------
 
-$.chain ->
+# .drain!
 
-  torna = validator data
+# #---------------------------
 
-  torna
+# # all the diff errors
 
-.switchLatest!
 
-.tap (signal) ->
+# \error.validator.tampaxparsing    # config file issue.
+# \error.validator.main             # config file validation failed.
+# \error.validator.modify-yaml      # config file issue.
+# \error.validator.no_remotehost    # ok
 
-  epath = dotpat signal
+# \error.core.unable_to_ssh         # config file issue ( ssh address is wrong ).
+# \error.core.cmd                   # ok
+# \error.core.infinteloop           # ok
 
-  [state,loc] = epath
+# \done.core.exit.closed            # ok
+# \done.core.exit.open              # ok
+# \done.core.exit.open_only_config  # ok
 
-  switch state
-  | \error =>
-    switch loc
-    | \validator =>
-      print.show do
-        data.options.watch_config_file
-        lit do
-          [".. returning to watching broken config file(s), make sure to fix your errors .."]
-          [c.er1]
 
-.drain!
+
+# #---------------------------
+
+# handleE = ([signal,log]) ->
+
+#   [status,type,which,watch] = dotpat signal
+
+#   wcf = data.options.watch_config_file
+
+#   if wcf and ("#{status}.#{type}" is \error.validator)
+
+#     msg = lit ["{"," returning to watching broken config file(s), make sure to fix your errors. ","}"],[c.er1,c.grey,c.er1]
+
+#     l lit do
+#       ["[#{metadata.name}] ",msg]
+#       [c.warn,null]
+
+#   switch watch
+#   | \open             =>
+#     msg = c.grey "returning to watch"
+#   | \open_only_config =>
+#     msg = c.grey "returning to watching config file(s)."
+#   | \closed => return
+
+#   switch status
+#   | \error =>
+#     log.normal \warn,msg
+#   | \done  =>
+#     log.normal \ok,msg
+
+
+
+
+
+# $.chain ->
+
+#   torna = validator data
+
+#   torna
+
+# .switchLatest!
+
+# .observe handleE
+
+# .catch handleE

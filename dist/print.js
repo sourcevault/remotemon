@@ -1,4 +1,4 @@
-var x$, com, y$, most, hoplon, ref$, z, wait, most_create, child_process, readline, cp, be, print, c, l, lit, j, readJson, R, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, normal_internal, verbose_internal, show, create_logger, print_wrap, I, key, out$ = typeof exports != 'undefined' && exports || this;
+var x$, com, y$, most, hoplon, ref$, z, wait, most_create, child_process, readline, cp, be, R, dot_pat_main, dotpat, print, c, l, lit, j, readJson, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, normal_internal, verbose_internal, show, create_logger, print_wrap, I, key, out$ = typeof exports != 'undefined' && exports || this;
 x$ = com = {};
 y$ = x$.metadata = {};
 y$.name = null;
@@ -23,6 +23,17 @@ com.child_process = child_process;
 cp = child_process;
 be = hoplon.types;
 com.readline = readline;
+R = hoplon.utils.R;
+dot_pat_main = be.str.edit(R.split(".")).or(be.undef.cont([]));
+dotpat = function(x){
+  return dot_pat_main.auth(x).value;
+};
+dotpat.take = function(amount, signal){
+  var sig;
+  sig = dotpat(signal);
+  return R.take(amount, sig).join(".");
+};
+com.dotpat = dotpat;
 com.spawn = function(cmd){
   return cp.spawnSync(cmd, [], {
     shell: 'bash',
@@ -132,7 +143,7 @@ print.failed_in_tampax_parsing = function(filename, E){
   l(lit(["[" + metadata.name + "]", "[parseError]", " yaml/tampex parsing error."], [c.warn, c.er2, c.er1]));
   l("\n  " + c.er2(filename + "\n"));
   l(c.grey(E));
-  emsg = ["\n", c.pink("  make sure :\n\n"), c.blue("   - correct path is provided.\n"), c.blue("   - .yaml file can be parsed without error.\n"), c.blue("   - .yaml file has no duplicate field.")];
+  emsg = ["\n", c.pink("  make sure :\n\n"), c.blue("   - correct path is provided.\n"), c.blue("   - .yaml file can be parsed without error.\n"), c.blue("   - .yaml file has no duplicate field.\n"), c.blue("   - .yaml file is not empty.")];
   return l(c.grey(emsg.join("")));
 };
 print.in_selected_key = function(arg$, path, filename, topmsg){
@@ -188,23 +199,35 @@ normal_internal = hoplon.guard.unary.wh(function(arg$){
 }).ar(1, function(arg$){
   var txt;
   txt = arg$[0];
-  return l(txt);
+  l(lit(["[" + metadata.name + "] ", txt], [c.ok, null]));
 }).ar(2, function(arg$, state){
-  var type, txt_1;
+  var type, txt_1, buildname, co, brac;
   type = arg$[0], txt_1 = arg$[1];
-  return normal_internal([type, txt_1, ''], state);
+  buildname = state.buildname;
+  switch (type) {
+  case 'ok':
+    co = c.ok;
+    brac = c.ok;
+    break;
+  case 'warn':
+    co = c.warn;
+    brac = c.er1;
+  }
+  l(lit(["[" + metadata.name + "]", buildname, " { ", txt_1, " } "], [co, c.er1, brac, null, brac]));
 }).ar(3, function(arg$, state){
-  var type, txt_1, txt_2, buildname, procname;
+  var type, txt_1, txt_2, buildname, procname, co;
   type = arg$[0], txt_1 = arg$[1], txt_2 = arg$[2];
   buildname = state.buildname;
   switch (type) {
   case 'ok':
     procname = c.ok("[") + c.pink(txt_1 + "") + c.ok("]");
+    co = c.ok;
     break;
   case 'warn':
     procname = lit(["[", txt_1 + "", "]"], [c.pink, null, c.pink]);
+    co = c.warn;
   }
-  return l(lit(["[" + metadata.name + "]", buildname, procname + "", txt_2], [c.ok, c.er1, c.ok, c.grey]));
+  return l(lit(["[" + metadata.name + "]", buildname, procname + "", txt_2], [co, c.er1, c.ok, c.grey]));
 }).ar(4, function(arg$, state){
   var type, txt_1, txt_2, txt_3;
   type = arg$[0], txt_1 = arg$[1], txt_2 = arg$[2], txt_3 = arg$[3];
@@ -265,16 +288,3 @@ print.showHeader = function(){
   return l(lit(["[" + metadata.name + "]", " v" + metadata.version], [c.ok, c.grey, c.grey]));
 };
 print.create_logger = create_logger;
-print.show = function(disp, txt){
-  var num;
-  if (disp) {
-    switch (typeof disp) {
-    case 'string':
-      num = parseInt(disp[0]);
-      l(c.ok("[" + metadata.name + "]"), txt[num]);
-      break;
-    default:
-      l(c.ok("[" + metadata.name + "]"), txt);
-    }
-  }
-};

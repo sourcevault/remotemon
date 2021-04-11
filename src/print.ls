@@ -41,6 +41,22 @@ be                   = hoplon.types
 
 com.readline         = readline
 
+R = hoplon.utils.R
+
+dot_pat_main = be.str.edit R.split "."
+.or be.undef.cont []
+
+dotpat = (x)-> (dot_pat_main.auth x).value
+
+dotpat.take = (amount,signal) ->
+
+  sig = dotpat signal
+
+  (R.take amount,sig).join "."
+
+
+com.dotpat = dotpat
+
 # ----------------------------------------------------------------------------
 
 com.spawn = (cmd) ->
@@ -234,7 +250,8 @@ print.failed_in_tampax_parsing = (filename,E) ->
     c.pink "  make sure :\n\n"
     c.blue "   - correct path is provided.\n"
     c.blue "   - .yaml file can be parsed without error.\n"
-    c.blue "   - .yaml file has no duplicate field."
+    c.blue "   - .yaml file has no duplicate field.\n"
+    c.blue "   - .yaml file is not empty."
     ]
 
   l c.grey emsg.join ""
@@ -321,7 +338,6 @@ print.no_match_for_arguments = ->
 
 # ----------------------------------------------------------------
 
-
 normal_internal = hoplon.guard.unary
 
 .wh do
@@ -336,9 +352,27 @@ normal_internal = hoplon.guard.unary
 
     else then return void
 
-.ar 1,([txt]) -> l txt
+.ar 1,([txt]) !->
 
-.ar 2,([type,txt_1],state) -> normal_internal [type,txt_1,''],state
+  l lit ["[#{metadata.name}] ",txt],[c.ok,null]
+
+
+.ar 2,([type,txt_1],state) !->
+
+  buildname = state.buildname
+
+  switch type
+  | \ok            =>
+    co   = c.ok
+    brac = c.ok
+  | \warn          =>
+    co   = c.warn
+    brac = c.er1
+
+  l lit do
+      ["[#{metadata.name}]",buildname," { ",txt_1," } "]
+      [co,c.er1,brac,null,brac]
+
 
 .ar 3,([type,txt_1,txt_2],state) ->
 
@@ -349,13 +383,18 @@ normal_internal = hoplon.guard.unary
 
     procname = (c.ok "[") + (c.pink "#{txt_1}") + (c.ok "]")
 
+    co   = c.ok
+
   | \warn          =>
 
     procname = lit ["[","#{txt_1}","]"],[c.pink,null,c.pink]
 
+    co = c.warn
+
+
   l lit do
       ["[#{metadata.name}]",buildname,"#{procname}",txt_2]
-      [c.ok,c.er1,c.ok,c.grey]
+      [co,c.er1,c.ok,c.grey]
 
 
 .ar 4,([type,txt_1,txt_2,txt_3],state) !->
@@ -439,21 +478,3 @@ print.show-header = -> l lit do
   [c.ok,c.grey,c.grey]
 
 print.create_logger = create_logger
-
-print.show = (disp,txt) !->
-
-  if disp
-
-    switch typeof disp
-
-    | \string   =>
-
-      num = parseInt disp[0]
-
-      l (c.ok "[#{metadata.name}]"),txt[num]
-
-    | otherwise =>
-
-      l (c.ok "[#{metadata.name}]"),txt
-
-
