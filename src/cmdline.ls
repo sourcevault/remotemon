@@ -63,6 +63,8 @@ try
 
 if (parser.help.count!) > 0
 
+  # -s --silent                ignore all remotemon messages
+
   str =
     """
     remotemon version #{metadata.version}
@@ -108,7 +110,7 @@ if (parser.help.count!) > 0
 
 print.show-header!
 
-if parser.version.count! > 0
+if (parser.version.count! > 0)
   return
 
 isvar = R.test /\=/
@@ -153,3 +155,5 @@ data = {}
     ..auto_make_directory = parser.auto_make_directory.count!
 
 validator data
+
+

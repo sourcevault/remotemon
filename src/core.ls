@@ -68,11 +68,11 @@ ME.findfile = (filename) ->
 
     return false
 
-  filenames =  (c.er1 "[ ") + ([(c.warn I) for I in allfiles].join c.er1 " ][ ") + (c.er1 " ]")
+  filenames =  (c.er1 "{ ") + ([(c.warn I) for I in allfiles].join c.er1 " } { ") + (c.er1 " }")
 
   l lit do
     ["[#{metadata.name}]"," using ",filenames]
-    [c.ok,c.grey,null]
+    [c.ok,null,null]
 
   return allfiles
 
@@ -91,7 +91,7 @@ ME.recursive_str_list = be.arr
 
   .cont R.flatten
   .or do
-    be.obj.and (obj) ->
+    be.obj.and (obj) -> # Error Path
 
       keys = Object.keys obj
 
@@ -100,6 +100,7 @@ ME.recursive_str_list = be.arr
       | 0 => return [false,[\:ob_in_str_list,\empty_object]]
 
       | otherwise => return [false,[\:ob_in_str_list,\object]]
+
   .or be.str
   .or be.undefnull
 
@@ -110,8 +111,8 @@ ME.recursive_str_list = be.arr
   for I in list
 
     switch R.type I
-    | "Undefined","Null" => void
-    | "Array" =>
+    | \Undefined,\null => void
+    | \Array =>
       out.push ...I
     | otherwise =>
       out.push I
@@ -163,9 +164,18 @@ rm_all_undef           = (obj) -> JSON.parse JSON.stringify obj
 
 #--------------------------------------------------------------
 
-is_true = (x) -> x is true
+is_true = (x) ->
 
-is_false = (x) -> x is false
+  if (x is true) then return true
+
+  [false,'not true']
+
+is_false = (x) ->
+
+  if (x is false) then return true
+
+  [false,'not false']
+
 
 ME.rsync = {}
 
@@ -174,17 +184,22 @@ grouparr = R.pipe do
   R.groupBy (v) -> v[0]
   R.map R.map (x) -> x[1]
 
-ME.rsync.check_if_error = (detail) ->
+ME.rsync.throw_if_error = (detail,key) ->
 
-  if detail.error then return [false,detail.error[0],detail.error[1]]
+  if (not detail.error) then return true
 
-  true
+  path = [key,detail.error[1]]
 
-organize-rsync = (list) ->
+  [false,detail.error]
 
-  if (list is false) then return false
 
-  fin = {str:[],obnormal:[],obarr:[],des:[],src:[],error:false}
+organize_rsync = (list,key,state) ->
+
+  fin = {str:[],obnormal:[],obarr:{},des:[],src:[],error:false}
+
+  error = []
+
+  error.push \:rsync
 
   for I,index in list
 
@@ -193,9 +208,9 @@ organize-rsync = (list) ->
 
       if not (data.rsync.bool.has I)
 
-        fin.error = [\:rsync,[\duo,[I,"not a valid boolean rsync option."]]]
+        error.push [\duo,[I,"not a valid boolean rsync option."]],[...key,index]
 
-        fin.error = [fin.error,index]
+        fin.error = error
 
         return fin
 
@@ -208,9 +223,9 @@ organize-rsync = (list) ->
       switch keys.length
       | 0         =>
 
-        fin.error = [\:rsync,[\uno,["empty object without any attribute"]]]
+        error.push [\uno,["empty object without any attribute"]],[...key,index]
 
-        fin.error = [fin.error,index]
+        fin.error = error
 
         return fin
 
@@ -218,9 +233,9 @@ organize-rsync = (list) ->
 
       | otherwise =>
 
-        fin.error = [\:rsync,[\uno,["object can only have singular attribute."]]]
+        error.push [\uno,["object can only have singular attribute."]],[...key,index]
 
-        fin.error = [fin.error,index]
+        fin.error = error
 
         return fin
 
@@ -228,9 +243,9 @@ organize-rsync = (list) ->
 
       if not ((data.rsync.compound.has k) or (k in [\src,\des]))
 
-        fin.error = [\:rsync,[\duo,[k," not a valid compound rsync option."]]]
+        error.push [\duo,[k," not a valid compound rsync option."]],[...key,index]
 
-        fin.error = [fin.error,index]
+        fin.error = error
 
         return fin
 
@@ -242,17 +257,17 @@ organize-rsync = (list) ->
 
         if not (((R.type val)) is \String)
 
-          fin.error = [\:rsync,[\duo,[\des," has to be string type."]]]
+          error.push [\duo,[\des," has to be string type."]],[...key,index]
 
-          fin.error = [fin.error,index]
+          fin.error = error
 
           return fin
 
         if fin.des.length is 1
 
-          fin.error = [\:rsync,[\duo,[\des," there can't be multiple remote folders as destination."]]]
+          error.push [\duo,[\des," there can't be multiple remote folders as destination."]],[...key,index]
 
-          fin.error = [fin.error,index]
+          fin.error = error
 
           return fin
 
@@ -264,9 +279,9 @@ organize-rsync = (list) ->
 
         if ret.error
 
-          fin.error = [\:rsync,[\duo,[k,"can only be a list of string or just string."]]]
+          error.push [\duo,[k,"can only be a list of string or just string."]],[...key,index]
 
-          fin.error = [fin.error,index]
+          fin.error = error
 
           return fin
 
@@ -276,7 +291,11 @@ organize-rsync = (list) ->
 
         else
 
-          fin.obarr.push [[k,I] for I in ret.value]
+          if fin.obarr[k] is undefined
+
+            fin.obarr[k] = []
+
+          fin.obarr[k].push  ...ret.value
 
       else
 
@@ -286,57 +305,25 @@ organize-rsync = (list) ->
         | \Undefined,\Null => void
         | otherwise =>
 
-          fin.error = [\:rsync,[\duo,[k,"can only be a string (or number)."]]]
+          error.push [\duo,[k,"can only be a string (or number)."]],[...key,index]
 
-          fin.error = [fin.error,index]
+          fin.error = error
 
           return fin
 
-    | "Array"   =>
-
-      result = organize-rsync I
-
-      if result.error
-
-        fin.error = result.error[0]
-
-        fin.error = [fin.error,[index,result.error[1]]]
-
-        return fin
-
-      fin.str      = R.concat fin.str,result.str
-      fin.obnormal = R.concat fin.obnormal,result.obnormal
-      fin.obarr    = R.concat fin.obarr,result.obarr
-      fin.src      = R.concat fin.src,result.src
-
     | otherwise =>
 
-      fin.error = [\:rsync,[\uno,["not valid rsync option."]]]
+      error.push [\uno,["not valid rsync option."]],[...key,index]
 
-      fin.error = [fin.error,index]
+      fin.error = error
 
       return fin
 
-  fin.obarr = grouparr fin.obarr
-
   fin.src = R.flatten fin.src
-
-  fin
-
-
-ME.rsync.core = be.arr
-
-.edit organize-rsync
-
-.and ME.rsync.check_if_error
-
-.cont (fin) ->
-
-  state = R.last arguments
 
   if (not fin.des[0])
 
-    (fin.des.push state.origin.remotefold)
+    fin.des.push state.origin.remotefold
 
   if (fin.src.length is 0)
 
@@ -345,24 +332,60 @@ ME.rsync.core = be.arr
   fin
 
 
+# ------------------------------------------------------------------------
+
+
+ME.false = be is_false
+
+karr = be.known.arr
+
 ME.rsync.main = be is_true
 
-.cont ->
+.cont (...,state)->
 
-  state = R.last arguments
-  data.def.rsync.concat (des:state.origin.remotefold)
+  list = data.def.rsync.concat (des:state.origin.remotefold)
 
-.or be.arr.map ME.rsync.core
+  organize_rsync (R.flatten list),[],state
 
-.and ME.rsync.core
-
-.alt ME.rsync.core
-
-.cont (data) -> [data]
-
-.or is_false
+.or ME.false
 
 .or be.undefnull.cont false
+
+.or do
+
+  be.arr.map be.arr
+
+  .err (msg,key) ->
+
+    switch key
+    | undefined => [\:def,'not array']
+    | otherwise => [\not_array_of_array,key]
+
+  .and do
+    karr.map do
+      karr
+      .cont (arr,key,...,state) -> organize_rsync (R.flatten arr),[key],state
+      .and ME.rsync.throw_if_error
+
+
+.or do
+  be.arr.cont (arr,...,state) -> [organize_rsync (R.flatten arr),[],state]
+
+  .and ME.rsync.throw_if_error
+
+
+.err (msg,path) ->
+
+  filtered = be.flatro msg
+
+  [[name,details,innerpath]] = filtered
+
+  if name is \:rsync
+
+    return message:[name,details],path:path.concat innerpath
+
+  return message:[details]
+
 
 #----------------------------------------------------
 
@@ -447,7 +470,7 @@ ME.origin = be.obj.alt be.undefnull.cont -> {}
 
 .on \initialize  , be.bool.or be.undefnull.cont true
 
-.on \watch       , (ME.watch ["."],["."])
+.on \watch       , ME.watch ["."],["."]
 
 .on \ssh         , do
   be.str.or be.undefnull.cont data.def.ssh
@@ -521,7 +544,7 @@ ME.main = be.obj
 
 # ----------------------------------------
 
-.err be.flatato
+.err be.flatro
 
 .edit (__,state) ->
 
@@ -713,9 +736,9 @@ $tampax-parse = (filename,yaml_text,cmdargs) ->
 
       print.failed_in_tampax_parsing filename,err
 
-      error \error.validator.tampaxparsing
+      add \error.validator.tampaxparsing
 
-      return
+      end!
 
     add [filename,raw-json]
 
@@ -756,17 +779,28 @@ handle_error = ({message,path,value}) !->
 
 rmdef = R.reject (x) -> data.selected_keys.set.has x
 
-only_str_interal = be.str.cont (str) -> " - " + str
+only_str = be.str.cont (str) -> " - " + str
+
+.or be.arr.cont (arr) ->
+
+  fin  = ""
+
+  for I in arr
+
+    fin += "\n    - " + I
+
+  fin
 
 .fix ""
 
-only_str = (str) -> (only_str_interal.auth str).value
+.wrap!
+
 
 exec_list_option = (alldata) ->
 
   for [filename,data] in R.reverse alldata
 
-    l lit ['> FILE ',filename],[c.warn,c.blue]
+    l lit ['> FILE ',filename],[c.warn,c.pink]
 
     keys = Object.keys data
 
@@ -776,11 +810,13 @@ exec_list_option = (alldata) ->
 
       l lit ["  --- ","< EMPTY >"," ---"],[c.pink,c.warn,c.pink]
 
-    for I in user_ones
+    for I from 0 til user_ones.length
 
-      des = only_str data[I].description
+      name = user_ones[I]
 
-      l lit [" • ",I,des],[c.warn,c.ok,c.pink]
+      des = only_str data[name].description
+
+      l lit [" • ",name,des],[c.warn,c.ok,null]
 
 
 
@@ -814,7 +850,6 @@ main_all = (info) -> (alldata) ->
 
       torna = ME.main.auth state,state
 
-
       if torna.continue
         break
       else if ((torna.message[0][0]) isnt \:usercmd_not_defined)
@@ -831,8 +866,8 @@ main_all = (info) -> (alldata) ->
       def         : {}
       user        : {}
 
-    torna = ME.main.auth state,state
 
+    torna = ME.main.auth state,state
 
   if torna.error
 
@@ -840,12 +875,15 @@ main_all = (info) -> (alldata) ->
 
     return
 
-  core torna.value,info
+  info.filename = torna.value.filename
+
+  init_config_file_watch torna.value,info
 
 
-main_single = (info) -> (raw_data) ->
+main_repeat = (info) -> (raw_data) ->
 
-  if raw_data is \error.validator.tampaxparsing then return
+  if (raw_data is \error.validator.tampaxparsing)
+    return most.just \error._._.open_only_config
 
   state =
     commandline   : info.commandline
@@ -853,23 +891,24 @@ main_single = (info) -> (raw_data) ->
     filename      : info.filename
     all_filenames : [info.filename]
     cmd           : info.cmdname
-    origin        : raw_data
+    origin        : raw_data[1]
     def           : {}
     user          : {}
 
   torna = ME.main.auth state,state
 
-
   if torna.error
 
     handle_error torna
 
-    return
+    return most.just \error._._.open_only_config
 
-  core torna.value,info
+  [configs,buildname,log] = create_logger torna.value
+
+  core torna.value,info,log,configs,buildname
 
 
-reparse_config_file = (info)->
+reparse_config_file = (info) -> ->
 
   filename = info.filename
 
@@ -886,7 +925,7 @@ reparse_config_file = (info)->
   $parsed = $tampax-parse filename,yaml-text,info.cmdargs
 
   $parsed
-  .map main_single info
+  .map main_repeat info
 
 
 #---------------------------------------------------------------------------------------
@@ -939,12 +978,12 @@ prime_process = (data,options,log,cont,rl) -> ->*
     " exec-locale "
     c.warn " (#{locale.length}) "
 
+
   for cmd in locale
 
     log.verbose cmd
 
     yield from cont cmd
-
 
   if data.rsync
 
@@ -974,6 +1013,12 @@ prime_process = (data,options,log,cont,rl) -> ->*
 
         yield new Promise (resolve,reject) -> reject status
 
+      else
+
+        log.normal do
+          \ok
+          lit [" rsync ","✔️ ok "],[0,c.ok]
+          ""
 
   remotetask = data['exec-remote']
 
@@ -1078,8 +1123,10 @@ improve_signal = (signal,config,log,rl,opts) ->
 
     en = '.open'
 
+
   most.just signal + en
 
+$empty = most.empty!
 
 resolve_signal = be.arr
 .on 1,be.str.fix ' << program screwed up >> '
@@ -1104,9 +1151,11 @@ resolve_signal = be.arr
 .alt be.str
 .cont improve_signal
 
-.fix most.empty!
+.fix $empty
+.wrap!
 
 # ---------
+
 
 print_final_message = (log) -> (signal) ->
 
@@ -1114,23 +1163,25 @@ print_final_message = (log) -> (signal) ->
 
   switch watch
   | \open             =>
-    msg = c.grey "returning to watch"
+    msg = "returning to watch"
   | \open_only_config =>
-    msg = c.grey "returning to watching only config file."
-  | \closed => return
+    msg = "watching only config file"
+  | \closed           => return $empty
 
   switch status
   | \error =>
-    log.normal \warn,msg
+    log.normal \err,msg
   | \done  =>
     log.normal \ok,msg
+
+  $empty
 
 
 diff = R.pipe do
   R.aperture 2
   R.map ([x,y]) -> y - x
 
-init_user_watch = (data,options,log,handle_cmd,rl) -> ->
+init_user_watch = (data,options,log,handle_cmd,rl) ->
 
   log.normal do
     data.watch
@@ -1139,7 +1190,6 @@ init_user_watch = (data,options,log,handle_cmd,rl) -> ->
     c.grey " { working directory } → #{process.cwd!}"
     " " + [(c.blue I) for I in data.watch].join (c.pink " | ")
 
-
   $init_file_watch =  most_create (add,end,error) ->
 
     if data.initialize
@@ -1147,12 +1197,13 @@ init_user_watch = (data,options,log,handle_cmd,rl) -> ->
       add \init
 
     if data.watch
-
       watcher = chokidar.watch data.watch,data.chokidar
 
       watcher.on \change,add
 
-      !-> watcher.close!; end!
+      !->
+        watcher.close!
+        end!
 
 
   exec_all_user_cmds = prime_process data,options,log,handle_cmd,rl
@@ -1198,17 +1249,12 @@ init_user_watch = (data,options,log,handle_cmd,rl) -> ->
 
     most.generate exec_all_user_cmds
 
-  pfm = print_final_message log
 
   $file_watch.switchLatest!
 
   .recoverWith (signal) -> most.just signal
 
-  .chain (signal)-> (resolve_signal.auth signal,data,log,rl,options).value
-
-  .observe pfm
-  .catch pfm
-
+  .chain (signal)-> resolve_signal signal,data,log,rl,options
 
 
 init_continuation = (buildname,dryRun) -> (cmd,type = \async) ->*
@@ -1229,8 +1275,18 @@ init_continuation = (buildname,dryRun) -> (cmd,type = \async) ->*
 
   return \ok
 
+zero = (arr) -> (arr.length is 0)
 
-core = (data,info) ->
+check_if_empty = be.known.obj
+.on \exec-locale,zero
+.on \exec-finale,zero
+.on \exec-remote,zero
+.on \rsync,(be.arr.and zero).or ME.false
+.cont true
+.fix false
+.wrap!
+
+create_logger = (data) ->
 
   if (data.cmd is undefined)
 
@@ -1240,7 +1296,7 @@ core = (data,info) ->
 
   else
 
-    buildname = "[#{data.cmd}]"
+    buildname = c.warn "[#{data.cmd}]"
 
     configs = data.user[data.cmd]
 
@@ -1254,6 +1310,10 @@ core = (data,info) ->
 
   log = print.create_logger buildname,verbose
 
+  [configs,buildname,log]
+
+core = (data,info,log,configs,buildname) ->
+
   if ((not configs.remotehost) and (configs['exec-remote'].length))
 
     log.normal do
@@ -1263,13 +1323,25 @@ core = (data,info) ->
 
     return
 
+  if (check_if_empty configs and not info.options.watch_config_file)
+
+    l lit do
+        ["[#{metadata.name}]"," no user command to execute."]
+        [c.warn,c.er1]
+
+    return
+
   handle_cmd = init_continuation buildname,data.options.dryRun
 
   rl = readline.createInterface {input:process.stdin,output:process.stdout,terminal:false}
 
   rl.on \line,(input) !-> process.stdout.write input
 
-  $config-watch = do
+  init_user_watch configs,data.options,log,handle_cmd,rl
+
+init_config_file_watch = (data,info) ->
+
+  $config_watch = do
 
     most_create (add,end,error) ->
 
@@ -1287,16 +1359,35 @@ core = (data,info) ->
 
         setTimeout add,0
 
-  $config-watch.skip 1
+  [configs,buildname,log] = create_logger data
+
+  pfm = print_final_message log
+
+  rest = $config_watch.skip 1
 
   .tap !->
 
-    l lit do
-        ["\n[#{metadata.name}]"," configuration file ","#{filename}"," itself has changed, restarting watch.."]
-        [c.ok,c.pink,c.warn,c.pink]
+    msg = lit do
+      ["configuration file ","#{data.filename}"," itself has changed, restarting watch"]
+      [c.ok,c.warn,c.ok]
 
-  $config-watch
-  .tap init_user_watch configs,data.options,log,handle_cmd,rl
+    log.normal \ok,msg
+
+  .chain reparse_config_file info
+
+
+  init = $config_watch.take 1
+
+  .map ->
+
+    out = core data,info,log,configs,buildname
+
+    out
+
+  most.mergeArray [init,rest]
+  .switchLatest!
+  .tap pfm
+  .recoverWith pfm
   .drain!
 
 
@@ -1316,11 +1407,9 @@ entry = (info) -> # validator
 
       return
 
-
     $all.push $tampax-parse I,yaml-text,info.cmdargs
 
-
-  # --------------------------------------------------
+  #--------------------------------------------------
 
   parsed = most.mergeArray $all
   .recoverWith (x) -> most.just x

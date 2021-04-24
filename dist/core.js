@@ -1,4 +1,4 @@
-var ext, com, print, data, metadata, ref$, l, z, j, R, readJson, exec, fs, tampax, most_create, most, c, lit, chokidar, spawn, readline, dotpat, zj, noop, be, log, tlog, maybe, ME, rm, util, filterForConfigFile, sdir, get_all_yaml_files, unu, rm_all_undef, is_true, is_false, grouparr, organizeRsync, mergeF, vre, yaml_tokenize, vars, isref, modifyYaml, $tampaxParse, handle_error, rmdef, only_str_interal, only_str, exec_list_option, main_all, main_single, reparse_config_file, create_rsync_cmd, execFinale, prime_process, improve_signal, resolve_signal, print_final_message, diff, init_user_watch, init_continuation, core, entry, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ext, com, print, data, metadata, ref$, l, z, j, R, readJson, exec, fs, tampax, most_create, most, c, lit, chokidar, spawn, readline, dotpat, zj, noop, be, log, tlog, maybe, ME, rm, util, filterForConfigFile, sdir, get_all_yaml_files, unu, rm_all_undef, is_true, is_false, grouparr, organize_rsync, karr, mergeF, vre, yaml_tokenize, vars, isref, modifyYaml, $tampaxParse, handle_error, rmdef, only_str, exec_list_option, main_all, main_repeat, reparse_config_file, create_rsync_cmd, execFinale, prime_process, improve_signal, $empty, resolve_signal, print_final_message, diff, init_user_watch, init_continuation, zero, check_if_empty, create_logger, core, init_config_file_watch, entry, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ext = require("./data");
 com = ext.com, print = ext.print, data = ext.data, metadata = ext.metadata;
 ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, j = ref$.j, R = ref$.R;
@@ -47,15 +47,15 @@ ME.findfile = function(filename){
     l(lit(["[" + metadata.name + "]", "[Error]", " cannot find ANY configuration file."], [c.er3, c.er1, c.warn]));
     return false;
   }
-  filenames = c.er1("[ ") + (function(){
+  filenames = c.er1("{ ") + (function(){
     var i$, ref$, len$, results$ = [];
     for (i$ = 0, len$ = (ref$ = allfiles).length; i$ < len$; ++i$) {
       I = ref$[i$];
       results$.push(c.warn(I));
     }
     return results$;
-  }()).join(c.er1(" ][ ")) + c.er1(" ]");
-  l(lit(["[" + metadata.name + "]", " using ", filenames], [c.ok, c.grey, null]));
+  }()).join(c.er1(" } { ")) + c.er1(" }");
+  l(lit(["[" + metadata.name + "]", " using ", filenames], [c.ok, null, null]));
   return allfiles;
 };
 ME.recursive_str_list = be.arr.map(be.arr.and(function(arr){
@@ -80,10 +80,10 @@ ME.recursive_str_list = be.arr.map(be.arr.and(function(arr){
   for (i$ = 0, len$ = list.length; i$ < len$; ++i$) {
     I = list[i$];
     switch (R.type(I)) {
-    case "Undefined":
-    case "Null":
+    case 'Undefined':
+    case 'null':
       break;
-    case "Array":
+    case 'Array':
       out.push.apply(out, I);
       break;
     default:
@@ -125,10 +125,16 @@ rm_all_undef = function(obj){
   return JSON.parse(JSON.stringify(obj));
 };
 is_true = function(x){
-  return x === true;
+  if (x === true) {
+    return true;
+  }
+  return [false, 'not true'];
 };
 is_false = function(x){
-  return x === false;
+  if (x === false) {
+    return true;
+  }
+  return [false, 'not false'];
 };
 ME.rsync = {};
 grouparr = R.pipe(R.unnest, R.groupBy(function(v){
@@ -136,33 +142,34 @@ grouparr = R.pipe(R.unnest, R.groupBy(function(v){
 }), R.map(R.map(function(x){
   return x[1];
 })));
-ME.rsync.check_if_error = function(detail){
-  if (detail.error) {
-    return [false, detail.error[0], detail.error[1]];
+ME.rsync.throw_if_error = function(detail, key){
+  var path;
+  if (!detail.error) {
+    return true;
   }
-  return true;
+  path = [key, detail.error[1]];
+  return [false, detail.error];
 };
-organizeRsync = function(list){
-  var fin, i$, len$, index, I, keys, k, val, ret, result;
-  if (list === false) {
-    return false;
-  }
+organize_rsync = function(list, key, state){
+  var fin, error, i$, len$, index, I, keys, k, val, ret, ref$;
   fin = {
     str: [],
     obnormal: [],
-    obarr: [],
+    obarr: {},
     des: [],
     src: [],
     error: false
   };
+  error = [];
+  error.push(':rsync');
   for (i$ = 0, len$ = list.length; i$ < len$; ++i$) {
     index = i$;
     I = list[i$];
     switch (R.type(I)) {
     case 'String':
       if (!data.rsync.bool.has(I)) {
-        fin.error = [':rsync', ['duo', [I, "not a valid boolean rsync option."]]];
-        fin.error = [fin.error, index];
+        error.push(['duo', [I, "not a valid boolean rsync option."]], arrayFrom$(key).concat([index]));
+        fin.error = error;
         return fin;
       }
       fin.str.push(I);
@@ -171,46 +178,49 @@ organizeRsync = function(list){
       keys = Object.keys(I);
       switch (keys.length) {
       case 0:
-        fin.error = [':rsync', ['uno', ["empty object without any attribute"]]];
-        fin.error = [fin.error, index];
+        error.push(['uno', ["empty object without any attribute"]], arrayFrom$(key).concat([index]));
+        fin.error = error;
         return fin;
       case 1:
         break;
       default:
-        fin.error = [':rsync', ['uno', ["object can only have singular attribute."]]];
-        fin.error = [fin.error, index];
+        error.push(['uno', ["object can only have singular attribute."]], arrayFrom$(key).concat([index]));
+        fin.error = error;
         return fin;
       }
       k = keys[0];
       if (!(data.rsync.compound.has(k) || (k === 'src' || k === 'des'))) {
-        fin.error = [':rsync', ['duo', [k, " not a valid compound rsync option."]]];
-        fin.error = [fin.error, index];
+        error.push(['duo', [k, " not a valid compound rsync option."]], arrayFrom$(key).concat([index]));
+        fin.error = error;
         return fin;
       }
       val = I[k];
       if (k === 'des') {
         if (!(R.type(val) === 'String')) {
-          fin.error = [':rsync', ['duo', ['des', " has to be string type."]]];
-          fin.error = [fin.error, index];
+          error.push(['duo', ['des', " has to be string type."]], arrayFrom$(key).concat([index]));
+          fin.error = error;
           return fin;
         }
         if (fin.des.length === 1) {
-          fin.error = [':rsync', ['duo', ['des', " there can't be multiple remote folders as destination."]]];
-          fin.error = [fin.error, index];
+          error.push(['duo', ['des', " there can't be multiple remote folders as destination."]], arrayFrom$(key).concat([index]));
+          fin.error = error;
           return fin;
         }
         fin.des.push(val);
       } else if (k === 'src' || data.rsync.filter.has(k)) {
         ret = ME.rsync.strarr.auth(val);
         if (ret.error) {
-          fin.error = [':rsync', ['duo', [k, "can only be a list of string or just string."]]];
-          fin.error = [fin.error, index];
+          error.push(['duo', [k, "can only be a list of string or just string."]], arrayFrom$(key).concat([index]));
+          fin.error = error;
           return fin;
         }
         if (k === 'src') {
           fin.src.push(ret.value);
         } else {
-          fin.obarr.push((fn$()));
+          if (fin.obarr[k] === undefined) {
+            fin.obarr[k] = [];
+          }
+          (ref$ = fin.obarr[k]).push.apply(ref$, ret.value);
         }
       } else {
         switch (R.type(val)) {
@@ -222,45 +232,19 @@ organizeRsync = function(list){
         case 'Null':
           break;
         default:
-          fin.error = [':rsync', ['duo', [k, "can only be a string (or number)."]]];
-          fin.error = [fin.error, index];
+          error.push(['duo', [k, "can only be a string (or number)."]], arrayFrom$(key).concat([index]));
+          fin.error = error;
           return fin;
         }
       }
       break;
-    case "Array":
-      result = organizeRsync(I);
-      if (result.error) {
-        fin.error = result.error[0];
-        fin.error = [fin.error, [index, result.error[1]]];
-        return fin;
-      }
-      fin.str = R.concat(fin.str, result.str);
-      fin.obnormal = R.concat(fin.obnormal, result.obnormal);
-      fin.obarr = R.concat(fin.obarr, result.obarr);
-      fin.src = R.concat(fin.src, result.src);
-      break;
     default:
-      fin.error = [':rsync', ['uno', ["not valid rsync option."]]];
-      fin.error = [fin.error, index];
+      error.push(['uno', ["not valid rsync option."]], arrayFrom$(key).concat([index]));
+      fin.error = error;
       return fin;
     }
   }
-  fin.obarr = grouparr(fin.obarr);
   fin.src = R.flatten(fin.src);
-  return fin;
-  function fn$(){
-    var i$, ref$, len$, results$ = [];
-    for (i$ = 0, len$ = (ref$ = ret.value).length; i$ < len$; ++i$) {
-      I = ref$[i$];
-      results$.push([k, I]);
-    }
-    return results$;
-  }
-};
-ME.rsync.core = be.arr.edit(organizeRsync).and(ME.rsync.check_if_error).cont(function(fin){
-  var state;
-  state = R.last(arguments);
   if (!fin.des[0]) {
     fin.des.push(state.origin.remotefold);
   }
@@ -268,16 +252,45 @@ ME.rsync.core = be.arr.edit(organizeRsync).and(ME.rsync.check_if_error).cont(fun
     fin.src.push(".");
   }
   return fin;
-});
+};
+ME['false'] = be(is_false);
+karr = be.known.arr;
 ME.rsync.main = be(is_true).cont(function(){
-  var state;
-  state = R.last(arguments);
-  return data.def.rsync.concat({
+  var state, list;
+  state = arguments[arguments.length - 1];
+  list = data.def.rsync.concat({
     des: state.origin.remotefold
   });
-}).or(be.arr.map(ME.rsync.core)).and(ME.rsync.core).alt(ME.rsync.core).cont(function(data){
-  return [data];
-}).or(is_false).or(be.undefnull.cont(false));
+  return organize_rsync(R.flatten(list), [], state);
+}).or(ME['false']).or(be.undefnull.cont(false)).or(be.arr.map(be.arr).err(function(msg, key){
+  switch (key) {
+  case undefined:
+    return [':def', 'not array'];
+  default:
+    return ['not_array_of_array', key];
+  }
+}).and(karr.map(karr.cont(function(arr, key){
+  var state;
+  state = arguments[arguments.length - 1];
+  return organize_rsync(R.flatten(arr), [key], state);
+}).and(ME.rsync.throw_if_error)))).or(be.arr.cont(function(arr){
+  var state;
+  state = arguments[arguments.length - 1];
+  return [organize_rsync(R.flatten(arr), [], state)];
+}).and(ME.rsync.throw_if_error)).err(function(msg, path){
+  var filtered, ref$, name, details, innerpath;
+  filtered = be.flatro(msg);
+  ref$ = filtered[0], name = ref$[0], details = ref$[1], innerpath = ref$[2];
+  if (name === ':rsync') {
+    return {
+      message: [name, details],
+      path: path.concat(innerpath)
+    };
+  }
+  return {
+    message: [details]
+  };
+});
 ME.rsync.strarr = be.arr.map(be.str).or(be.str.cont(function(s){
   return [s];
 })).or(be.undefnull.cont([]));
@@ -347,7 +360,7 @@ ME.main = be.obj.on('cmd', be.str.and(function(x){
     return [false, [':usercmd_not_defined', [raw.all_filenames, raw.cmd]]];
   }
   return true;
-}).err(be.flatato).edit(function(__, state){
+}).err(be.flatro).edit(function(__, state){
   var user, def, cmdname, value, i$, ref$, len$, I;
   user = state.user, def = state.def;
   for (cmdname in user) {
@@ -481,8 +494,8 @@ $tampaxParse = function(filename, yaml_text, cmdargs){
     return tampax.yamlParseString(yaml_text, arrayFrom$(cmdargs), function(err, rawJson){
       if (err) {
         print.failed_in_tampax_parsing(filename, err);
-        error('error.validator.tampaxparsing');
-        return;
+        add('error.validator.tampaxparsing');
+        end();
       }
       add([filename, rawJson]);
       return end();
@@ -521,27 +534,33 @@ handle_error = function(arg$){
 rmdef = R.reject(function(x){
   return data.selected_keys.set.has(x);
 });
-only_str_interal = be.str.cont(function(str){
+only_str = be.str.cont(function(str){
   return " - " + str;
-}).fix("");
-only_str = function(str){
-  return only_str_interal.auth(str).value;
-};
+}).or(be.arr.cont(function(arr){
+  var fin, i$, len$, I;
+  fin = "";
+  for (i$ = 0, len$ = arr.length; i$ < len$; ++i$) {
+    I = arr[i$];
+    fin += "\n    - " + I;
+  }
+  return fin;
+})).fix("").wrap();
 exec_list_option = function(alldata){
-  var i$, ref$, len$, ref1$, filename, data, lresult$, keys, user_ones, j$, len1$, I, des, results$ = [];
+  var i$, ref$, len$, ref1$, filename, data, lresult$, keys, user_ones, j$, to$, I, name, des, results$ = [];
   for (i$ = 0, len$ = (ref$ = R.reverse(alldata)).length; i$ < len$; ++i$) {
     ref1$ = ref$[i$], filename = ref1$[0], data = ref1$[1];
     lresult$ = [];
-    l(lit(['> FILE ', filename], [c.warn, c.blue]));
+    l(lit(['> FILE ', filename], [c.warn, c.pink]));
     keys = Object.keys(data);
     user_ones = rmdef(keys);
     if (user_ones.length === 0) {
       l(lit(["  --- ", "< EMPTY >", " ---"], [c.pink, c.warn, c.pink]));
     }
-    for (j$ = 0, len1$ = user_ones.length; j$ < len1$; ++j$) {
-      I = user_ones[j$];
-      des = only_str(data[I].description);
-      lresult$.push(l(lit([" • ", I, des], [c.warn, c.ok, c.pink])));
+    for (j$ = 0, to$ = user_ones.length; j$ < to$; ++j$) {
+      I = j$;
+      name = user_ones[I];
+      des = only_str(data[name].description);
+      lresult$.push(l(lit([" • ", name, des], [c.warn, c.ok, null])));
     }
     results$.push(lresult$);
   }
@@ -596,14 +615,15 @@ main_all = function(info){
       handle_error(torna);
       return;
     }
-    return core(torna.value, info);
+    info.filename = torna.value.filename;
+    return init_config_file_watch(torna.value, info);
   };
 };
-main_single = function(info){
+main_repeat = function(info){
   return function(raw_data){
-    var state, torna;
+    var state, torna, ref$, configs, buildname, log;
     if (raw_data === 'error.validator.tampaxparsing') {
-      return;
+      return most.just('error._._.open_only_config');
     }
     state = {
       commandline: info.commandline,
@@ -611,30 +631,33 @@ main_single = function(info){
       filename: info.filename,
       all_filenames: [info.filename],
       cmd: info.cmdname,
-      origin: raw_data,
+      origin: raw_data[1],
       def: {},
       user: {}
     };
     torna = ME.main.auth(state, state);
     if (torna.error) {
       handle_error(torna);
-      return;
+      return most.just('error._._.open_only_config');
     }
-    return core(torna.value, info);
+    ref$ = create_logger(torna.value), configs = ref$[0], buildname = ref$[1], log = ref$[2];
+    return core(torna.value, info, log, configs, buildname);
   };
 };
 reparse_config_file = function(info){
-  var filename, yamlText, E, $parsed;
-  filename = info.filename;
-  try {
-    yamlText = modifyYaml(filename, info.vars);
-  } catch (e$) {
-    E = e$;
-    print.failed_in_custom_parser(filename, E);
-    return;
-  }
-  $parsed = $tampaxParse(filename, yamlText, info.cmdargs);
-  return $parsed.map(main_single(info));
+  return function(){
+    var filename, yamlText, E, $parsed;
+    filename = info.filename;
+    try {
+      yamlText = modifyYaml(filename, info.vars);
+    } catch (e$) {
+      E = e$;
+      print.failed_in_custom_parser(filename, E);
+      return;
+    }
+    $parsed = $tampaxParse(filename, yamlText, info.cmdargs);
+    return $parsed.map(main_repeat(info));
+  };
 };
 create_rsync_cmd = function(rsync, remotehost){
   var txt, str, obnormal, obarr, des, src, i$, len$, I, ref$, key, val, cmd;
@@ -696,6 +719,8 @@ prime_process = function(data, options, log, cont, rl){
         if (status !== 'ok') {
           log.normal('warn', lit([" rsync", " break "], [c.pink, c.er3]), "");
           (yield new Promise(fn$));
+        } else {
+          log.normal('ok', lit([" rsync ", "✔️ ok "], [0, c.ok]), "");
         }
       }
     }
@@ -768,6 +793,7 @@ improve_signal = function(signal, config, log, rl, opts){
   }
   return most.just(signal + en);
 };
+$empty = most.empty();
 resolve_signal = be.arr.on(1, be.str.fix(' << program screwed up >> ')).on(0, be.str.fix('<< program screwed up >>').cont(function(cmd){
   cmd = cmd.replace(/'''/g, "'");
   if (cmd.split('\n').length > 1) {
@@ -783,27 +809,29 @@ resolve_signal = be.arr.on(1, be.str.fix(' << program screwed up >> ')).on(0, be
   cmdtxt = arg$[0], buildname = arg$[1];
   l(lit(["[" + metadata.name + "]" + buildname, "[ ", "⚡️", "    error ", "] ", cmdtxt], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1]));
   return 'error.core.cmd';
-}).alt(be.str).cont(improve_signal).fix(most.empty());
+}).alt(be.str).cont(improve_signal).fix($empty).wrap();
 print_final_message = function(log){
   return function(signal){
     var ref$, status, type, which, watch, msg;
     ref$ = dotpat(signal), status = ref$[0], type = ref$[1], which = ref$[2], watch = ref$[3];
     switch (watch) {
     case 'open':
-      msg = c.grey("returning to watch");
+      msg = "returning to watch";
       break;
     case 'open_only_config':
-      msg = c.grey("returning to watching only config file.");
+      msg = "watching only config file";
       break;
     case 'closed':
-      return;
+      return $empty;
     }
     switch (status) {
     case 'error':
-      return log.normal('warn', msg);
+      log.normal('err', msg);
+      break;
     case 'done':
-      return log.normal('ok', msg);
+      log.normal('ok', msg);
     }
+    return $empty;
   };
 };
 diff = R.pipe(R.aperture(2), R.map(function(arg$){
@@ -812,59 +840,56 @@ diff = R.pipe(R.aperture(2), R.map(function(arg$){
   return y - x;
 }));
 init_user_watch = function(data, options, log, handle_cmd, rl){
-  return function(){
-    var I, $init_file_watch, exec_all_user_cmds, $file_watch, pfm;
-    log.normal(data.watch, 'ok', c.ok("  ↓ watching "), c.grey(" { working directory } → " + process.cwd()), " " + (function(){
-      var i$, ref$, len$, results$ = [];
-      for (i$ = 0, len$ = (ref$ = data.watch).length; i$ < len$; ++i$) {
-        I = ref$[i$];
-        results$.push(c.blue(I));
-      }
-      return results$;
-    }()).join(c.pink(" | ")));
-    $init_file_watch = most_create(function(add, end, error){
-      var watcher;
-      if (data.initialize) {
-        add('init');
-      }
-      if (data.watch) {
-        watcher = chokidar.watch(data.watch, data.chokidar);
-        watcher.on('change', add);
-        return function(){
-          watcher.close();
-          end();
-        };
-      }
-    });
-    exec_all_user_cmds = prime_process(data, options, log, handle_cmd, rl);
-    $file_watch = $init_file_watch.timestamp().loop(function(db, ob){
-      var ref$, first, second, fin;
-      db.shift();
-      db.push(Math.floor(ob.time / 2000));
-      ref$ = diff(db), first = ref$[0], second = ref$[1];
-      fin = {
-        seed: db
+  var I, $init_file_watch, exec_all_user_cmds, $file_watch;
+  log.normal(data.watch, 'ok', c.ok("  ↓ watching "), c.grey(" { working directory } → " + process.cwd()), " " + (function(){
+    var i$, ref$, len$, results$ = [];
+    for (i$ = 0, len$ = (ref$ = data.watch).length; i$ < len$; ++i$) {
+      I = ref$[i$];
+      results$.push(c.blue(I));
+    }
+    return results$;
+  }()).join(c.pink(" | ")));
+  $init_file_watch = most_create(function(add, end, error){
+    var watcher;
+    if (data.initialize) {
+      add('init');
+    }
+    if (data.watch) {
+      watcher = chokidar.watch(data.watch, data.chokidar);
+      watcher.on('change', add);
+      return function(){
+        watcher.close();
+        end();
       };
-      if (first === second) {
-        l(lit(["[" + metadata.name + "]", "[ ", "⚡️", "    error ", "] ", "infinite loop detected ", ob.value, " is offending file, ignoring event."], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1, c.warn, c.er1]));
-        fin.value = 'err';
-      } else {
-        fin.value = 'ok';
-      }
-      return fin;
-    }, [0, 0, 0]).map(function(status){
-      if (status === 'err') {
-        return most.just('error.core.infinteloop');
-      }
-      return most.generate(exec_all_user_cmds);
-    });
-    pfm = print_final_message(log);
-    return $file_watch.switchLatest().recoverWith(function(signal){
-      return most.just(signal);
-    }).chain(function(signal){
-      return resolve_signal.auth(signal, data, log, rl, options).value;
-    }).observe(pfm)['catch'](pfm);
-  };
+    }
+  });
+  exec_all_user_cmds = prime_process(data, options, log, handle_cmd, rl);
+  $file_watch = $init_file_watch.timestamp().loop(function(db, ob){
+    var ref$, first, second, fin;
+    db.shift();
+    db.push(Math.floor(ob.time / 2000));
+    ref$ = diff(db), first = ref$[0], second = ref$[1];
+    fin = {
+      seed: db
+    };
+    if (first === second) {
+      l(lit(["[" + metadata.name + "]", "[ ", "⚡️", "    error ", "] ", "infinite loop detected ", ob.value, " is offending file, ignoring event."], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1, c.warn, c.er1]));
+      fin.value = 'err';
+    } else {
+      fin.value = 'ok';
+    }
+    return fin;
+  }, [0, 0, 0]).map(function(status){
+    if (status === 'err') {
+      return most.just('error.core.infinteloop');
+    }
+    return most.generate(exec_all_user_cmds);
+  });
+  return $file_watch.switchLatest().recoverWith(function(signal){
+    return most.just(signal);
+  }).chain(function(signal){
+    return resolve_signal(signal, data, log, rl, options);
+  });
 };
 init_continuation = function(buildname, dryRun){
   return function*(cmd, type){
@@ -889,13 +914,17 @@ init_continuation = function(buildname, dryRun){
     return 'ok';
   };
 };
-core = function(data, info){
-  var buildname, configs, verbose, log, handle_cmd, rl, $configWatch;
+zero = function(arr){
+  return arr.length === 0;
+};
+check_if_empty = be.known.obj.on('exec-locale', zero).on('exec-finale', zero).on('exec-remote', zero).on('rsync', be.arr.and(zero).or(ME['false'])).cont(true).fix(false).wrap();
+create_logger = function(data){
+  var buildname, configs, verbose, log;
   if (data.cmd === undefined) {
     buildname = "";
     configs = data.def;
   } else {
-    buildname = "[" + data.cmd + "]";
+    buildname = c.warn("[" + data.cmd + "]");
     configs = data.user[data.cmd];
   }
   if (configs.verbose) {
@@ -904,8 +933,16 @@ core = function(data, info){
     verbose = data.options.verbose;
   }
   log = print.create_logger(buildname, verbose);
+  return [configs, buildname, log];
+};
+core = function(data, info, log, configs, buildname){
+  var handle_cmd, rl;
   if (!configs.remotehost && configs['exec-remote'].length) {
     log.normal('warn', c.er2(" ⚡️     error "), c.er1(" remotehost address not defined for task."));
+    return;
+  }
+  if (check_if_empty(configs) && !info.options.watch_config_file) {
+    l(lit(["[" + metadata.name + "]", " no user command to execute."], [c.warn, c.er1]));
     return;
   }
   handle_cmd = init_continuation(buildname, data.options.dryRun);
@@ -917,7 +954,11 @@ core = function(data, info){
   rl.on('line', function(input){
     process.stdout.write(input);
   });
-  $configWatch = most_create(function(add, end, error){
+  return init_user_watch(configs, data.options, log, handle_cmd, rl);
+};
+init_config_file_watch = function(data, info){
+  var $config_watch, ref$, configs, buildname, log, pfm, rest, init;
+  $config_watch = most_create(function(add, end, error){
     var watcher;
     if (data.options.watch_config_file) {
       watcher = chokidar.watch(data.filename, {
@@ -933,10 +974,19 @@ core = function(data, info){
       return setTimeout(add, 0);
     }
   });
-  $configWatch.skip(1).tap(function(){
-    l(lit(["\n[" + metadata.name + "]", " configuration file ", filename + "", " itself has changed, restarting watch.."], [c.ok, c.pink, c.warn, c.pink]));
+  ref$ = create_logger(data), configs = ref$[0], buildname = ref$[1], log = ref$[2];
+  pfm = print_final_message(log);
+  rest = $config_watch.skip(1).tap(function(){
+    var msg;
+    msg = lit(["configuration file ", data.filename + "", " itself has changed, restarting watch"], [c.ok, c.warn, c.ok]);
+    log.normal('ok', msg);
+  }).chain(reparse_config_file(info));
+  init = $config_watch.take(1).map(function(){
+    var out;
+    out = core(data, info, log, configs, buildname);
+    return out;
   });
-  return $configWatch.tap(init_user_watch(configs, data.options, log, handle_cmd, rl)).drain();
+  return most.mergeArray([init, rest]).switchLatest().tap(pfm).recoverWith(pfm).drain();
 };
 entry = function(info){
   var $all, i$, ref$, len$, I, yamlText, E, parsed;

@@ -43,17 +43,15 @@ com.readline         = readline
 
 R = hoplon.utils.R
 
-dot_pat_main = be.str.edit R.split "."
+dotpat = be.str.edit R.split "."
 .or be.undef.cont []
-
-dotpat = (x)-> (dot_pat_main.auth x).value
+.wrap!
 
 dotpat.take = (amount,signal) ->
 
   sig = dotpat signal
 
   (R.take amount,sig).join "."
-
 
 com.dotpat = dotpat
 
@@ -247,14 +245,14 @@ print.failed_in_tampax_parsing = (filename,E) ->
 
   emsg = [
     "\n"
-    c.pink "  make sure :\n\n"
-    c.blue "   - correct path is provided.\n"
-    c.blue "   - .yaml file can be parsed without error.\n"
-    c.blue "   - .yaml file has no duplicate field.\n"
-    c.blue "   - .yaml file is not empty."
+    c.warn "  make sure :\n\n"
+    c.er1 "   - YAML file(s) can be parsed without error.\n"
+    c.er1 "   - YAML file(s) has no duplicate field.\n"
+    c.er1 "   - YAML file(s) is not empty.\n"
+    c.er1 "   - correct path is provided."
     ]
 
-  l c.grey emsg.join ""
+  l emsg.join ""
 
 
 print.in_selected_key = ([vname,cmd_str],path,filename,topmsg) ->
@@ -363,15 +361,29 @@ normal_internal = hoplon.guard.unary
 
   switch type
   | \ok            =>
+
     co   = c.ok
     brac = c.ok
+    main = c.ok
+    bc   = c.warn
+
   | \warn          =>
+
     co   = c.warn
     brac = c.er1
+    main = c.grey
+    bc   = c.warn
+
+  | \err           =>
+
+    co   = c.warn
+    bc   = c.warn
+    brac = c.er1
+    main = c.er3
 
   l lit do
-      ["[#{metadata.name}]",buildname," { ",txt_1," } "]
-      [co,c.er1,brac,null,brac]
+      ["[#{metadata.name}]",buildname," ..",txt_1,".."]
+      [co,bc,brac,main,brac]
 
 
 .ar 3,([type,txt_1,txt_2],state) ->
@@ -385,16 +397,19 @@ normal_internal = hoplon.guard.unary
 
     co   = c.ok
 
+    bc   = c.warn
+
   | \warn          =>
 
-    procname = lit ["[","#{txt_1}","]"],[c.pink,null,c.pink]
+    procname = lit ["[","#{txt_1}","]"],[c.er1,null,c.er1]
 
-    co = c.warn
+    co  = c.warn
 
+    bc  = c.er1
 
   l lit do
       ["[#{metadata.name}]",buildname,"#{procname}",txt_2]
-      [co,c.er1,c.ok,c.grey]
+      [co,bc,c.ok,c.grey]
 
 
 .ar 4,([type,txt_1,txt_2,txt_3],state) !->
@@ -475,6 +490,6 @@ for I,key of print
 print.show-header = -> l lit do
 
   ["[#{metadata.name}]"," v#{metadata.version}"]
-  [c.ok,c.grey,c.grey]
+  [c.ok,null]
 
 print.create_logger = create_logger

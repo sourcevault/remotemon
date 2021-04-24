@@ -2,9 +2,14 @@ global:
   file: dist/main.js
   proj: utils
   sshport: 45
+  first: &first
+    - verbose
+  second: &second
+    - recursive
 
 # remotehost: pi@192.168.43.50
-remotehost: pi@192.168.43.48
+
+remotehost: pi@192.168.43.47
 
 remotefold: ~/test
 
@@ -16,24 +21,61 @@ watch: true
 
 ssh: -tt -o LogLevel=QUIET -p {{global.sshport}}
 
-pkg:
-  # verbose: 1
-  # description: writes a long sentence.
+foo:
+  watch: true
+  verbose: 1
+  description:
+    - writes a long sentence.
   exec-locale:
     - echo 'really long ass sentence, I like ukrainian girls'
   rsync:
+    - *first
+    - *second
+    # - not_valid
+
     - rsh: ssh -p {{global.sshport}}
-    - verbose
-    - recursive
+    # - rsh: ssh -p 22
+
+
     - exclude:
-      - .git
       - node_modules
+      - .git
+
+  # - \verbose
+
+  # - &first
+  #   - archive
+  # - - *second
+  #   - verbose
+    # - exclude:
+    #   - .git
+
+  # - - *first
+  #   - *second
+  # - verbose
+
+
+  # - &first
+  # - &second
+
+
+
+    # - &first
+    #   - archive
+    #   - exclude:
+    #     - .git
+    #     - node_modules
+
+    # - - *first
+    #   - recursive
+    #   - verbose
+
   # exec-locale:
   #   - exit 1
 
-  exec-remote:
-    - echo 'hello world'
-    - sudo rm -rf {{remotefold}}
+  # exec-remote:
+  #   - echo 'hello world'
+    # - sudo rm -rf {{remotefold}}
 
   # verbose: 0
 
@@ -51,22 +93,19 @@ pkg:
     # - lsc -bc test/{{global.proj}}
     # - node {{global.file}}
 
-# foo:
-#   - |-
-#     echo {{0}}
-
 # exec-remote:
 #   - echo 'hello world'
 #   - rm -rf {{remotefold}}
 
-# exec-locale:
-#   - echo 'hello world'
+exec-locale:
+  - echo 'hello world 3'
 
 
-# rsync:
 #   - rsh: ssh
 #   - verbose
 #   - recursive
 #   - exclude:
 #     - .git
 #     - node_modules
+
+version.update: update-version src/package.yaml remotemon
