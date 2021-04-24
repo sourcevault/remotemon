@@ -221,6 +221,14 @@ For now it's not possible for `remotemon` to do two levels of referencing in con
 
 ##### 🟡 changelog
 
+`1.3.0`
+
+- informs user if unable to `ssh` into `remotehost`, provides option to create remote directory.
+
+- added `-m --auto-make-directory   make remote directory if it doesn't exist` option.
+
+- major internal refactor.
+
 `1.2.4`
 
 - `description` field added for usercmd.

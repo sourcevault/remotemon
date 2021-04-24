@@ -1,4 +1,4 @@
-var x$, com, y$, most, hoplon, ref$, z, wait, most_create, child_process, readline, cp, be, print, c, l, lit, j, readJson, R, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, normal_internal, verbose_internal, show, create_logger, print_wrap, I, key, out$ = typeof exports != 'undefined' && exports || this;
+var x$, com, y$, most, hoplon, ref$, z, wait, most_create, child_process, readline, cp, be, R, dotpat, print, c, l, lit, j, readJson, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, normal_internal, verbose_internal, show, create_logger, print_wrap, I, key, out$ = typeof exports != 'undefined' && exports || this;
 x$ = com = {};
 y$ = x$.metadata = {};
 y$.name = null;
@@ -23,6 +23,14 @@ com.child_process = child_process;
 cp = child_process;
 be = hoplon.types;
 com.readline = readline;
+R = hoplon.utils.R;
+dotpat = be.str.edit(R.split(".")).or(be.undef.cont([])).wrap();
+dotpat.take = function(amount, signal){
+  var sig;
+  sig = dotpat(signal);
+  return R.take(amount, sig).join(".");
+};
+com.dotpat = dotpat;
 com.spawn = function(cmd){
   return cp.spawnSync(cmd, [], {
     shell: 'bash',
@@ -132,8 +140,8 @@ print.failed_in_tampax_parsing = function(filename, E){
   l(lit(["[" + metadata.name + "]", "[parseError]", " yaml/tampex parsing error."], [c.warn, c.er2, c.er1]));
   l("\n  " + c.er2(filename + "\n"));
   l(c.grey(E));
-  emsg = ["\n", c.pink("  make sure :\n\n"), c.blue("   - correct path is provided.\n"), c.blue("   - .yaml file can be parsed without error.\n"), c.blue("   - .yaml file has no duplicate field.")];
-  return l(c.grey(emsg.join("")));
+  emsg = ["\n", c.warn("  make sure :\n\n"), c.er1("   - YAML file(s) can be parsed without error.\n"), c.er1("   - YAML file(s) has no duplicate field.\n"), c.er1("   - YAML file(s) is not empty.\n"), c.er1("   - correct path is provided.")];
+  return l(emsg.join(""));
 };
 print.in_selected_key = function(arg$, path, filename, topmsg){
   var vname, cmd_str;
@@ -188,23 +196,47 @@ normal_internal = hoplon.guard.unary.wh(function(arg$){
 }).ar(1, function(arg$){
   var txt;
   txt = arg$[0];
-  return l(txt);
+  l(lit(["[" + metadata.name + "] ", txt], [c.ok, null]));
 }).ar(2, function(arg$, state){
-  var type, txt_1;
+  var type, txt_1, buildname, co, brac, main, bc;
   type = arg$[0], txt_1 = arg$[1];
-  return normal_internal([type, txt_1, ''], state);
+  buildname = state.buildname;
+  switch (type) {
+  case 'ok':
+    co = c.ok;
+    brac = c.ok;
+    main = c.ok;
+    bc = c.warn;
+    break;
+  case 'warn':
+    co = c.warn;
+    brac = c.er1;
+    main = c.grey;
+    bc = c.warn;
+    break;
+  case 'err':
+    co = c.warn;
+    bc = c.warn;
+    brac = c.er1;
+    main = c.er3;
+  }
+  l(lit(["[" + metadata.name + "]", buildname, " ..", txt_1, ".."], [co, bc, brac, main, brac]));
 }).ar(3, function(arg$, state){
-  var type, txt_1, txt_2, buildname, procname;
+  var type, txt_1, txt_2, buildname, procname, co, bc;
   type = arg$[0], txt_1 = arg$[1], txt_2 = arg$[2];
   buildname = state.buildname;
   switch (type) {
   case 'ok':
     procname = c.ok("[") + c.pink(txt_1 + "") + c.ok("]");
+    co = c.ok;
+    bc = c.warn;
     break;
   case 'warn':
-    procname = lit(["[", txt_1 + "", "]"], [c.pink, null, c.pink]);
+    procname = lit(["[", txt_1 + "", "]"], [c.er1, null, c.er1]);
+    co = c.warn;
+    bc = c.er1;
   }
-  return l(lit(["[" + metadata.name + "]", buildname, procname + "", txt_2], [c.ok, c.er1, c.ok, c.grey]));
+  return l(lit(["[" + metadata.name + "]", buildname, procname + "", txt_2], [co, bc, c.ok, c.grey]));
 }).ar(4, function(arg$, state){
   var type, txt_1, txt_2, txt_3;
   type = arg$[0], txt_1 = arg$[1], txt_2 = arg$[2], txt_3 = arg$[3];
@@ -262,19 +294,6 @@ for (I in print) {
   print[I] = print_wrap(key);
 }
 print.showHeader = function(){
-  return l(lit(["[" + metadata.name + "]", " v" + metadata.version], [c.ok, c.grey, c.grey]));
+  return l(lit(["[" + metadata.name + "]", " v" + metadata.version], [c.ok, null]));
 };
 print.create_logger = create_logger;
-print.show = function(disp, txt){
-  var num;
-  if (disp) {
-    switch (typeof disp) {
-    case 'string':
-      num = parseInt(disp[0]);
-      l(c.ok("[" + metadata.name + "]"), txt[num]);
-      break;
-    default:
-      l(c.ok("[" + metadata.name + "]"), txt);
-    }
-  }
-};
