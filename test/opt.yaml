@@ -9,7 +9,11 @@ global:
 
 # remotehost: pi@192.168.43.50
 
-remotehost: pi@192.168.43.47
+defargs: [pi@192.168.43.50]
+
+remotehost: 'hello world {{0}}'
+
+# remotehost: pi@192.168.43.50
 
 remotefold: ~/test
 
@@ -35,6 +39,7 @@ foo:
 
     - rsh: ssh -p {{global.sshport}}
     # - rsh: ssh -p 22
+
 
 
     - exclude:
@@ -97,8 +102,8 @@ foo:
 #   - echo 'hello world'
 #   - rm -rf {{remotefold}}
 
-exec-locale:
-  - echo 'hello world 3'
+# exec-locale:
+#   - echo 'hello world 3'
 
 
 #   - rsh: ssh
@@ -109,3 +114,9 @@ exec-locale:
 #     - node_modules
 
 version.update: update-version src/package.yaml remotemon
+
+
+# bar:
+#   defargs: [hello,world]
+#   exec-locale:
+#     - echo 'from command line {{0}}'

@@ -174,6 +174,10 @@ print.custom_build = function(msg, path, filename){
   show_name(filename);
   return l(show_body(path, [c.grey("unrecognized value provided.") + "\n", c.grey("only acceptable value types :\n"), c.pink("- array of string ( defaults to exec-locale )."), c.pink("- object with restricted keys :"), c.warn("\n  - " + data.selected_keys.arr.join("\n  - "))].join("\n ")));
 };
+print.defrags_req = function(len, path, filename){
+  show_name(filename);
+  return l(show_body(path, [len + " command line arguments required."]));
+};
 print.basicError = function(msg, path, filename, all){
   var vals;
   vals = R.filter(function(x){

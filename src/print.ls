@@ -311,6 +311,15 @@ print.custom_build = (msg,path,filename)->
       c.warn "\n  - "+ data.selected_keys.arr.join "\n  - "
     ].join "\n "
 
+print.defrags_req = (len,path,filename) ->
+
+  show_name filename
+
+  l show_body do
+    path
+    [
+      "#{len} command line arguments required."
+    ]
 
 # ----------------------------------------------------------------
 
@@ -473,6 +482,7 @@ create_logger = (buildname,verbose) ->
 
 # ----------------------------------------------------------------
 
+
 print_wrap = (f)-> ->
 
   f ...arguments
@@ -491,5 +501,6 @@ print.show-header = -> l lit do
 
   ["[#{metadata.name}]"," v#{metadata.version}"]
   [c.ok,null]
+
 
 print.create_logger = create_logger

@@ -1,4 +1,4 @@
-var ext, com, print, data, metadata, ref$, l, z, j, R, readJson, exec, fs, tampax, most_create, most, c, lit, chokidar, spawn, readline, dotpat, zj, noop, be, log, tlog, maybe, ME, rm, util, filterForConfigFile, sdir, get_all_yaml_files, unu, rm_all_undef, is_true, is_false, grouparr, organize_rsync, karr, mergeF, vre, yaml_tokenize, vars, isref, modifyYaml, $tampaxParse, handle_error, rmdef, only_str, exec_list_option, main_all, main_repeat, reparse_config_file, create_rsync_cmd, execFinale, prime_process, improve_signal, $empty, resolve_signal, print_final_message, diff, init_user_watch, init_continuation, zero, check_if_empty, create_logger, core, init_config_file_watch, entry, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ext, com, print, data, metadata, ref$, l, z, j, R, readJson, exec, fs, tampax, most_create, most, c, lit, chokidar, spawn, readline, dotpat, zj, noop, be, log, tlog, maybe, ME, rm, util, filterForConfigFile, sdir, get_all_yaml_files, unu, rm_all_undef, is_true, is_false, grouparr, organize_rsync, karr, mergeArray, mergeF, vre, yaml_tokenize, vars, isref, modifyYaml, $tampaxParse, handle_error, rmdef, only_str, exec_list_option, main_all, main_repeat, reparse_config_file, create_rsync_cmd, execFinale, prime_process, improve_signal, $empty, resolve_signal, print_final_message, diff, init_user_watch, init_continuation, zero, check_if_empty, create_logger, core, init_config_file_watch, entry, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ext = require("./data");
 com = ext.com, print = ext.print, data = ext.data, metadata = ext.metadata;
 ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, j = ref$.j, R = ref$.R;
@@ -47,14 +47,14 @@ ME.findfile = function(filename){
     l(lit(["[" + metadata.name + "]", "[Error]", " cannot find ANY configuration file."], [c.er3, c.er1, c.warn]));
     return false;
   }
-  filenames = c.er1("{ ") + (function(){
+  filenames = c.ok("• ") + (function(){
     var i$, ref$, len$, results$ = [];
     for (i$ = 0, len$ = (ref$ = allfiles).length; i$ < len$; ++i$) {
       I = ref$[i$];
-      results$.push(c.warn(I));
+      results$.push(c.grey(I));
     }
     return results$;
-  }()).join(c.er1(" } { ")) + c.er1(" }");
+  }()).join(c.ok(" • "));
   l(lit(["[" + metadata.name + "]", " using ", filenames], [c.ok, null, null]));
   return allfiles;
 };
@@ -291,6 +291,31 @@ ME.rsync.main = be(is_true).cont(function(){
     message: [details]
   };
 });
+mergeArray = function(def, arr){
+  var i$, len$, index, item;
+  for (i$ = 0, len$ = def.length; i$ < len$; ++i$) {
+    index = i$;
+    item = def[i$];
+    if (arr[index] === undefined) {
+      arr[index] = item;
+    }
+  }
+  return arr;
+};
+ME.defargs = be.undefnull.cont(function(){
+  return ['arr', 0, []];
+}).alt(be.arr.cont(function(arr){
+  return ['arr', arr.length, arr];
+})).alt(be.str.cont(function(str){
+  return ['arr', 1, [str]];
+})).alt(be.int.pos.cont(function(num){
+  return ['req', num, []];
+})).cont(function(data){
+  var state;
+  state = arguments[arguments.length - 1];
+  data[2] = mergeArray(data[2], state.cmdargs);
+  return data;
+});
 ME.rsync.strarr = be.arr.map(be.str).or(be.str.cont(function(s){
   return [s];
 })).or(be.undefnull.cont([]));
@@ -317,10 +342,19 @@ ME.user = be.obj.err([':custom_build']).or(be.undefnull.cont(function(){
   return {
     'exec-locale': list
   };
-})).on('initialize', ME.maybe.bool).on('watch', ME.watch(false, void 8)).on('verbose', be.num.or(unu)).on('ssh', be.str.or(unu)).on(['exec-remote', 'exec-locale', 'exec-finale'], ME.execlist).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync.main);
+})).on('initialize', ME.maybe.bool).on('defargs', ME.defargs).on('watch', ME.watch(false, void 8)).on('verbose', be.num.or(unu)).on('ssh', be.str.or(unu)).on(['exec-remote', 'exec-locale', 'exec-finale'], ME.execlist).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync.main);
+ME.str = be.str.cont(function(str){
+  var state, ref$, type, len, list;
+  state = arguments[arguments.length - 1];
+  ref$ = state.origin.defargs, type = ref$[0], len = ref$[1], list = ref$[2];
+  if (type === 'arr') {
+    return tampax(str, list);
+  }
+  return str;
+});
 ME.origin = be.obj.alt(be.undefnull.cont(function(){
   return {};
-})).on('remotehost', be.str.or(unu)).on('remotefold', be.str.or(unu.cont("~"))).on('verbose', be.num.or(unu.cont(false))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.watch(["."], ["."])).on('ssh', be.str.or(be.undefnull.cont(data.def.ssh))).on(['exec-locale', 'exec-finale', 'exec-remote'], ME.execlist).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).and(be(function(data){
+})).on('defargs', ME.defargs).on('remotehost', ME.str.or(unu)).on('remotefold', be.str.or(unu.cont("~"))).on('verbose', be.num.or(unu.cont(false))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.watch(["."], ["."])).on('ssh', be.str.or(be.undefnull.cont(data.def.ssh))).on(['exec-locale', 'exec-finale', 'exec-remote'], ME.execlist).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).and(be(function(data){
   if (data.remotehost) {
     return true;
   } else {
@@ -588,6 +622,7 @@ main_all = function(info){
           filename: filename,
           all_filenames: info.filenames,
           cmd: info.cmdname,
+          cmdargs: info.cmdargs,
           origin: data,
           def: {},
           user: {}
@@ -606,6 +641,7 @@ main_all = function(info){
         filename: alldata[0][0],
         cmd: info.cmdname,
         origin: alldata[0][1],
+        cmdargs: info.cmdargs,
         def: {},
         user: {}
       };
@@ -701,7 +737,7 @@ prime_process = function(data, options, log, cont, rl){
   return function*(){
     var locale, i$, len$, cmd, remotehost, ref$, each, disp, status, remotetask, tryToSSH, checkDir, mkdir, E, userinput, I;
     locale = data['exec-locale'];
-    log.normal(locale.length, 'ok', " exec-locale ", c.warn(" (" + locale.length + ") "));
+    log.normal(locale.length, 'ok', " exec-locale ", c.warn(" (" + locale.length + ")"));
     for (i$ = 0, len$ = locale.length; i$ < len$; ++i$) {
       cmd = locale[i$];
       log.verbose(cmd);

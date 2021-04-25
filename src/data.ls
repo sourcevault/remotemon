@@ -57,6 +57,7 @@ data.selected_keys = {}
      \exec-finale
      \ssh
      \global
+     \defargs
 
 data.selected_keys.set = new Set data.selected_keys.arr
 

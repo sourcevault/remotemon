@@ -68,7 +68,7 @@ ME.findfile = (filename) ->
 
     return false
 
-  filenames =  (c.er1 "{ ") + ([(c.warn I) for I in allfiles].join c.er1 " } { ") + (c.er1 " }")
+  filenames =  (c.ok "• ") + ([(c.grey I) for I in allfiles].join c.ok " • ")
 
   l lit do
     ["[#{metadata.name}]"," using ",filenames]
@@ -386,6 +386,29 @@ ME.rsync.main = be is_true
 
   return message:[details]
 
+#----------------------------------------------------
+
+mergeArray = (def,arr) ->
+
+  for item,index in def
+
+    if (arr[index] is undefined)
+
+      arr[index] = item
+
+  arr
+
+
+
+ME.defargs = be.undefnull.cont -> [\arr,0,[]]
+.alt be.arr.cont (arr) -> [\arr,arr.length,arr]
+.alt be.str.cont (str) -> [\arr,1,[str]]
+.alt be.int.pos.cont (num) -> [\req,num,[]]
+.cont (data,...,state) ->
+
+  data[2] = mergeArray data[2],state.cmdargs
+
+  data
 
 #----------------------------------------------------
 
@@ -446,6 +469,8 @@ ME.user = be.obj
 
 .on \initialize    , ME.maybe.bool
 
+.on \defargs       , ME.defargs
+
 .on \watch         , ME.watch false,void
 
 .on \verbose       , be.num.or unu
@@ -458,11 +483,27 @@ ME.user = be.obj
 
 .on \rsync        , ME.rsync.main
 
+
 # ----------------------------------------
+
+ME.str = be.str.cont (str,...,state) ->
+
+  [type,len,list] = state.origin.defargs
+
+  if type is 'arr'
+
+    return tampax str,list
+
+  return str
+
 
 ME.origin = be.obj.alt be.undefnull.cont -> {}
 
-.on \remotehost  , be.str.or unu
+.on \defargs     , ME.defargs
+
+.on \remotehost  , ME.str.or unu
+
+# .on \remotehost  , be.str.or unu
 
 .on \remotefold  , be.str.or unu.cont "~"
 
@@ -473,6 +514,7 @@ ME.origin = be.obj.alt be.undefnull.cont -> {}
 .on \watch       , ME.watch ["."],["."]
 
 .on \ssh         , do
+
   be.str.or be.undefnull.cont data.def.ssh
 
 .on [\exec-locale,\exec-finale,\exec-remote],ME.execlist
@@ -768,6 +810,8 @@ handle_error = ({message,path,value}) !->
 
   | \:custom_build         => print.custom_build
 
+  # | \:defargs.req          => print.defrags_req
+
   | otherwise              =>
 
     [Error] = message
@@ -844,6 +888,7 @@ main_all = (info) -> (alldata) ->
         filename      : filename
         all_filenames : info.filenames
         cmd           : info.cmdname
+        cmdargs       : info.cmdargs
         origin        : data
         def           : {}
         user          : {}
@@ -863,6 +908,7 @@ main_all = (info) -> (alldata) ->
       filename    : alldata[0][0]
       cmd         : info.cmdname
       origin      : alldata[0][1]
+      cmdargs      : info.cmdargs
       def         : {}
       user        : {}
 
@@ -976,7 +1022,7 @@ prime_process = (data,options,log,cont,rl) -> ->*
     locale.length
     \ok
     " exec-locale "
-    c.warn " (#{locale.length}) "
+    c.warn " (#{locale.length})"
 
 
   for cmd in locale

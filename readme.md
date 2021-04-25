@@ -221,7 +221,7 @@ For now it's not possible for `remotemon` to do two levels of referencing in con
 
 ##### 🟡 changelog
 
-`1.3.0`
+`1.2.0`
 
 - informs user if unable to `ssh` into `remotehost`, provides option to create remote directory.
 
