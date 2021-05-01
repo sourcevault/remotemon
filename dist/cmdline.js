@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 
-var bani, ext, validator, findfile, com, print, readJson, most, j, exec, chokidar, most_create, updateNotifier, fs, metadata, optionParser, dotpat, ref$, l, z, zj, R, lit, c, be, noop, parser, rest, E, pkg, notifier, str, isvar, vars, args, filename, filenames, wcf, x$, data, y$;
+var bani, ext, validator, findfile, com, print, readJson, most, j, exec, chokidar, most_create, updateNotifier, fs, metadata, optionParser, dotpat, ref$, l, z, zj, R, lit, c, wait, be, parser, rest, E, pkg, notifier, str, isvar, vars, args, filename, filenames, wcf, x$, data, y$;
 bani = require("./core");
 ext = bani.ext, validator = bani.validator, findfile = bani.findfile;
 com = ext.com, print = ext.print;
 readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, updateNotifier = com.updateNotifier, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser;
 dotpat = com.dotpat;
-ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, zj = ref$.zj, j = ref$.j, R = ref$.R, lit = ref$.lit, c = ref$.c;
+ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, zj = ref$.zj, j = ref$.j, R = ref$.R, lit = ref$.lit, c = ref$.c, wait = ref$.wait;
 be = com.hoplon.types;
-noop = function(){};
 parser = new optionParser();
 parser.addOption('h', 'help', null, 'help');
 parser.addOption('v', 'verbose', null, 'verbose');

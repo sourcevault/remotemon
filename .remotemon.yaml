@@ -11,21 +11,23 @@ global:
     - null
     - hungryhippo
 
-
-
 # remotehost: pi@192.168.43.50
 
 defargs: [pi@192.168.43.50,package.json,-tt]
 
-remotehost: 'hello world {{0}}'
+# remotehost: 'hello world {{0}}'
 
-# remotehost: pi@192.168.43.50
+remotehost: pi@192.168.43.50
 
-remotefold: ~/test
+remotefold: ~/test3
 
-chokidar:
-  ignored:
-    - .remotemon.yaml
+watch:
+  # - .editorconfig
+  - .remotemon.yaml
+
+# chokidar:
+#   ignored:
+#     - ./remotemon.yaml
 
 # verbose: 0
 
@@ -33,63 +35,23 @@ chokidar:
 
 # ssh: '{{2}} -o LogLevel=QUIET -p {{global.sshport}}'
 
-longname:=
+longname:
   watch: true
-  defargs: [hello,world]
   verbose: 1
   description:
     - writes a long sentence.
-  ssh: -tt -o 'RequestTTY no' -p 45
+  ssh: -tt -o LogLevel=QUIET -p 45
   exec-locale:
-    - echo '{{0}}'
+    - echo 'hello world 11'
   # rsync:
-  #   - *first
-  #   - *second
-    # - not_valid
-
-    # - rsh: ssh -p {{global.sshport}}
-    # - rsh: ssh -p 22
-
-
-
-    # - exclude:
-    #   - node_modules
-    #   - .git
-
-  # - \verbose
-
-  # - &first
+  #   - exclude:
+  #     - node_modules
+  #     - .git
+  #   - rsh: ssh -p 45
   #   - archive
-  # - - *second
+  #   - recursive
   #   - verbose
-    # - exclude:
-    #   - .git
 
-  # - - *first
-  #   - *second
-  # - verbose
-
-
-  # - &first
-  # - &second
-
-
-
-    # - &first
-    #   - archive
-    #   - exclude:
-    #     - .git
-    #     - node_modules
-
-    # - - *first
-    #   - recursive
-    #   - verbose
-
-  # exec-locale:
-  #   - exit 1
-
-  # exec-remote:
-  #   - echo 'hello world'
     # - sudo rm -rf {{remotefold}}
 
   # verbose: 0

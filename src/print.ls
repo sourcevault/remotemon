@@ -84,7 +84,7 @@ export com,print
 
 {c,l,lit,j,read-json,R,z,create_stack} = hoplon.utils
 
-show_stack = create_stack 2,[]
+show_stack = create_stack 2,['node:internal']
 
 __dirname + \/../package.json
 
@@ -118,7 +118,7 @@ metadata = com.metadata
 show_name = (filename) ->
 
   l lit do
-    ["[#{metadata.name}]","[dataError]\n"]
+    ["[#{metadata.name}]"," • dataError •\n"]
     [c.er2,c.er3]
 
   if filename
@@ -150,7 +150,7 @@ show_body = (path,msg) ->
     ]
 
   if msg
-    txt.push "\n\n #{msg}","  "
+    txt.push "\n\n  #{msg}","  "
 
   lit do
     txt
@@ -179,7 +179,7 @@ print.rsyncError = (msg,path,filename,type) ->
 print.incorrect_arg_num = ->
 
   l lit do
-    ["[#{metadata.name}]","[inputError]\n"]
+    ["[#{metadata.name}]"," • inputError •\n"]
     [c.er2,c.er3]
 
   l lit do
@@ -207,16 +207,16 @@ print.reqError = (props,path,filename) ->
 print.cmdError = (cmdname) ->
 
   l lit do
-    ["[#{metadata.name}][ cmdFailure ] ",cmdname]
+    ["[#{metadata.name}] • cmdFailure • ",cmdname]
     [c.er2,c.warn]
 
-print.ob_in_str_list = ([type],path,filename) ->
+print.ob_in_str_list = (type,path,filename) ->
 
   show_name filename
 
   txt = switch type
   | \object       => "object not accepted in string list."
-  | \empty_object => "empty object found, it's likely a YAML alias referencing issue."
+  | \empty_object => "empty object found, it could be a YAML alias referencing issue."
 
   l show_body do
     path
@@ -225,7 +225,7 @@ print.ob_in_str_list = ([type],path,filename) ->
 print.failed_in_custom_parser = (filename,E) ->
 
   l lit do
-    ["[#{metadata.name}]","[parseError]"," unable to modify global variable in YAML file."]
+    ["[#{metadata.name}]"," • parseError •"," unable to modify global variable in YAML file."]
     [c.warn,c.er3,c.er1]
 
   l "\n  " + c.er2 filename + "\n"
@@ -236,7 +236,7 @@ print.failed_in_custom_parser = (filename,E) ->
 print.failed_in_tampax_parsing = (filename,E) ->
 
   l lit do
-    ["[#{metadata.name}]","[parseError]"," yaml/tampex parsing error."]
+    ["[#{metadata.name}]"," • parseError •"," yaml/tampex parsing error."]
     [c.warn,c.er2,c.er1]
 
   l "\n  " + c.er2 filename + "\n"
@@ -258,7 +258,7 @@ print.failed_in_tampax_parsing = (filename,E) ->
 print.in_selected_key = ([vname,cmd_str],path,filename,topmsg) ->
 
   l lit do
-    ["[#{metadata.name}]","[ cmdFailure ] \n"]
+    ["[#{metadata.name}]"," • cmdFailure •\n"]
     [c.er2,c.er3]
 
   l lit do
@@ -286,14 +286,14 @@ print.resError = (props,path,filename) ->
     ].join "\n  "
 
 
-print.could_not_find_custom_cmd = ([filenames,cmdname]) ->
-
-  colored = (c.er3 "[ ") + ([(c.er1 I) for I in filenames].join c.er3 " ][ ") + (c.er3 " ]")
-
-  show_name colored
+print.could_not_find_custom_cmd = (cmdname) ->
 
   l lit do
-    ["  unable to locate ","#{cmdname}"," task in config file(s)."]
+    ["[#{metadata.name}]"," • dataError •\n"]
+    [c.er2,c.er3]
+
+  l lit do
+    [" unable to locate ","#{cmdname}"," task in config file(s)."]
     [c.pink,c.warn,c.pink]
 
 
@@ -311,16 +311,6 @@ print.custom_build = (msg,path,filename)->
       c.warn "\n  - "+ data.selected_keys.arr.join "\n  - "
     ].join "\n "
 
-print.defrags_req = (len,path,filename) ->
-
-  show_name filename
-
-  l show_body do
-    path
-    [
-      "#{len} command line arguments required."
-    ]
-
 # ----------------------------------------------------------------
 
 print.basicError = (msg,path,filename,all) ->
@@ -337,7 +327,7 @@ print.no_match_for_arguments = ->
   l lit do
     [
       "[#{metadata.name}]"
-      "[argumentError]\n\n"
+      " • argumentError \n\n"
       "   match for arguments failed.\n\n"
       "   " + (j arguments)
     ]
@@ -363,62 +353,103 @@ normal_internal = hoplon.guard.unary
 
   l lit ["[#{metadata.name}] ",txt],[c.ok,null]
 
-
 .ar 2,([type,txt_1],state) !->
-
-  buildname = state.buildname
 
   switch type
   | \ok            =>
 
-    co   = c.ok
-    brac = c.ok
-    main = c.ok
-    bc   = c.warn
+    brac_color = c.ok
+
+    txt_color = c.grey
 
   | \warn          =>
 
-    co   = c.warn
-    brac = c.er1
-    main = c.grey
-    bc   = c.warn
+    brac_color = c.er1
+
+    txt_color = c.grey
 
   | \err           =>
 
-    co   = c.warn
-    bc   = c.warn
-    brac = c.er1
-    main = c.er3
+    brac_color = c.er3
 
-  l lit do
-      ["[#{metadata.name}]",buildname," ..",txt_1,".."]
-      [co,bc,brac,main,brac]
+    txt_color = c.er2
 
+  txt_1 = lit ["{ ",txt_1," }"],[brac_color,txt_color,brac_color]
 
-.ar 3,([type,txt_1,txt_2],state) ->
+  normal_internal [type,false,txt_1],state
+
+.ar 3,([type,txt_1,disp],state) ->
 
   buildname = state.buildname
 
   switch type
   | \ok            =>
 
-    procname = (c.ok "[") + (c.pink "#{txt_1}") + (c.ok "]")
+    color_process_name  = c.ok
 
-    co   = c.ok
+    color_buildname_dot = c.ok
 
-    bc   = c.warn
+    color_buildname     = c.ok
+
+    color_finaltxt      = c.ok
 
   | \warn          =>
 
-    procname = lit ["[","#{txt_1}","]"],[c.er1,null,c.er1]
+    color_process_name  = c.warn
 
-    co  = c.warn
+    color_buildname_dot = c.warn
 
-    bc  = c.er1
+    color_buildname     = c.warn
+
+    color_finaltxt      = c.warn
+
+  | \err            =>
+
+    color_process_name  = c.er3
+
+    color_buildname_dot = c.er3
+
+    color_buildname     = c.er3
+
+    color_finaltxt      = c.er2
+
+  | \err_light      =>
+
+    color_process_name  = c.er1
+
+    color_buildname_dot = c.er1
+
+    color_buildname     = c.er1
+
+    color_finaltxt      = c.er1
+
+  procname = (color_buildname_dot  " •") + (color_buildname txt_1)
+
+
+  if txt_1
+
+    procdot = " •"
+
+  else
+
+    procname = ""
+
+    procdot  = ""
+
+
+  if buildname
+
+    buildname = (color_buildname_dot " • ") + (color_buildname buildname)
+
+  else
+
+    buildname = ""
+
 
   l lit do
-      ["[#{metadata.name}]",buildname,"#{procname}",txt_2]
-      [co,bc,c.ok,c.grey]
+    ["[#{metadata.name}]",      buildname,       procname,            procdot,     " " + disp]
+    [  color_process_name,           null,           null,color_buildname_dot, color_finaltxt]
+
 
 
 .ar 4,([type,txt_1,txt_2,txt_3],state) !->
@@ -500,7 +531,7 @@ for I,key of print
 print.show-header = -> l lit do
 
   ["[#{metadata.name}]"," v#{metadata.version}"]
-  [c.ok,null]
+  [c.er1,c.er1]
 
 
 print.create_logger = create_logger

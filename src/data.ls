@@ -44,20 +44,20 @@ data.rsync.bool = new Set do
 data.selected_keys = {}
 
   ..arr =
+     \ssh
      \watch
+     \rsync
+     \global
+     \defargs
      \verbose
+     \chokidar
+     \initialize
+     \remotefold
      \remotehost
      \description
-     \remotefold
-     \chokidar
-     \rsync
-     \initialize
      \exec-locale
      \exec-remote
      \exec-finale
-     \ssh
-     \global
-     \defargs
 
 data.selected_keys.set = new Set data.selected_keys.arr
 

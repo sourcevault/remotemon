@@ -24,7 +24,9 @@ compile:
 
 # 	remotemon --config test/opt.yaml -w foo
 
-	remotemon --config test/opt.yaml
+
+	remotemon longname foo bar
+
 
 # 	remotemon -c ./test/opt.yaml version.update
 

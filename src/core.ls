@@ -10,7 +10,7 @@ ext = require "./data"
 
 {dotpat} = com
 
-{zj,j,lit,c,R,noop} = com.hoplon.utils
+{zj,j,lit,c,R,noop,wait} = com.hoplon.utils
 
 be = com.hoplon.types
 
@@ -63,33 +63,28 @@ ME.findfile = (filename) ->
   if (allfiles.length is 0)
 
     l lit do
-      ["[#{metadata.name}]","[Error]"," cannot find ANY configuration file."]
+      ["[#{metadata.name}]"," • Error •"," cannot find ANY configuration file."]
       [c.er3,c.er1,c.warn]
 
     return false
 
-  filenames =  (c.ok "• ") + ([(c.grey I) for I in allfiles].join c.ok " • ")
+  filenames =  [(c.er1 I) for I in allfiles].join c.warn " > "
 
   l lit do
-    ["[#{metadata.name}]"," using ",filenames]
-    [c.ok,null,null]
+    ["[#{metadata.name}]"," using data from ",filenames]
+    [c.er1,c.er1,c.er1]
 
   return allfiles
 
-# #----------------------------------------------------
+#--------------------------------------------------------------
 
-ME.recursive_str_list = be.arr
+unu                    = be.undefnull.cont void
+
+#--------------------------------------------------------------
+
+ME.recursive_str_list  = be.arr.cont R.flatten
 .map do
-  be.arr
-  .and (arr) ->
-
-    ret = ME.recursive_str_list.auth arr
-
-    if ret.continue then return true
-
-    return [false,ret.message,ret.path]
-
-  .cont R.flatten
+  be.str
   .or do
     be.obj.and (obj) -> # Error Path
 
@@ -101,29 +96,11 @@ ME.recursive_str_list = be.arr
 
       | otherwise => return [false,[\:ob_in_str_list,\object]]
 
-  .or be.str
-  .or be.undefnull
-
-.edit (list) ->
-
-  out = []
-
-  for I in list
-
-    switch R.type I
-    | \Undefined,\null => void
-    | \Array =>
-      out.push ...I
-    | otherwise =>
-      out.push I
-
-  out
-
+  .or unu
 .alt be.str.cont (x) -> [x]
+.err (all) ->
 
-.err (msg) -> msg[0]
-
-.err (msg) ->
+  [msg] = be.flatro all
 
   [type] = msg
 
@@ -132,19 +109,22 @@ ME.recursive_str_list = be.arr
 
   "not string or string list."
 
+.edit R.without [void]
+
+#--------------------------------------------------------------
+
 ME.strlist = (F) ->
 
   ME.recursive_str_list
   .or be.undefnull.cont F
 
+#--------------------------------------------------------------
 
 ME.strlist.empty       = ME.strlist -> []
 
 ME.strlist.dot         = ME.strlist -> ["."]
 
 ME.strlist.false       = ME.strlist false
-
-unu                    = be.undefnull.cont void
 
 ME.maybe               = {}
 
@@ -331,9 +311,9 @@ organize_rsync = (list,key,state) ->
 
   fin
 
-
 # ------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------
 
 ME.false = be is_false
 
@@ -367,12 +347,12 @@ ME.rsync.main = be is_true
       .cont (arr,key,...,state) -> organize_rsync (R.flatten arr),[key],state
       .and ME.rsync.throw_if_error
 
-
 .or do
-  be.arr.cont (arr,...,state) -> [organize_rsync (R.flatten arr),[],state]
+  be.arr.cont (arr,...,state) -> organize_rsync (R.flatten arr),[],state
 
   .and ME.rsync.throw_if_error
 
+  .cont (a) -> [a]
 
 .err (msg,path) ->
 
@@ -380,7 +360,7 @@ ME.rsync.main = be is_true
 
   [[name,details,innerpath]] = filtered
 
-  if name is \:rsync
+  if (name is \:rsync)
 
     return message:[name,details],path:path.concat innerpath
 
@@ -388,49 +368,149 @@ ME.rsync.main = be is_true
 
 #----------------------------------------------------
 
-mergeArray = (def,arr) ->
+mergeArray = (deflength,def,arr) ->
 
-  for item,index in def
+  fin = []
 
-    if (arr[index] is undefined)
+  for I from 0 til deflength
 
-      arr[index] = item
+    if (arr[I] is undefined) and (def[I] is undefined)
 
-  arr
+      break
+
+    else if (arr[I] is undefined)
+
+      fin[I] = def[I]
+
+    else
+
+      fin[I] = arr[I]
+
+  fin
 
 
+# ----------------------------------------
 
-ME.defargs = be.undefnull.cont -> [\arr,0,[]]
+ME.str = {}
+
+# ----------------------------------------
+
+ME.str.def = be.str.cont (str,...,state) ->
+
+  [type,len,list] = state.origin.defargs
+
+  tampax str,list
+
+
+# ----------------------------------------
+
+ME.str.user = be.str.cont (str,...,cmdname,state) ->
+
+  [__,__,list] = state.origin[cmdname].defargs
+
+  out = tampax str,list
+
+  out
+
+# ----------------------------------------
+
+is_obj_with_single = (obj) -> (Object.keys obj).length is 1
+
+obj_str_correction = (str_transform) -> (obj,...,cmdname,state) ->
+
+  [key] = Object.keys obj
+
+  mod = switch R.type obj[key]
+
+  | \Array  => [(str_transform.auth I,cmdname,state).value for I in obj[key]]
+
+  | \String => (str_transform.auth obj[key],cmdname,state).value
+
+  obj[key] = mod
+
+  obj
+
+userstr2tam = ME.str.user
+.or do
+  be.obj.and is_obj_with_single
+  .cont obj_str_correction ME.str.user
+
+defstr2tam = ME.str.def
+.or do
+  be.obj.and is_obj_with_single
+  .cont obj_str_correction ME.str.def
+
+ME.rsync.user = be.arr.map userstr2tam
+.or be.arr.map be.arr.map userstr2tam
+.fix R.identity
+
+ME.rsync.def = be.arr.map defstr2tam
+.or be.arr.map be.arr.map defstr2tam
+.fix R.identity
+
+# ----------------------------------------
+
+ME.defargs-main = be.undefnull.cont -> [\arr,0,[]]
 .alt be.arr.cont (arr) -> [\arr,arr.length,arr]
 .alt be.str.cont (str) -> [\arr,1,[str]]
 .alt be.int.pos.cont (num) -> [\req,num,[]]
+.err 'is not of type array / str / int.pos'
+
+# ----------------------------------------
+
+ME.defargs = ME.defargs-main
+
 .cont (data,...,state) ->
 
-  data[2] = mergeArray data[2],state.cmdargs
+  [__,len,list] = data
+
+  data[2] = mergeArray len,data[2],state.cmdargs
 
   data
+
+toarr = {}
+
+toarr.single_str = (str)-> [str]
+
+toarr.empty = -> []
+
 
 #----------------------------------------------------
 
 ME.rsync.strarr = be.arr.map be.str
-.or be.str.cont (s) -> [s]
-.or be.undefnull.cont []
+
+.or be.str.cont toarr.single_str
+
+.or be.undefnull.cont toarr.empty
 
 #----------------------------------------------------
 
-ME.execlist = ME.strlist.empty
+str_correction = (strF) -> (strlist,execname,cmdname,...,state) ->
 
-.cont (strlist) -> [str.replace /'/g,"'\''" for str in strlist]
+  fin = []
+
+  for str in strlist
+
+    nstr = str.replace /'/g,"'\''"
+
+    fin.push (strF.auth nstr,null,cmdname,state).value
+
+  fin
+
+ME.execlist = {}
+
+ME.execlist.def = ME.strlist.empty.cont str_correction ME.str.def
+
+ME.execlist.user = ME.strlist.empty.cont str_correction ME.str.user
 
 #----------------------------------------------------
 
-ME.chokidar = be.obj
+ME.chokidar = {}
+
+ME.chokidar.main = be.obj
 .on do
   data.chokidar.bools
   ME.maybe.bool
-.on do
-  [\ignored \cwd]
-  ME.maybe.str
 .on do
   \awaitWriteFinish
   ME.maybe.obj.on do
@@ -441,17 +521,59 @@ ME.chokidar = be.obj
   [\interval \binaryInterval \depth]
   ME.maybe.num
 
+cds = ME.str.def.cont toarr.single_str
+
+.or unu.cont toarr.empty
+
+cus = ME.str.user.cont toarr.single_str
+
+.or be.undefnull.cont toarr.empty
+
+ME.chokidar.def = ME.chokidar.main
+.on \cwd,cds
+.on \ignored,cds.or be.arr.map cds
+
+ME.chokidar.user = ME.chokidar.main
+.on \cwd,cus
+.on \ignored, cus.or be.arr.map cus
+.tap (x) ->
+
+  z x
 # ----------------------------------------
 
-ME.watch = (undef,on_true) ->
+ME.watch = {}
 
-  ME.recursive_str_list
-  .or be.undefnull.cont undef
-  .or is_false
-  .or (be is_true).cont on_true
-  .cont (data) ->
-    if (data.length is 0) then return false
-    data
+ME.watch.main = ME.recursive_str_list
+
+.or is_false
+
+# ----------------------------------------
+
+ME.watch.def = ME.watch.main
+
+.or be.undefnull.cont ["."]
+
+.or (be is_true).cont ["."]
+
+.cont (data,...,state) ->
+
+  if (data.length is 0) then return false
+
+  [(ME.str.def.auth I,state).value for I in data]
+
+# ----------------------------------------
+
+ME.watch.user = ME.watch.main
+
+.or be.undefnull.cont void
+
+.or (be is_true).cont void
+
+.cont (data,...,state) ->
+
+  if (data.length is 0) then return false
+
+  [(ME.str.user.auth I,state).value for I in data]
 
 # ----------------------------------------
 
@@ -467,59 +589,49 @@ ME.user = be.obj
   ME.strlist.empty
   .cont (list) -> {'exec-locale':list}
 
-.on \initialize    , ME.maybe.bool
+.on \initialize               , ME.maybe.bool
 
-.on \defargs       , ME.defargs
+.on \defargs                  , ME.defargs
 
-.on \watch         , ME.watch false,void
+.on \watch                    , ME.watch.user
 
-.on \verbose       , be.num.or unu
+.on \verbose                  , be.num.or unu
 
-.on \ssh           , be.str.or unu
+.on \ssh                      , ME.str.user.or unu
 
-.on [\exec-remote,\exec-locale,\exec-finale],ME.execlist
+.on [\exec-remote,\exec-locale,\exec-finale] , ME.execlist.user
 
-.on \chokidar     , ME.chokidar.or unu
+.on \chokidar                 , ME.chokidar.user.or unu
 
-.on \rsync        , ME.rsync.main
+.on \rsync                    , ME.rsync.user
 
+.on \rsync                    , ME.rsync.main
+
+.on [\remotehost,\remotefold] , ME.str.user.or unu
 
 # ----------------------------------------
-
-ME.str = be.str.cont (str,...,state) ->
-
-  [type,len,list] = state.origin.defargs
-
-  if type is 'arr'
-
-    return tampax str,list
-
-  return str
-
 
 ME.origin = be.obj.alt be.undefnull.cont -> {}
 
 .on \defargs     , ME.defargs
 
-.on \remotehost  , ME.str.or unu
+.on \remotehost  , ME.str.def.or unu
 
-# .on \remotehost  , be.str.or unu
-
-.on \remotefold  , be.str.or unu.cont "~"
+.on \remotefold  , ME.str.def.or unu.cont "~"
 
 .on \verbose     , be.num.or unu.cont false
 
 .on \initialize  , be.bool.or be.undefnull.cont true
 
-.on \watch       , ME.watch ["."],["."]
+.on \watch       , ME.watch.def
 
 .on \ssh         , do
 
-  be.str.or be.undefnull.cont data.def.ssh
+  ME.str.def.or be.undefnull.cont data.def.ssh
 
-.on [\exec-locale,\exec-finale,\exec-remote],ME.execlist
+.on [\exec-locale,\exec-finale,\exec-remote], ME.execlist.def
 
-.on \chokidar , ME.chokidar.or be.undefnull.cont data.def.chokidar
+.on \chokidar , ME.chokidar.def.or be.undefnull.cont data.def.chokidar
 
 .and do
 
@@ -531,7 +643,9 @@ ME.origin = be.obj.alt be.undefnull.cont -> {}
 
     data
 
-.on \rsync,ME.rsync.main
+.on \rsync       , ME.rsync.def
+
+.on \rsync       , ME.rsync.main
 
 .map (value,key,__,state) ->
 
@@ -573,15 +687,15 @@ ME.main = be.obj
     [\:in_selected_key,[state.cmd,state.commandline]]
   .or be.undef
 
-.on \origin,ME.origin
-
 .and (raw) ->
 
-  if (raw.cmd isnt undefined) and (raw.user[raw.cmd] is undefined)
+  if (raw.cmd isnt undefined) and (raw.origin[raw.cmd] is undefined)
 
-    return [false,[\:usercmd_not_defined,[raw.all_filenames,raw.cmd]]]
+    return [false,[\:usercmd_not_defined,raw.cmd]]
 
   true
+
+.on \origin,ME.origin
 
 
 # ----------------------------------------
@@ -810,8 +924,6 @@ handle_error = ({message,path,value}) !->
 
   | \:custom_build         => print.custom_build
 
-  # | \:defargs.req          => print.defrags_req
-
   | otherwise              =>
 
     [Error] = message
@@ -864,7 +976,6 @@ exec_list_option = (alldata) ->
 
 
 
-
 main_all = (info) -> (alldata) ->
 
   for I in alldata
@@ -877,6 +988,7 @@ main_all = (info) -> (alldata) ->
     exec_list_option alldata
 
     return
+
 
   if info.cmdname
 
@@ -912,7 +1024,6 @@ main_all = (info) -> (alldata) ->
       def         : {}
       user        : {}
 
-
     torna = ME.main.auth state,state
 
   if torna.error
@@ -922,6 +1033,8 @@ main_all = (info) -> (alldata) ->
     return
 
   info.filename = torna.value.filename
+
+  info.cmdargs  = info.cmdargs
 
   init_config_file_watch torna.value,info
 
@@ -937,11 +1050,18 @@ main_repeat = (info) -> (raw_data) ->
     filename      : info.filename
     all_filenames : [info.filename]
     cmd           : info.cmdname
+    cmdargs       : info.cmdargs
     origin        : raw_data[1]
     def           : {}
     user          : {}
 
-  torna = ME.main.auth state,state
+  try
+
+    torna = ME.main.auth state,state
+
+  catch E
+
+    z E
 
   if torna.error
 
@@ -951,7 +1071,7 @@ main_repeat = (info) -> (raw_data) ->
 
   [configs,buildname,log] = create_logger torna.value
 
-  core torna.value,info,log,configs,buildname
+  core info,log,configs,buildname
 
 
 reparse_config_file = (info) -> ->
@@ -970,11 +1090,23 @@ reparse_config_file = (info) -> ->
 
   $parsed = $tampax-parse filename,yaml-text,info.cmdargs
 
+
   $parsed
   .map main_repeat info
 
-
 #---------------------------------------------------------------------------------------
+
+
+arrToStr = (arr) ->
+
+  gap = switch arr.length
+  | 0 => ""
+  | 1 => " "
+  | otherwise => " "
+
+  (arr.join " ") + gap
+
+
 
 create_rsync_cmd = (rsync,remotehost) ->
 
@@ -994,7 +1126,7 @@ create_rsync_cmd = (rsync,remotehost) ->
 
     txt += "--#{key}={" + (["\'#{I}\'" for I in val].join ',') + "} "
 
-  cmd = "rsync " + txt + (src.join " ") + " " + (remotehost + ":" + des[0])
+  cmd = "rsync " + txt + (arrToStr src) + (remotehost + ":" + des[0])
 
   cmd
 
@@ -1006,7 +1138,7 @@ exec-finale = (data,log,cont) ->*
     postscript.length
     \ok
     " exec-finale "
-    c.warn " (#{postscript.length}) "
+    c.warn "(#{postscript.length}) "
 
   for cmd in postscript
 
@@ -1021,9 +1153,8 @@ prime_process = (data,options,log,cont,rl) -> ->*
   log.normal do
     locale.length
     \ok
-    " exec-locale "
-    c.warn " (#{locale.length})"
-
+    " exec-locale"
+    c.warn "(#{locale.length})"
 
   for cmd in locale
 
@@ -1039,12 +1170,12 @@ prime_process = (data,options,log,cont,rl) -> ->*
 
       cmd = create_rsync_cmd each,remotehost
 
-      disp   = [" ",(each.src.join " ")," ~> ",remotehost,":",each.des].join ""
+      disp = (each.src.join " ") + " ->" + " " + remotehost + ":" + each.des
 
       log.normal do
         \ok
-        lit [" rsync"," start "],[0,c.warn]
-        disp
+        lit [" rsync"," start"],[0,c.warn]
+        c.grey disp
 
       log.verbose "....",cmd
 
@@ -1053,8 +1184,8 @@ prime_process = (data,options,log,cont,rl) -> ->*
       if status isnt \ok
 
         log.normal do
-          \warn
-          lit [" rsync"," break "],[c.pink,c.er3]
+          \err_light
+          lit [" rsync"," break"],[c.pink,c.er2]
           ""
 
         yield new Promise (resolve,reject) -> reject status
@@ -1063,7 +1194,7 @@ prime_process = (data,options,log,cont,rl) -> ->*
 
         log.normal do
           \ok
-          lit [" rsync ","✔️ ok "],[0,c.ok]
+          lit [" rsync ","✔️ ok"],[0,c.ok]
           ""
 
   remotetask = data['exec-remote']
@@ -1082,9 +1213,12 @@ prime_process = (data,options,log,cont,rl) -> ->*
 
     catch E
 
-      l lit do
-          ["[#{metadata.name}]"," unable to ssh to remote address ",data.remotehost,"."]
-          [c.er2,c.warn,c.er3,c.grey]
+      log.normal do
+        \err
+        " exec-locale"
+        lit do
+          ["unable to ssh to remote address ",data.remotehost,"."]
+          [c.er1,c.er2,c.er1]
 
       yield \error.core.unable_to_ssh
 
@@ -1123,9 +1257,9 @@ prime_process = (data,options,log,cont,rl) -> ->*
         log.normal do
           \ok
           " exec.remote "
-          lit ['[✔️ ok ]'," #{data.remotehost}:#{data.remotefold} ", "created."],[c.ok,c.warn,c.ok]
+          lit ['• ✔️ ok •'," #{data.remotehost}:#{data.remotefold} ", "created."],[c.ok,c.warn,c.ok]
 
-  disp = lit [(" (#{remotetask.length}) "),(data.remotehost + ":" + data.remotefold)],[c.warn,c.grey]
+  disp = lit [("(#{remotetask.length}) "),(data.remotehost + ":" + data.remotefold)],[c.warn,c.grey]
 
   log.normal do
     remotetask.length
@@ -1189,8 +1323,8 @@ resolve_signal = be.arr
 .cont ([cmdtxt,buildname])->
 
   l lit do
-      ["[#{metadata.name}]#{buildname}","[ ","⚡️","    error ","] ",cmdtxt]
-      [c.er1,c.er2,c.er3,c.er2,c.er2,c.er1]
+      ["[#{metadata.name}]"," • ",buildname," • ","⚡️ ⚡️ error • ",cmdtxt]
+      [c.er2,c.er2,c.er2,c.er2,c.er2,c.er1]
 
   \error.core.cmd
 
@@ -1201,7 +1335,6 @@ resolve_signal = be.arr
 .wrap!
 
 # ---------
-
 
 print_final_message = (log) -> (signal) ->
 
@@ -1227,14 +1360,13 @@ diff = R.pipe do
   R.aperture 2
   R.map ([x,y]) -> y - x
 
-init_user_watch = (data,options,log,handle_cmd,rl) ->
+init_user_watch = (data,info,log,handle_cmd,rl) ->
 
   log.normal do
     data.watch
     \ok
-    c.ok "  ↓ watching "
-    c.grey " { working directory } → #{process.cwd!}"
-    " " + [(c.blue I) for I in data.watch].join (c.pink " | ")
+    "    watching"
+    [(c.warn I) for I in data.watch].join " "
 
   $init_file_watch =  most_create (add,end,error) ->
 
@@ -1243,6 +1375,9 @@ init_user_watch = (data,options,log,handle_cmd,rl) ->
       add \init
 
     if data.watch
+
+      z data.chokidar
+
       watcher = chokidar.watch data.watch,data.chokidar
 
       watcher.on \change,add
@@ -1252,7 +1387,7 @@ init_user_watch = (data,options,log,handle_cmd,rl) ->
         end!
 
 
-  exec_all_user_cmds = prime_process data,options,log,handle_cmd,rl
+  exec_all_user_cmds = prime_process data,info,log,handle_cmd,rl
 
   $file_watch = $init_file_watch
   .timestamp!
@@ -1269,15 +1404,10 @@ init_user_watch = (data,options,log,handle_cmd,rl) ->
 
       if (first is second)
 
-        l lit do
-          [
-            "[#{metadata.name}]"
-            "[ ","⚡️","    error ","] "
-            "infinite loop detected "
-            ob.value
-            " is offending file, ignoring event."
-          ]
-          [c.er1,c.er2,c.er3,c.er2,c.er2,c.er1,c.warn,c.er1]
+        log.normal do
+          \warn
+          " ⚡️ ⚡️ error "
+          "infinite loop detected " + ob.value + " is offending file, ignoring event."
 
         fin.value = \err
 
@@ -1300,7 +1430,7 @@ init_user_watch = (data,options,log,handle_cmd,rl) ->
 
   .recoverWith (signal) -> most.just signal
 
-  .chain (signal)-> resolve_signal signal,data,log,rl,options
+  .chain (signal)-> resolve_signal signal,data,log,rl,info
 
 
 init_continuation = (buildname,dryRun) -> (cmd,type = \async) ->*
@@ -1312,6 +1442,7 @@ init_continuation = (buildname,dryRun) -> (cmd,type = \async) ->*
   else
 
     {status} = spawn cmd
+
 
   if (status isnt 0)
 
@@ -1342,7 +1473,7 @@ create_logger = (data) ->
 
   else
 
-    buildname = c.warn "[#{data.cmd}]"
+    buildname = data.cmd
 
     configs = data.user[data.cmd]
 
@@ -1358,13 +1489,24 @@ create_logger = (data) ->
 
   [configs,buildname,log]
 
-core = (data,info,log,configs,buildname) ->
+core = (info,log,configs,buildname) ->
+
+  [argtype,arglen,deflist] = configs.defargs
+
+  if (argtype is \req) and (deflist.length < arglen)
+
+    log.normal do
+      \err
+      c.er3 " ⚡️ ⚡️ error "
+      lit ["command requires minimum of ",arglen," commandline argument."],[c.er1,c.er3,c.er1]
+
+    return
 
   if ((not configs.remotehost) and (configs['exec-remote'].length))
 
     log.normal do
-      \warn
-      c.er2 " ⚡️     error "
+      \err
+      c.er2 " ⚡️ ⚡️ error "
       c.er1 " remotehost address not defined for task."
 
     return
@@ -1377,13 +1519,14 @@ core = (data,info,log,configs,buildname) ->
 
     return
 
-  handle_cmd = init_continuation buildname,data.options.dryRun
+  handle_cmd = init_continuation buildname,info.options.dryRun
 
   rl = readline.createInterface {input:process.stdin,output:process.stdout,terminal:false}
 
   rl.on \line,(input) !-> process.stdout.write input
 
-  init_user_watch configs,data.options,log,handle_cmd,rl
+
+  init_user_watch configs,info,log,handle_cmd,rl
 
 init_config_file_watch = (data,info) ->
 
@@ -1426,7 +1569,7 @@ init_config_file_watch = (data,info) ->
 
   .map ->
 
-    out = core data,info,log,configs,buildname
+    out = core info,log,configs,buildname
 
     out
 

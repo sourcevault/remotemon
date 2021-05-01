@@ -13,11 +13,9 @@ bani = require "./core"
 
 {dotpat} = com
 
-{l,z,zj,j,R,lit,c} = com.hoplon.utils
+{l,z,zj,j,R,lit,c,wait} = com.hoplon.utils
 
 be = com.hoplon.types
-
-noop = ->
 
 #--------------------------------------------
 
@@ -155,5 +153,6 @@ data = {}
     ..auto_make_directory = parser.auto_make_directory.count!
 
 validator data
+
 
 

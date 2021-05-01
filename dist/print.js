@@ -50,7 +50,7 @@ print = {};
 out$.com = com;
 out$.print = print;
 ref$ = hoplon.utils, c = ref$.c, l = ref$.l, lit = ref$.lit, j = ref$.j, readJson = ref$.readJson, R = ref$.R, z = ref$.z, create_stack = ref$.create_stack;
-show_stack = create_stack(2, []);
+show_stack = create_stack(2, ['node:internal']);
 R.tryCatch(function(filename){
   var raw, pj;
   raw = com.readJson(filename);
@@ -67,7 +67,7 @@ R.tryCatch(function(filename){
 __dirname + '/../package.json');
 metadata = com.metadata;
 show_name = function(filename){
-  l(lit(["[" + metadata.name + "]", "[dataError]\n"], [c.er2, c.er3]));
+  l(lit(["[" + metadata.name + "]", " • dataError •\n"], [c.er2, c.er3]));
   if (filename) {
     return l("  " + c.er1(filename) + "\n");
   }
@@ -84,7 +84,7 @@ show_body = function(path, msg){
   ref$ = clean_path(path), init = ref$[0], last = ref$[1];
   txt = ["  " + init.join("."), "." + last.join("."), " <-- error here"];
   if (msg) {
-    txt.push("\n\n " + msg, "  ");
+    txt.push("\n\n  " + msg, "  ");
   }
   return lit(txt, [c.warn, c.er3, c.er2, c.pink]);
 };
@@ -103,7 +103,7 @@ print.rsyncError = function(msg, path, filename, type){
   return l(c.grey("\n  please refer to docs to provide valid values."));
 };
 print.incorrect_arg_num = function(){
-  l(lit(["[" + metadata.name + "]", "[inputError]\n"], [c.er2, c.er3]));
+  l(lit(["[" + metadata.name + "]", " • inputError •\n"], [c.er2, c.er3]));
   return l(lit(["  ", "incorrect number of arguments for function."], [0, c.er1, c.er3, c.er1]));
 };
 print.reqError = function(props, path, filename){
@@ -114,30 +114,29 @@ print.reqError = function(props, path, filename){
   return l(c.er1("  ." + props.join(" .")));
 };
 print.cmdError = function(cmdname){
-  return l(lit(["[" + metadata.name + "][ cmdFailure ] ", cmdname], [c.er2, c.warn]));
+  return l(lit(["[" + metadata.name + "] • cmdFailure • ", cmdname], [c.er2, c.warn]));
 };
-print.ob_in_str_list = function(arg$, path, filename){
-  var type, txt;
-  type = arg$[0];
+print.ob_in_str_list = function(type, path, filename){
+  var txt;
   show_name(filename);
   txt = (function(){
     switch (type) {
     case 'object':
       return "object not accepted in string list.";
     case 'empty_object':
-      return "empty object found, it's likely a YAML alias referencing issue.";
+      return "empty object found, it could be a YAML alias referencing issue.";
     }
   }());
   return l(show_body(path, txt));
 };
 print.failed_in_custom_parser = function(filename, E){
-  l(lit(["[" + metadata.name + "]", "[parseError]", " unable to modify global variable in YAML file."], [c.warn, c.er3, c.er1]));
+  l(lit(["[" + metadata.name + "]", " • parseError •", " unable to modify global variable in YAML file."], [c.warn, c.er3, c.er1]));
   l("\n  " + c.er2(filename + "\n"));
   return l(c.grey(E));
 };
 print.failed_in_tampax_parsing = function(filename, E){
   var emsg;
-  l(lit(["[" + metadata.name + "]", "[parseError]", " yaml/tampex parsing error."], [c.warn, c.er2, c.er1]));
+  l(lit(["[" + metadata.name + "]", " • parseError •", " yaml/tampex parsing error."], [c.warn, c.er2, c.er1]));
   l("\n  " + c.er2(filename + "\n"));
   l(c.grey(E));
   emsg = ["\n", c.warn("  make sure :\n\n"), c.er1("   - YAML file(s) can be parsed without error.\n"), c.er1("   - YAML file(s) has no duplicate field.\n"), c.er1("   - YAML file(s) is not empty.\n"), c.er1("   - correct path is provided.")];
@@ -146,7 +145,7 @@ print.failed_in_tampax_parsing = function(filename, E){
 print.in_selected_key = function(arg$, path, filename, topmsg){
   var vname, cmd_str;
   vname = arg$[0], cmd_str = arg$[1];
-  l(lit(["[" + metadata.name + "]", "[ cmdFailure ] \n"], [c.er2, c.er3]));
+  l(lit(["[" + metadata.name + "]", " • cmdFailure •\n"], [c.er2, c.er3]));
   l(lit(["  ." + vname, " is a selected key, cannot be used as a task name.\n"], [c.er3, c.warn]));
   return l(lit(["  ", cmd_str.join(" ")], [null, c.er1]));
 };
@@ -156,27 +155,13 @@ print.resError = function(props, path, filename){
   key = R.last(path);
   return l(show_body(path, [c.grey("unrecognized config key") + c.er3(" " + key) + "\n", c.grey("only acceptable keys are :\n"), c.pink("- " + props.join(" \n  - "))].join("\n  ")));
 };
-print.could_not_find_custom_cmd = function(arg$){
-  var filenames, cmdname, colored, I;
-  filenames = arg$[0], cmdname = arg$[1];
-  colored = c.er3("[ ") + (function(){
-    var i$, ref$, len$, results$ = [];
-    for (i$ = 0, len$ = (ref$ = filenames).length; i$ < len$; ++i$) {
-      I = ref$[i$];
-      results$.push(c.er1(I));
-    }
-    return results$;
-  }()).join(c.er3(" ][ ")) + c.er3(" ]");
-  show_name(colored);
-  return l(lit(["  unable to locate ", cmdname + "", " task in config file(s)."], [c.pink, c.warn, c.pink]));
+print.could_not_find_custom_cmd = function(cmdname){
+  l(lit(["[" + metadata.name + "]", " • dataError •\n"], [c.er2, c.er3]));
+  return l(lit([" unable to locate ", cmdname + "", " task in config file(s)."], [c.pink, c.warn, c.pink]));
 };
 print.custom_build = function(msg, path, filename){
   show_name(filename);
   return l(show_body(path, [c.grey("unrecognized value provided.") + "\n", c.grey("only acceptable value types :\n"), c.pink("- array of string ( defaults to exec-locale )."), c.pink("- object with restricted keys :"), c.warn("\n  - " + data.selected_keys.arr.join("\n  - "))].join("\n ")));
-};
-print.defrags_req = function(len, path, filename){
-  show_name(filename);
-  return l(show_body(path, [len + " command line arguments required."]));
 };
 print.basicError = function(msg, path, filename, all){
   var vals;
@@ -187,7 +172,7 @@ print.basicError = function(msg, path, filename, all){
   return l(show_body(path, vals[0]));
 };
 print.no_match_for_arguments = function(){
-  return l(lit(["[" + metadata.name + "]", "[argumentError]\n\n", "   match for arguments failed.\n\n", "   " + j(arguments)], [c.er2, c.er3, c.warn, c.pink]));
+  return l(lit(["[" + metadata.name + "]", " • argumentError \n\n", "   match for arguments failed.\n\n", "   " + j(arguments)], [c.er2, c.er3, c.warn, c.pink]));
 };
 normal_internal = hoplon.guard.unary.wh(function(arg$){
   var type;
@@ -202,45 +187,65 @@ normal_internal = hoplon.guard.unary.wh(function(arg$){
   txt = arg$[0];
   l(lit(["[" + metadata.name + "] ", txt], [c.ok, null]));
 }).ar(2, function(arg$, state){
-  var type, txt_1, buildname, co, brac, main, bc;
+  var type, txt_1, brac_color, txt_color;
   type = arg$[0], txt_1 = arg$[1];
-  buildname = state.buildname;
   switch (type) {
   case 'ok':
-    co = c.ok;
-    brac = c.ok;
-    main = c.ok;
-    bc = c.warn;
+    brac_color = c.ok;
+    txt_color = c.grey;
     break;
   case 'warn':
-    co = c.warn;
-    brac = c.er1;
-    main = c.grey;
-    bc = c.warn;
+    brac_color = c.er1;
+    txt_color = c.grey;
     break;
   case 'err':
-    co = c.warn;
-    bc = c.warn;
-    brac = c.er1;
-    main = c.er3;
+    brac_color = c.er3;
+    txt_color = c.er2;
   }
-  l(lit(["[" + metadata.name + "]", buildname, " ..", txt_1, ".."], [co, bc, brac, main, brac]));
+  txt_1 = lit(["{ ", txt_1, " }"], [brac_color, txt_color, brac_color]);
+  normal_internal([type, false, txt_1], state);
 }).ar(3, function(arg$, state){
-  var type, txt_1, txt_2, buildname, procname, co, bc;
-  type = arg$[0], txt_1 = arg$[1], txt_2 = arg$[2];
+  var type, txt_1, disp, buildname, color_process_name, color_buildname_dot, color_buildname, color_finaltxt, procname, procdot;
+  type = arg$[0], txt_1 = arg$[1], disp = arg$[2];
   buildname = state.buildname;
   switch (type) {
   case 'ok':
-    procname = c.ok("[") + c.pink(txt_1 + "") + c.ok("]");
-    co = c.ok;
-    bc = c.warn;
+    color_process_name = c.ok;
+    color_buildname_dot = c.ok;
+    color_buildname = c.ok;
+    color_finaltxt = c.ok;
     break;
   case 'warn':
-    procname = lit(["[", txt_1 + "", "]"], [c.er1, null, c.er1]);
-    co = c.warn;
-    bc = c.er1;
+    color_process_name = c.warn;
+    color_buildname_dot = c.warn;
+    color_buildname = c.warn;
+    color_finaltxt = c.warn;
+    break;
+  case 'err':
+    color_process_name = c.er3;
+    color_buildname_dot = c.er3;
+    color_buildname = c.er3;
+    color_finaltxt = c.er2;
+    break;
+  case 'err_light':
+    color_process_name = c.er1;
+    color_buildname_dot = c.er1;
+    color_buildname = c.er1;
+    color_finaltxt = c.er1;
   }
-  return l(lit(["[" + metadata.name + "]", buildname, procname + "", txt_2], [co, bc, c.ok, c.grey]));
+  procname = color_buildname_dot(" •") + color_buildname(txt_1);
+  if (txt_1) {
+    procdot = " •";
+  } else {
+    procname = "";
+    procdot = "";
+  }
+  if (buildname) {
+    buildname = color_buildname_dot(" • ") + color_buildname(buildname);
+  } else {
+    buildname = "";
+  }
+  return l(lit(["[" + metadata.name + "]", buildname, procname, procdot, " " + disp], [color_process_name, null, null, color_buildname_dot, color_finaltxt]));
 }).ar(4, function(arg$, state){
   var type, txt_1, txt_2, txt_3;
   type = arg$[0], txt_1 = arg$[1], txt_2 = arg$[2], txt_3 = arg$[3];
@@ -298,6 +303,6 @@ for (I in print) {
   print[I] = print_wrap(key);
 }
 print.showHeader = function(){
-  return l(lit(["[" + metadata.name + "]", " v" + metadata.version], [c.ok, null]));
+  return l(lit(["[" + metadata.name + "]", " v" + metadata.version], [c.er1, c.er1]));
 };
 print.create_logger = create_logger;

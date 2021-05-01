@@ -1,10 +1,10 @@
-var ext, com, print, data, metadata, ref$, l, z, j, R, readJson, exec, fs, tampax, most_create, most, c, lit, chokidar, spawn, readline, dotpat, zj, noop, be, log, tlog, maybe, ME, rm, util, filterForConfigFile, sdir, get_all_yaml_files, unu, rm_all_undef, is_true, is_false, grouparr, organize_rsync, karr, mergeArray, mergeF, vre, yaml_tokenize, vars, isref, modifyYaml, $tampaxParse, handle_error, rmdef, only_str, exec_list_option, main_all, main_repeat, reparse_config_file, create_rsync_cmd, execFinale, prime_process, improve_signal, $empty, resolve_signal, print_final_message, diff, init_user_watch, init_continuation, zero, check_if_empty, create_logger, core, init_config_file_watch, entry, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ext, com, print, data, metadata, ref$, l, z, j, R, readJson, exec, fs, tampax, most_create, most, c, lit, chokidar, spawn, readline, dotpat, zj, noop, wait, be, log, tlog, maybe, ME, rm, util, filterForConfigFile, sdir, get_all_yaml_files, unu, rm_all_undef, is_true, is_false, grouparr, organize_rsync, karr, mergeArray, is_obj_with_single, obj_str_correction, userstr2tam, defstr2tam, toarr, str_correction, cds, cus, mergeF, vre, yaml_tokenize, vars, isref, modifyYaml, $tampaxParse, handle_error, rmdef, only_str, exec_list_option, main_all, main_repeat, reparse_config_file, arrToStr, create_rsync_cmd, execFinale, prime_process, improve_signal, $empty, resolve_signal, print_final_message, diff, init_user_watch, init_continuation, zero, check_if_empty, create_logger, core, init_config_file_watch, entry, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ext = require("./data");
 com = ext.com, print = ext.print, data = ext.data, metadata = ext.metadata;
 ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, j = ref$.j, R = ref$.R;
 readJson = com.readJson, exec = com.exec, fs = com.fs, tampax = com.tampax, most_create = com.most_create, most = com.most, metadata = com.metadata, c = com.c, lit = com.lit, chokidar = com.chokidar, spawn = com.spawn, readline = com.readline;
 dotpat = com.dotpat;
-ref$ = com.hoplon.utils, zj = ref$.zj, j = ref$.j, lit = ref$.lit, c = ref$.c, R = ref$.R, noop = ref$.noop;
+ref$ = com.hoplon.utils, zj = ref$.zj, j = ref$.j, lit = ref$.lit, c = ref$.c, R = ref$.R, noop = ref$.noop, wait = ref$.wait;
 be = com.hoplon.types;
 log = function(x){
   return l(x);
@@ -44,28 +44,22 @@ ME.findfile = function(filename){
   var allfiles, filenames, I;
   allfiles = get_all_yaml_files(filename);
   if (allfiles.length === 0) {
-    l(lit(["[" + metadata.name + "]", "[Error]", " cannot find ANY configuration file."], [c.er3, c.er1, c.warn]));
+    l(lit(["[" + metadata.name + "]", " • Error •", " cannot find ANY configuration file."], [c.er3, c.er1, c.warn]));
     return false;
   }
-  filenames = c.ok("• ") + (function(){
+  filenames = (function(){
     var i$, ref$, len$, results$ = [];
     for (i$ = 0, len$ = (ref$ = allfiles).length; i$ < len$; ++i$) {
       I = ref$[i$];
-      results$.push(c.grey(I));
+      results$.push(c.er1(I));
     }
     return results$;
-  }()).join(c.ok(" • "));
-  l(lit(["[" + metadata.name + "]", " using ", filenames], [c.ok, null, null]));
+  }()).join(c.warn(" > "));
+  l(lit(["[" + metadata.name + "]", " using data from ", filenames], [c.er1, c.er1, c.er1]));
   return allfiles;
 };
-ME.recursive_str_list = be.arr.map(be.arr.and(function(arr){
-  var ret;
-  ret = ME.recursive_str_list.auth(arr);
-  if (ret['continue']) {
-    return true;
-  }
-  return [false, ret.message, ret.path];
-}).cont(R.flatten).or(be.obj.and(function(obj){
+unu = be.undefnull.cont(void 8);
+ME.recursive_str_list = be.arr.cont(R.flatten).map(be.str.or(be.obj.and(function(obj){
   var keys;
   keys = Object.keys(obj);
   switch (keys.length) {
@@ -74,36 +68,18 @@ ME.recursive_str_list = be.arr.map(be.arr.and(function(arr){
   default:
     return [false, [':ob_in_str_list', 'object']];
   }
-})).or(be.str).or(be.undefnull)).edit(function(list){
-  var out, i$, len$, I;
-  out = [];
-  for (i$ = 0, len$ = list.length; i$ < len$; ++i$) {
-    I = list[i$];
-    switch (R.type(I)) {
-    case 'Undefined':
-    case 'null':
-      break;
-    case 'Array':
-      out.push.apply(out, I);
-      break;
-    default:
-      out.push(I);
-    }
-  }
-  return out;
-}).alt(be.str.cont(function(x){
+})).or(unu)).alt(be.str.cont(function(x){
   return [x];
-})).err(function(msg){
-  return msg[0];
-}).err(function(msg){
-  var type;
+})).err(function(all){
+  var msg, type;
+  msg = be.flatro(all)[0];
   type = msg[0];
   switch (type) {
   case ':ob_in_str_list':
     return msg;
   }
   return "not string or string list.";
-});
+}).edit(R.without([void 8]));
 ME.strlist = function(F){
   return ME.recursive_str_list.or(be.undefnull.cont(F));
 };
@@ -114,7 +90,6 @@ ME.strlist.dot = ME.strlist(function(){
   return ["."];
 });
 ME.strlist['false'] = ME.strlist(false);
-unu = be.undefnull.cont(void 8);
 ME.maybe = {};
 ME.maybe.bool = be.bool.or(unu);
 ME.maybe.num = be.num.or(unu);
@@ -276,8 +251,10 @@ ME.rsync.main = be(is_true).cont(function(){
 }).and(ME.rsync.throw_if_error)))).or(be.arr.cont(function(arr){
   var state;
   state = arguments[arguments.length - 1];
-  return [organize_rsync(R.flatten(arr), [], state)];
-}).and(ME.rsync.throw_if_error)).err(function(msg, path){
+  return organize_rsync(R.flatten(arr), [], state);
+}).and(ME.rsync.throw_if_error).cont(function(a){
+  return [a];
+})).err(function(msg, path){
   var filtered, ref$, name, details, innerpath;
   filtered = be.flatro(msg);
   ref$ = filtered[0], name = ref$[0], details = ref$[1], innerpath = ref$[2];
@@ -291,18 +268,66 @@ ME.rsync.main = be(is_true).cont(function(){
     message: [details]
   };
 });
-mergeArray = function(def, arr){
-  var i$, len$, index, item;
-  for (i$ = 0, len$ = def.length; i$ < len$; ++i$) {
-    index = i$;
-    item = def[i$];
-    if (arr[index] === undefined) {
-      arr[index] = item;
+mergeArray = function(deflength, def, arr){
+  var fin, i$, I;
+  fin = [];
+  for (i$ = 0; i$ < deflength; ++i$) {
+    I = i$;
+    if (arr[I] === undefined && def[I] === undefined) {
+      break;
+    } else if (arr[I] === undefined) {
+      fin[I] = def[I];
+    } else {
+      fin[I] = arr[I];
     }
   }
-  return arr;
+  return fin;
 };
-ME.defargs = be.undefnull.cont(function(){
+ME.str = {};
+ME.str.def = be.str.cont(function(str){
+  var state, ref$, type, len, list;
+  state = arguments[arguments.length - 1];
+  ref$ = state.origin.defargs, type = ref$[0], len = ref$[1], list = ref$[2];
+  return tampax(str, list);
+});
+ME.str.user = be.str.cont(function(str){
+  var i$, cmdname, state, ref$, __, list, out;
+  1 < (i$ = arguments.length - 2) ? 1 : (i$ = 1); cmdname = arguments[i$]; state = arguments[i$ + 1];
+  ref$ = state.origin[cmdname].defargs, __ = ref$[0], __ = ref$[1], list = ref$[2];
+  out = tampax(str, list);
+  return out;
+});
+is_obj_with_single = function(obj){
+  return Object.keys(obj).length === 1;
+};
+obj_str_correction = function(str_transform){
+  return function(obj){
+    var i$, cmdname, state, key, mod, I;
+    1 < (i$ = arguments.length - 2) ? 1 : (i$ = 1); cmdname = arguments[i$]; state = arguments[i$ + 1];
+    key = Object.keys(obj)[0];
+    mod = (function(){
+      var i$, ref$, len$, results$ = [];
+      switch (R.type(obj[key])) {
+      case 'Array':
+        for (i$ = 0, len$ = (ref$ = obj[key]).length; i$ < len$; ++i$) {
+          I = ref$[i$];
+          results$.push(str_transform.auth(I, cmdname, state).value);
+        }
+        return results$;
+        break;
+      case 'String':
+        return str_transform.auth(obj[key], cmdname, state).value;
+      }
+    }());
+    obj[key] = mod;
+    return obj;
+  };
+};
+userstr2tam = ME.str.user.or(be.obj.and(is_obj_with_single).cont(obj_str_correction(ME.str.user)));
+defstr2tam = ME.str.def.or(be.obj.and(is_obj_with_single).cont(obj_str_correction(ME.str.def)));
+ME.rsync.user = be.arr.map(userstr2tam).or(be.arr.map(be.arr.map(userstr2tam))).fix(R.identity);
+ME.rsync.def = be.arr.map(defstr2tam).or(be.arr.map(be.arr.map(defstr2tam))).fix(R.identity);
+ME.defargsMain = be.undefnull.cont(function(){
   return ['arr', 0, []];
 }).alt(be.arr.cont(function(arr){
   return ['arr', arr.length, arr];
@@ -310,51 +335,82 @@ ME.defargs = be.undefnull.cont(function(){
   return ['arr', 1, [str]];
 })).alt(be.int.pos.cont(function(num){
   return ['req', num, []];
-})).cont(function(data){
-  var state;
+})).err('is not of type array / str / int.pos');
+ME.defargs = ME.defargsMain.cont(function(data){
+  var state, __, len, list;
   state = arguments[arguments.length - 1];
-  data[2] = mergeArray(data[2], state.cmdargs);
+  __ = data[0], len = data[1], list = data[2];
+  data[2] = mergeArray(len, data[2], state.cmdargs);
   return data;
 });
-ME.rsync.strarr = be.arr.map(be.str).or(be.str.cont(function(s){
-  return [s];
-})).or(be.undefnull.cont([]));
-ME.execlist = ME.strlist.empty.cont(function(strlist){
-  var i$, len$, str, results$ = [];
-  for (i$ = 0, len$ = strlist.length; i$ < len$; ++i$) {
-    str = strlist[i$];
-    results$.push(str.replace(/'/g, "'''"));
+toarr = {};
+toarr.single_str = function(str){
+  return [str];
+};
+toarr.empty = function(){
+  return [];
+};
+ME.rsync.strarr = be.arr.map(be.str).or(be.str.cont(toarr.single_str)).or(be.undefnull.cont(toarr.empty));
+str_correction = function(strF){
+  return function(strlist, execname, cmdname){
+    var state, fin, i$, len$, str, nstr;
+    state = arguments[arguments.length - 1];
+    fin = [];
+    for (i$ = 0, len$ = strlist.length; i$ < len$; ++i$) {
+      str = strlist[i$];
+      nstr = str.replace(/'/g, "'''");
+      fin.push(strF.auth(nstr, null, cmdname, state).value);
+    }
+    return fin;
+  };
+};
+ME.execlist = {};
+ME.execlist.def = ME.strlist.empty.cont(str_correction(ME.str.def));
+ME.execlist.user = ME.strlist.empty.cont(str_correction(ME.str.user));
+ME.chokidar = {};
+ME.chokidar.main = be.obj.on(data.chokidar.bools, ME.maybe.bool).on('awaitWriteFinish', ME.maybe.obj.on(['stabilityThreshold', 'pollInterval'], ME.maybe.num).or(be.bool)).on(['interval', 'binaryInterval', 'depth'], ME.maybe.num);
+cds = ME.str.def.cont(toarr.single_str).or(unu.cont(toarr.empty));
+cus = ME.str.user.cont(toarr.single_str).or(be.undefnull.cont(toarr.empty));
+ME.chokidar.def = ME.chokidar.main.on('cwd', cds).on('ignored', cds.or(be.arr.map(cds)));
+ME.chokidar.user = ME.chokidar.main.on('cwd', cus).on('ignored', cus.or(be.arr.map(cus))).tap(function(x){
+  return z(x);
+});
+ME.watch = {};
+ME.watch.main = ME.recursive_str_list.or(is_false);
+ME.watch.def = ME.watch.main.or(be.undefnull.cont(["."])).or(be(is_true).cont(["."])).cont(function(data){
+  var state, i$, len$, I, results$ = [];
+  state = arguments[arguments.length - 1];
+  if (data.length === 0) {
+    return false;
+  }
+  for (i$ = 0, len$ = data.length; i$ < len$; ++i$) {
+    I = data[i$];
+    results$.push(ME.str.def.auth(I, state).value);
   }
   return results$;
 });
-ME.chokidar = be.obj.on(data.chokidar.bools, ME.maybe.bool).on(['ignored', 'cwd'], ME.maybe.str).on('awaitWriteFinish', ME.maybe.obj.on(['stabilityThreshold', 'pollInterval'], ME.maybe.num).or(be.bool)).on(['interval', 'binaryInterval', 'depth'], ME.maybe.num);
-ME.watch = function(undef, on_true){
-  return ME.recursive_str_list.or(be.undefnull.cont(undef)).or(is_false).or(be(is_true).cont(on_true)).cont(function(data){
-    if (data.length === 0) {
-      return false;
-    }
-    return data;
-  });
-};
+ME.watch.user = ME.watch.main.or(be.undefnull.cont(void 8)).or(be(is_true).cont(void 8)).cont(function(data){
+  var state, i$, len$, I, results$ = [];
+  state = arguments[arguments.length - 1];
+  if (data.length === 0) {
+    return false;
+  }
+  for (i$ = 0, len$ = data.length; i$ < len$; ++i$) {
+    I = data[i$];
+    results$.push(ME.str.user.auth(I, state).value);
+  }
+  return results$;
+});
 ME.user = be.obj.err([':custom_build']).or(be.undefnull.cont(function(){
   return {};
 }).err(void 8)).and(be.restricted(data.selected_keys.arr)).alt(ME.strlist.empty.cont(function(list){
   return {
     'exec-locale': list
   };
-})).on('initialize', ME.maybe.bool).on('defargs', ME.defargs).on('watch', ME.watch(false, void 8)).on('verbose', be.num.or(unu)).on('ssh', be.str.or(unu)).on(['exec-remote', 'exec-locale', 'exec-finale'], ME.execlist).on('chokidar', ME.chokidar.or(unu)).on('rsync', ME.rsync.main);
-ME.str = be.str.cont(function(str){
-  var state, ref$, type, len, list;
-  state = arguments[arguments.length - 1];
-  ref$ = state.origin.defargs, type = ref$[0], len = ref$[1], list = ref$[2];
-  if (type === 'arr') {
-    return tampax(str, list);
-  }
-  return str;
-});
+})).on('initialize', ME.maybe.bool).on('defargs', ME.defargs).on('watch', ME.watch.user).on('verbose', be.num.or(unu)).on('ssh', ME.str.user.or(unu)).on(['exec-remote', 'exec-locale', 'exec-finale'], ME.execlist.user).on('chokidar', ME.chokidar.user.or(unu)).on('rsync', ME.rsync.user).on('rsync', ME.rsync.main).on(['remotehost', 'remotefold'], ME.str.user.or(unu));
 ME.origin = be.obj.alt(be.undefnull.cont(function(){
   return {};
-})).on('defargs', ME.defargs).on('remotehost', ME.str.or(unu)).on('remotefold', be.str.or(unu.cont("~"))).on('verbose', be.num.or(unu.cont(false))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.watch(["."], ["."])).on('ssh', be.str.or(be.undefnull.cont(data.def.ssh))).on(['exec-locale', 'exec-finale', 'exec-remote'], ME.execlist).on('chokidar', ME.chokidar.or(be.undefnull.cont(data.def.chokidar))).and(be(function(data){
+})).on('defargs', ME.defargs).on('remotehost', ME.str.def.or(unu)).on('remotefold', ME.str.def.or(unu.cont("~"))).on('verbose', be.num.or(unu.cont(false))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', ME.watch.def).on('ssh', ME.str.def.or(be.undefnull.cont(data.def.ssh))).on(['exec-locale', 'exec-finale', 'exec-remote'], ME.execlist.def).on('chokidar', ME.chokidar.def.or(be.undefnull.cont(data.def.chokidar))).and(be(function(data){
   if (data.remotehost) {
     return true;
   } else {
@@ -363,7 +419,7 @@ ME.origin = be.obj.alt(be.undefnull.cont(function(){
 }).fix(function(data){
   data.rsync = false;
   return data;
-})).on('rsync', ME.rsync.main).map(function(value, key, __, state){
+})).on('rsync', ME.rsync.def).on('rsync', ME.rsync.main).map(function(value, key, __, state){
   var put;
   switch (data.selected_keys.set.has(key)) {
   case true:
@@ -389,12 +445,12 @@ ME.main = be.obj.on('cmd', be.str.and(function(x){
   return !data.selected_keys.set.has(x);
 }).err(function(x, id, __, state){
   return [':in_selected_key', [state.cmd, state.commandline]];
-}).or(be.undef)).on('origin', ME.origin).and(function(raw){
-  if (raw.cmd !== undefined && raw.user[raw.cmd] === undefined) {
-    return [false, [':usercmd_not_defined', [raw.all_filenames, raw.cmd]]];
+}).or(be.undef)).and(function(raw){
+  if (raw.cmd !== undefined && raw.origin[raw.cmd] === undefined) {
+    return [false, [':usercmd_not_defined', raw.cmd]];
   }
   return true;
-}).err(be.flatro).edit(function(__, state){
+}).on('origin', ME.origin).err(be.flatro).edit(function(__, state){
   var user, def, cmdname, value, i$, ref$, len$, I;
   user = state.user, def = state.def;
   for (cmdname in user) {
@@ -652,12 +708,13 @@ main_all = function(info){
       return;
     }
     info.filename = torna.value.filename;
+    info.cmdargs = info.cmdargs;
     return init_config_file_watch(torna.value, info);
   };
 };
 main_repeat = function(info){
   return function(raw_data){
-    var state, torna, ref$, configs, buildname, log;
+    var state, torna, E, ref$, configs, buildname, log;
     if (raw_data === 'error.validator.tampaxparsing') {
       return most.just('error._._.open_only_config');
     }
@@ -667,17 +724,23 @@ main_repeat = function(info){
       filename: info.filename,
       all_filenames: [info.filename],
       cmd: info.cmdname,
+      cmdargs: info.cmdargs,
       origin: raw_data[1],
       def: {},
       user: {}
     };
-    torna = ME.main.auth(state, state);
+    try {
+      torna = ME.main.auth(state, state);
+    } catch (e$) {
+      E = e$;
+      z(E);
+    }
     if (torna.error) {
       handle_error(torna);
       return most.just('error._._.open_only_config');
     }
     ref$ = create_logger(torna.value), configs = ref$[0], buildname = ref$[1], log = ref$[2];
-    return core(torna.value, info, log, configs, buildname);
+    return core(info, log, configs, buildname);
   };
 };
 reparse_config_file = function(info){
@@ -695,6 +758,20 @@ reparse_config_file = function(info){
     return $parsed.map(main_repeat(info));
   };
 };
+arrToStr = function(arr){
+  var gap;
+  gap = (function(){
+    switch (arr.length) {
+    case 0:
+      return "";
+    case 1:
+      return " ";
+    default:
+      return " ";
+    }
+  }());
+  return arr.join(" ") + gap;
+};
 create_rsync_cmd = function(rsync, remotehost){
   var txt, str, obnormal, obarr, des, src, i$, len$, I, ref$, key, val, cmd;
   txt = "";
@@ -711,7 +788,7 @@ create_rsync_cmd = function(rsync, remotehost){
     val = obarr[key];
     txt += ("--" + key + "={") + (fn$()).join(',') + "} ";
   }
-  cmd = "rsync " + txt + src.join(" ") + " " + (remotehost + ":" + des[0]);
+  cmd = "rsync " + txt + arrToStr(src) + (remotehost + ":" + des[0]);
   return cmd;
   function fn$(){
     var i$, ref$, len$, results$ = [];
@@ -725,7 +802,7 @@ create_rsync_cmd = function(rsync, remotehost){
 execFinale = function*(data, log, cont){
   var postscript, i$, len$, cmd, results$ = [];
   postscript = data['exec-finale'];
-  log.normal(postscript.length, 'ok', " exec-finale ", c.warn(" (" + postscript.length + ") "));
+  log.normal(postscript.length, 'ok', " exec-finale ", c.warn("(" + postscript.length + ") "));
   for (i$ = 0, len$ = postscript.length; i$ < len$; ++i$) {
     cmd = postscript[i$];
     log.verbose(cmd);
@@ -737,7 +814,7 @@ prime_process = function(data, options, log, cont, rl){
   return function*(){
     var locale, i$, len$, cmd, remotehost, ref$, each, disp, status, remotetask, tryToSSH, checkDir, mkdir, E, userinput, I;
     locale = data['exec-locale'];
-    log.normal(locale.length, 'ok', " exec-locale ", c.warn(" (" + locale.length + ")"));
+    log.normal(locale.length, 'ok', " exec-locale", c.warn("(" + locale.length + ")"));
     for (i$ = 0, len$ = locale.length; i$ < len$; ++i$) {
       cmd = locale[i$];
       log.verbose(cmd);
@@ -748,15 +825,15 @@ prime_process = function(data, options, log, cont, rl){
       for (i$ = 0, len$ = (ref$ = data.rsync).length; i$ < len$; ++i$) {
         each = ref$[i$];
         cmd = create_rsync_cmd(each, remotehost);
-        disp = [" ", each.src.join(" "), " ~> ", remotehost, ":", each.des].join("");
-        log.normal('ok', lit([" rsync", " start "], [0, c.warn]), disp);
+        disp = each.src.join(" ") + " ->" + " " + remotehost + ":" + each.des;
+        log.normal('ok', lit([" rsync", " start"], [0, c.warn]), c.grey(disp));
         log.verbose("....", cmd);
         status = (yield* cont(cmd, 'sync'));
         if (status !== 'ok') {
-          log.normal('warn', lit([" rsync", " break "], [c.pink, c.er3]), "");
+          log.normal('err_light', lit([" rsync", " break"], [c.pink, c.er2]), "");
           (yield new Promise(fn$));
         } else {
-          log.normal('ok', lit([" rsync ", "✔️ ok "], [0, c.ok]), "");
+          log.normal('ok', lit([" rsync ", "✔️ ok"], [0, c.ok]), "");
         }
       }
     }
@@ -769,7 +846,7 @@ prime_process = function(data, options, log, cont, rl){
         exec(tryToSSH);
       } catch (e$) {
         E = e$;
-        l(lit(["[" + metadata.name + "]", " unable to ssh to remote address ", data.remotehost, "."], [c.er2, c.warn, c.er3, c.grey]));
+        log.normal('err', " exec-locale", lit(["unable to ssh to remote address ", data.remotehost, "."], [c.er1, c.er2, c.er1]));
         (yield 'error.core.unable_to_ssh');
         return;
       }
@@ -794,11 +871,11 @@ prime_process = function(data, options, log, cont, rl){
         }
         if (userinput) {
           (yield* cont(mkdir));
-          log.normal('ok', " exec.remote ", lit(['[✔️ ok ]', " " + data.remotehost + ":" + data.remotefold + " ", "created."], [c.ok, c.warn, c.ok]));
+          log.normal('ok', " exec.remote ", lit(['• ✔️ ok •', " " + data.remotehost + ":" + data.remotefold + " ", "created."], [c.ok, c.warn, c.ok]));
         }
       }
     }
-    disp = lit([" (" + remotetask.length + ") ", data.remotehost + ":" + data.remotefold], [c.warn, c.grey]);
+    disp = lit(["(" + remotetask.length + ") ", data.remotehost + ":" + data.remotefold], [c.warn, c.grey]);
     log.normal(remotetask.length, 'ok', " exec.remote ", disp);
     for (i$ = 0, len$ = remotetask.length; i$ < len$; ++i$) {
       I = remotetask[i$];
@@ -843,7 +920,7 @@ resolve_signal = be.arr.on(1, be.str.fix(' << program screwed up >> ')).on(0, be
 })).cont(function(arg$){
   var cmdtxt, buildname;
   cmdtxt = arg$[0], buildname = arg$[1];
-  l(lit(["[" + metadata.name + "]" + buildname, "[ ", "⚡️", "    error ", "] ", cmdtxt], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1]));
+  l(lit(["[" + metadata.name + "]", " • ", buildname, " • ", "⚡️ ⚡️ error • ", cmdtxt], [c.er2, c.er2, c.er2, c.er2, c.er2, c.er1]));
   return 'error.core.cmd';
 }).alt(be.str).cont(improve_signal).fix($empty).wrap();
 print_final_message = function(log){
@@ -875,22 +952,23 @@ diff = R.pipe(R.aperture(2), R.map(function(arg$){
   x = arg$[0], y = arg$[1];
   return y - x;
 }));
-init_user_watch = function(data, options, log, handle_cmd, rl){
+init_user_watch = function(data, info, log, handle_cmd, rl){
   var I, $init_file_watch, exec_all_user_cmds, $file_watch;
-  log.normal(data.watch, 'ok', c.ok("  ↓ watching "), c.grey(" { working directory } → " + process.cwd()), " " + (function(){
+  log.normal(data.watch, 'ok', "    watching", (function(){
     var i$, ref$, len$, results$ = [];
     for (i$ = 0, len$ = (ref$ = data.watch).length; i$ < len$; ++i$) {
       I = ref$[i$];
-      results$.push(c.blue(I));
+      results$.push(c.warn(I));
     }
     return results$;
-  }()).join(c.pink(" | ")));
+  }()).join(" "));
   $init_file_watch = most_create(function(add, end, error){
     var watcher;
     if (data.initialize) {
       add('init');
     }
     if (data.watch) {
+      z(data.chokidar);
       watcher = chokidar.watch(data.watch, data.chokidar);
       watcher.on('change', add);
       return function(){
@@ -899,7 +977,7 @@ init_user_watch = function(data, options, log, handle_cmd, rl){
       };
     }
   });
-  exec_all_user_cmds = prime_process(data, options, log, handle_cmd, rl);
+  exec_all_user_cmds = prime_process(data, info, log, handle_cmd, rl);
   $file_watch = $init_file_watch.timestamp().loop(function(db, ob){
     var ref$, first, second, fin;
     db.shift();
@@ -909,7 +987,7 @@ init_user_watch = function(data, options, log, handle_cmd, rl){
       seed: db
     };
     if (first === second) {
-      l(lit(["[" + metadata.name + "]", "[ ", "⚡️", "    error ", "] ", "infinite loop detected ", ob.value, " is offending file, ignoring event."], [c.er1, c.er2, c.er3, c.er2, c.er2, c.er1, c.warn, c.er1]));
+      log.normal('warn', " ⚡️ ⚡️ error ", "infinite loop detected " + ob.value + " is offending file, ignoring event.");
       fin.value = 'err';
     } else {
       fin.value = 'ok';
@@ -924,7 +1002,7 @@ init_user_watch = function(data, options, log, handle_cmd, rl){
   return $file_watch.switchLatest().recoverWith(function(signal){
     return most.just(signal);
   }).chain(function(signal){
-    return resolve_signal(signal, data, log, rl, options);
+    return resolve_signal(signal, data, log, rl, info);
   });
 };
 init_continuation = function(buildname, dryRun){
@@ -960,7 +1038,7 @@ create_logger = function(data){
     buildname = "";
     configs = data.def;
   } else {
-    buildname = c.warn("[" + data.cmd + "]");
+    buildname = data.cmd;
     configs = data.user[data.cmd];
   }
   if (configs.verbose) {
@@ -971,17 +1049,22 @@ create_logger = function(data){
   log = print.create_logger(buildname, verbose);
   return [configs, buildname, log];
 };
-core = function(data, info, log, configs, buildname){
-  var handle_cmd, rl;
+core = function(info, log, configs, buildname){
+  var ref$, argtype, arglen, deflist, handle_cmd, rl;
+  ref$ = configs.defargs, argtype = ref$[0], arglen = ref$[1], deflist = ref$[2];
+  if (argtype === 'req' && deflist.length < arglen) {
+    log.normal('err', c.er3(" ⚡️ ⚡️ error "), lit(["command requires minimum of ", arglen, " commandline argument."], [c.er1, c.er3, c.er1]));
+    return;
+  }
   if (!configs.remotehost && configs['exec-remote'].length) {
-    log.normal('warn', c.er2(" ⚡️     error "), c.er1(" remotehost address not defined for task."));
+    log.normal('err', c.er2(" ⚡️ ⚡️ error "), c.er1(" remotehost address not defined for task."));
     return;
   }
   if (check_if_empty(configs) && !info.options.watch_config_file) {
     l(lit(["[" + metadata.name + "]", " no user command to execute."], [c.warn, c.er1]));
     return;
   }
-  handle_cmd = init_continuation(buildname, data.options.dryRun);
+  handle_cmd = init_continuation(buildname, info.options.dryRun);
   rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -990,7 +1073,7 @@ core = function(data, info, log, configs, buildname){
   rl.on('line', function(input){
     process.stdout.write(input);
   });
-  return init_user_watch(configs, data.options, log, handle_cmd, rl);
+  return init_user_watch(configs, info, log, handle_cmd, rl);
 };
 init_config_file_watch = function(data, info){
   var $config_watch, ref$, configs, buildname, log, pfm, rest, init;
@@ -1019,7 +1102,7 @@ init_config_file_watch = function(data, info){
   }).chain(reparse_config_file(info));
   init = $config_watch.take(1).map(function(){
     var out;
-    out = core(data, info, log, configs, buildname);
+    out = core(info, log, configs, buildname);
     return out;
   });
   return most.mergeArray([init, rest]).switchLatest().tap(pfm).recoverWith(pfm).drain();
