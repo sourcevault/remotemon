@@ -883,7 +883,7 @@ onchange = function*(data){
     return;
   }
   if (check_if_empty(lconfig)) {
-    log.normal('err', " ⚡️ ⚡️ error", c.er1("no user command to execute."));
+    log.normal('err', " ⚡️ ⚡️ error", c.er1("empty execution, no user command to execute."));
     (yield 'error');
     return;
   }
