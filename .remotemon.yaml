@@ -11,23 +11,33 @@ global:
     - null
     - hungryhippo
 
-# remotehost: pi@192.168.43.50
+remotehost: pi@192.168.43.50
+
+remotefold: ~/test3
 
 defargs: [pi@192.168.43.50,package.json,-tt]
 
 # remotehost: 'hello world {{0}}'
 
-remotehost: pi@192.168.43.50
+# remotehost: pi@192.168.43.50
 
-remotefold: ~/test3
 
 watch:
-  # - .editorconfig
+  - .editorconfig
   - .remotemon.yaml
 
-# chokidar:
-#   ignored:
-#     - ./remotemon.yaml
+ignore:
+  - /mnt/c/code/remotemon/.remotemon.yaml
+
+# rsync:
+#   - - exclude:
+#       - node_modules
+#       - .git
+#     - rsh: ssh -p 45
+#     - archive
+#     - recursive
+#     - verbose
+#     - ukraine
 
 # verbose: 0
 
@@ -36,23 +46,35 @@ watch:
 # ssh: '{{2}} -o LogLevel=QUIET -p {{global.sshport}}'
 
 longname:
-  watch: true
-  verbose: 1
-  description:
-    - writes a long sentence.
+  verbose: 0
+  defargs: [foo,bar,paper]
   ssh: -tt -o LogLevel=QUIET -p 45
   exec-locale:
     - echo 'hello world 11'
-  # rsync:
-  #   - exclude:
-  #     - node_modules
-  #     - .git
-  #   - rsh: ssh -p 45
-  #   - archive
-  #   - recursive
-  #   - verbose
+    # - echo {{1}}
+    # - echo {{global.file}}
 
+  rsync:
+    - exclude:
+        - node_modules
+        - .git
+    - rsh: ssh -p 45
+    - archive
+    - recursive
+
+  # exec-remote:
+  #   - echo 'hello world'
     # - sudo rm -rf {{remotefold}}
+
+  # exec-finale:
+  #   - ls
+
+ytv:
+  defargs: 1
+  watch: false
+  exec-locale:
+    - youtube-dl -f 18 {{0}}
+
 
   # verbose: 0
 

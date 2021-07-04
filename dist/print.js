@@ -38,8 +38,11 @@ com.spawn = function(cmd){
     windowsVerbatimArguments: true
   });
 };
-com.exec = function(cmd){
-  return child_process.execSync(cmd).toString();
+com.exec = function(cmd, dryRun){
+  dryRun == null && (dryRun = false);
+  if (!dryRun) {
+    return child_process.execSync(cmd).toString();
+  }
 };
 com.readJson = function(filename){
   return JSON.parse(
@@ -67,9 +70,9 @@ R.tryCatch(function(filename){
 __dirname + '/../package.json');
 metadata = com.metadata;
 show_name = function(filename){
-  l(lit(["[" + metadata.name + "]", " • dataError •\n"], [c.er2, c.er3]));
+  l(lit(["[" + metadata.name + "]", " • dataError •\n"], [c.er3, c.er2]));
   if (filename) {
-    return l("  " + c.er1(filename) + "\n");
+    return l("  " + c.er3(filename) + "\n");
   }
 };
 rdot = /\./;
@@ -78,7 +81,7 @@ clean_path = R.pipe(R.map(function(txt){
     return "\"" + txt + "\"";
   }
   return txt;
-}), R.drop(1), R.splitAt(-1));
+}), R.splitAt(-1));
 show_body = function(path, msg){
   var ref$, init, last, txt;
   ref$ = clean_path(path), init = ref$[0], last = ref$[1];
@@ -86,9 +89,9 @@ show_body = function(path, msg){
   if (msg) {
     txt.push("\n\n  " + msg, "  ");
   }
-  return lit(txt, [c.warn, c.er3, c.er2, c.pink]);
+  return lit(txt, [c.warn, c.er3, c.er2, c.er1]);
 };
-print.rsyncError = function(msg, path, filename, type){
+print.rsyncError = function(msg, path, filename){
   var itype, imsg;
   show_name(filename);
   l(show_body(path));
@@ -112,6 +115,10 @@ print.reqError = function(props, path, filename){
   ref$ = R.splitAt(-1, path), init = ref$[0], last = ref$[1][0];
   l(lit(["  mandatory value " + c.er1("." + last) + " not present.\n\n", "  all mandatory value(s) :\n"], [c.grey, c.grey]));
   return l(c.er1("  ." + props.join(" .")));
+};
+print.defargs_req = function(len){
+  l(lit(["[" + metadata.name + "]", " • dataError •\n"], [c.er2, c.er3]));
+  return l(lit(["  command requires minimum of ", len, " commandline argument."], [c.er2, c.er3, c.er2]));
 };
 print.cmdError = function(cmdname){
   return l(lit(["[" + metadata.name + "] • cmdFailure • ", cmdname], [c.er2, c.warn]));
@@ -142,11 +149,9 @@ print.failed_in_tampax_parsing = function(filename, E){
   emsg = ["\n", c.warn("  make sure :\n\n"), c.er1("   - YAML file(s) can be parsed without error.\n"), c.er1("   - YAML file(s) has no duplicate field.\n"), c.er1("   - YAML file(s) is not empty.\n"), c.er1("   - correct path is provided.")];
   return l(emsg.join(""));
 };
-print.in_selected_key = function(arg$, path, filename, topmsg){
-  var vname, cmd_str;
-  vname = arg$[0], cmd_str = arg$[1];
+print.in_selected_key = function(key, cmd_str){
   l(lit(["[" + metadata.name + "]", " • cmdFailure •\n"], [c.er2, c.er3]));
-  l(lit(["  ." + vname, " is a selected key, cannot be used as a task name.\n"], [c.er3, c.warn]));
+  l(lit(["  ." + key, " is a selected key, cannot be used as a task name.\n"], [c.er3, c.warn]));
   return l(lit(["  ", cmd_str.join(" ")], [null, c.er1]));
 };
 print.resError = function(props, path, filename){
@@ -157,19 +162,15 @@ print.resError = function(props, path, filename){
 };
 print.could_not_find_custom_cmd = function(cmdname){
   l(lit(["[" + metadata.name + "]", " • dataError •\n"], [c.er2, c.er3]));
-  return l(lit([" unable to locate ", cmdname + "", " task in config file(s)."], [c.pink, c.warn, c.pink]));
+  return l(lit([" unable to locate ", cmdname + "", " task in config file(s)."], [c.er1, c.warn, c.er1]));
 };
 print.custom_build = function(msg, path, filename){
   show_name(filename);
   return l(show_body(path, [c.grey("unrecognized value provided.") + "\n", c.grey("only acceptable value types :\n"), c.pink("- array of string ( defaults to exec-locale )."), c.pink("- object with restricted keys :"), c.warn("\n  - " + data.selected_keys.arr.join("\n  - "))].join("\n ")));
 };
-print.basicError = function(msg, path, filename, all){
-  var vals;
-  vals = R.filter(function(x){
-    return !(x === '');
-  }, all);
+print.basicError = function(msg, path, filename){
   show_name(filename);
-  return l(show_body(path, vals[0]));
+  return l(show_body(path, msg));
 };
 print.no_match_for_arguments = function(){
   return l(lit(["[" + metadata.name + "]", " • argumentError \n\n", "   match for arguments failed.\n\n", "   " + j(arguments)], [c.er2, c.er3, c.warn, c.pink]));
@@ -238,7 +239,7 @@ normal_internal = hoplon.guard.unary.wh(function(arg$){
     procdot = " •";
   } else {
     procname = "";
-    procdot = "";
+    procdot = " •";
   }
   if (buildname) {
     buildname = color_buildname_dot(" • ") + color_buildname(buildname);
@@ -253,16 +254,14 @@ normal_internal = hoplon.guard.unary.wh(function(arg$){
   l(" " + txt_3);
 }).def();
 verbose_internal = hoplon.guard.unary.ar(2, function(arg$, state){
-  var txt_1, txt_2, disp;
+  var txt_1, txt_2, vl, disp;
   txt_1 = arg$[0], txt_2 = arg$[1];
-  switch (state.verbose_level) {
-  case 1:
+  vl = state.verbose_level;
+  if (vl === 1) {
     disp = txt_1.replace(/\'''/g, "'");
-    break;
-  case 2:
+  } else if (vl > 1) {
     disp = txt_2.replace(/\'''/g, "'");
-    break;
-  default:
+  } else if (vl === 0) {
     return;
   }
   return l("> " + disp);

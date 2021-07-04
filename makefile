@@ -4,7 +4,10 @@ SRC_NAME = $(shell ls src | grep ".\(ls\)")
 
 TEST_NAME = $(shell ls test | grep ".\(ls\|yaml\)")
 
+# SRC_FILES = ${SRC_NAME:%=--watch src/%} --watch makefile --watch .remotemon.yaml
+
 SRC_FILES = ${SRC_NAME:%=--watch src/%} --watch makefile
+
 
 TEST_FILES = ${TEST_NAME:%=--watch test/%}
 
@@ -20,12 +23,15 @@ compile:
 	lsc -cb test
 	make pkg
 
-# 	remotemon -l --config ../router/.remotemon.yaml
+# 	remotemon --config ../router/.remotemon.yaml -w
 
 # 	remotemon --config test/opt.yaml -w foo
 
 
-	remotemon longname foo bar
+# 	remotemon longname -w foo bar
+
+	remotemon ytv https://www.youtube.com/watch\?v\=T2uR-5Hp5Lw test=1
+
 
 
 # 	remotemon -c ./test/opt.yaml version.update
@@ -39,8 +45,8 @@ compile:
 # 	file=hello foo bar
 
 w.compile:
-# 	nodemon  --exec "make compile || exit 1" ${SRC_FILES} ${TEST_FILES}
-	nodemon  --exec "make compile || exit 1" ${SRC_FILES}
+	nodemon  --exec "make compile || exit 1" ${SRC_FILES} ${TEST_FILES}
+# 	nodemon  --exec "make compile || exit 1" ${SRC_FILES}
 
 .ONESHELL:
 SHELL = /bin/bash

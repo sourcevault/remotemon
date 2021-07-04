@@ -66,7 +66,11 @@ com.spawn = (cmd) ->
 
 # ----------------------------------------------------------------------------
 
-com.exec = (cmd) -> (child_process.execSync cmd).toString!
+com.exec = (cmd,dryRun = false) ->
+
+  if not dryRun
+
+    (child_process.execSync cmd).toString!
 
 com.read-json = (filename) ->
 
@@ -119,10 +123,10 @@ show_name = (filename) ->
 
   l lit do
     ["[#{metadata.name}]"," • dataError •\n"]
-    [c.er2,c.er3]
+    [c.er3,c.er2]
 
   if filename
-    l "  " + (c.er1 filename) + "\n"
+    l "  " + (c.er3 filename) + "\n"
 
 rdot = /\./
 
@@ -134,7 +138,6 @@ clean_path = R.pipe do
       return "\"" + txt + "\""
 
     txt
-  R.drop 1
   R.splitAt -1
 
 
@@ -154,10 +157,10 @@ show_body = (path,msg) ->
 
   lit do
     txt
-    [c.warn,c.er3,c.er2,c.pink]
+    [c.warn,c.er3,c.er2,c.er1]
 
 
-print.rsyncError = (msg,path,filename,type) ->
+print.rsyncError = (msg,path,filename) ->
 
   show_name filename
 
@@ -203,6 +206,15 @@ print.reqError = (props,path,filename) ->
 
 
   l c.er1 "  ." + props.join " ."
+
+print.defargs_req = (len) ->
+
+  l lit do
+    ["[#{metadata.name}]"," • dataError •\n"]
+    [c.er2,c.er3]
+
+  l lit ["  command requires minimum of ",len," commandline argument."],[c.er2,c.er3,c.er2]
+
 
 print.cmdError = (cmdname) ->
 
@@ -255,14 +267,14 @@ print.failed_in_tampax_parsing = (filename,E) ->
   l emsg.join ""
 
 
-print.in_selected_key = ([vname,cmd_str],path,filename,topmsg) ->
+print.in_selected_key = (key,cmd_str) ->
 
   l lit do
     ["[#{metadata.name}]"," • cmdFailure •\n"]
     [c.er2,c.er3]
 
   l lit do
-    ["  .#{vname}"," is a selected key, cannot be used as a task name.\n"]
+    ["  .#{key}"," is a selected key, cannot be used as a task name.\n"]
     [c.er3,c.warn]
 
   l lit do
@@ -294,7 +306,7 @@ print.could_not_find_custom_cmd = (cmdname) ->
 
   l lit do
     [" unable to locate ","#{cmdname}"," task in config file(s)."]
-    [c.pink,c.warn,c.pink]
+    [c.er1,c.warn,c.er1]
 
 
 print.custom_build = (msg,path,filename)->
@@ -313,13 +325,11 @@ print.custom_build = (msg,path,filename)->
 
 # ----------------------------------------------------------------
 
-print.basicError = (msg,path,filename,all) ->
-
-  vals = R.filter ((x) -> not (x is '')),all
+print.basicError = (msg,path,filename) ->
 
   show_name filename
 
-  l show_body path,vals[0]
+  l show_body path,msg
 
 
 print.no_match_for_arguments = ->
@@ -434,7 +444,7 @@ normal_internal = hoplon.guard.unary
 
     procname = ""
 
-    procdot  = ""
+    procdot  = " •"
 
 
   if buildname
@@ -466,17 +476,17 @@ verbose_internal = hoplon.guard.unary
 
 .ar 2,([txt_1,txt_2],state) ->
 
-  switch state.verbose_level
+  vl = state.verbose_level
 
-  | 1 =>
+  if (vl is 1)
 
     disp = txt_1.replace /\'''/g,"'"
 
-  | 2 =>
+  else if (vl > 1)
 
     disp = txt_2.replace /\'''/g,"'"
 
-  | otherwise =>
+  else if (vl is 0)
 
     return
 

@@ -8,13 +8,7 @@ data = {}
 
 export {com:ext.com,print:ext.print,data:data}
 
-data.chokidar = {}
-
 data.def = {}
-
-data.chokidar.bools =
-  *\persistent \ignoreInitial \followSymlinks \disableGlobbing \usePolling
-   \alwaysStat \ignorePermissionErrors \atomic
 
 data.rsync = {}
 
@@ -33,7 +27,7 @@ data.rsync.bool = new Set do
  *\verbose \quiet \no-motd \checksum \archive \relative \no-OPTION \recursive
   \no-implied-dirs \backup \update \inplace \append \append-verify \dirs \links
   \copy-links \copy-unsafe-links \safe-links \copy-dirlinks \keep-dirlinks \hard-links
-  \perms \executability \acls \xattrs \owner \group \devices \specials \devices
+  \perms \no-perms \executability \acls \xattrs \owner \group \devices \specials \devices
   \specials \times \omit-dir-times \super \fake-super \sparse \dry-run \whole-file
   \one-file-system \existing \ignore-existing \remove-soucre-files \del \delete
   \delete-before \delete-during \delete-delay \delete-after \delete-excluded \ignore-errors
@@ -48,13 +42,28 @@ data.selected_keys = {}
      \watch
      \rsync
      \global
+     \ignore
      \defargs
      \verbose
-     \chokidar
      \initialize
      \remotefold
      \remotehost
      \description
+     \exec-locale
+     \exec-remote
+     \exec-finale
+
+  ..undef =
+     \ssh
+     \watch
+
+     \global
+     \ignore
+     \verbose
+     \initialize
+     \remotefold
+     \remotehost
+
      \exec-locale
      \exec-remote
      \exec-finale
@@ -65,4 +74,3 @@ data.def.rsync = [(src:\.),\recursive,\quiet]
 
 data.def.ssh = "-tt -o LogLevel=QUIET"
 
-data.def.chokidar = {awaitWriteFinish:true}
