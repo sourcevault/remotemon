@@ -30,7 +30,7 @@ compile:
 
 # 	remotemon longname -w foo bar
 
-	remotemon ytv https://www.youtube.com/watch\?v\=T2uR-5Hp5Lw test=1
+	remotemon ytv
 
 
 
