@@ -1321,7 +1321,7 @@ onchange = (data) ->*
     log.normal do
       \err
       " ⚡️ ⚡️ error"
-      c.er1 "no user command to execute."
+      c.er1 "empty execution, no user command to execute."
 
     yield \error
 
@@ -1687,12 +1687,8 @@ get_all = (info) ->*
 
   ms_create_watch lconfig,info,log
 
-
 most.generate get_all,info
 
 .drain!
-
-
-
 
 
