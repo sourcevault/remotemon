@@ -5,11 +5,11 @@
 npm install -g remotemon
 ```
 
-`remotemon` is a cli-tool for building/copying/executing code on remote machines and monitoring the result.
+`remotemon` is a cli automation tool for building/copying/executing code on remote machines and monitoring the result.
 
-Its main application use-case is for developing / running scripts on remote machines like the raspberry pi ..
+Its main use-case is for developing / running scripts on remote machines like the raspberry pi ..
 
-.. however it can also be used as as a replacement for `make` / `nodemon` 😀.
+.. but can also be used for purposes that would normally be done using  `make` / `nodemon` 😀.
 
 ```bash
 remotemon rpi.update # to update rpi 😎
@@ -20,13 +20,6 @@ remotemon ssh45 # to change default ssh port to 45 👮🏼‍♂️
 
 <!-- ![](https://github.com/sourcevault/remotemon/blob/dev/example.png) -->
 ![](./example.png)
-
-***When not to use remotemon ?***
-
-- when your build process gets complicated enough to warrant the use of gulpfiles, makefiles, etc.
-
-- `remotemon` is meant for situations where you are constantly having to configure linux system files, but also developing and running code on remote machines, that involves complicated `rsync` and `ssh` commands, but prefer to change those files from the comfort of your favorite local text editor - not everybody knows how to use vim.
-
 
 #### 🟡 How to Use
 
@@ -153,13 +146,15 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 - `remotehost`  - `{username}@{ipaddress}` / ssh name of remote client.
 - `remotefold`  - folder in remote client where we want to execute our script.
 - `watch`       - local file(s) or folders(s) to watch for changes.
+- `ignore`      - files to **not** watch.
 - `exec-locale` - local script to run before copying files to remote client and executing our scripts.
 - `exec-remote` - command to execute in remote client.
 - `exec-finale` - command to execute after `exec-remote` returns `exit 0`.
 - `ssh`         - custom `ssh` config options, default is `-tt -o LogLevel=QUIET`.
 - `verbose`     - hardcode verbose level of printing for command.
 - `description` - provide a brief description of what the command does.
-
+- `defargs`     - default values for empty commandline arguments, for enforcing minimum commandline arguments, a number can be provided.
+- `initialize`  - boolean value to specify if a first run is performed or not when command is run, default is `true`.
 - `chokidar`- options to use for ![chokidar](https://github.com/paulmillr/chokidar) module :
   - `awaitWriteFinish`
     -  `stabilityThreshold`
@@ -168,42 +163,62 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
   - `persistent`▪️`ignoreInitial`▪️`followSymlinks`▪️`disableGlobbing`▪️`usePolling`▪️`alwaysStat`▪️`ignorePermissionErrors`▪️`atomic`▪️`interval`▪️`binaryInterval`▪️`depth`▪️`ignored`▪️`cwd`
 
 - `rsync` - rsync options ( currently supported ) :
-    - `src: .` - source folder(s) to sync.
-    - `des: ~/test` - destination folder in remote client.
+    - `src` - source folder(s) to sync.
+    - `des` - destination folder in remote client.
     - `recursive`▪️`verbose`▪️`quiet`▪️`no-motd`▪️`exclude:`▪️`checksum`▪️`archive`▪️`relative`▪️`no-OPTION`▪️`no-implied-dirs`▪️`backup`▪️`update`▪️`inplace`▪️`append`▪️`append-verify`▪️`dirs`▪️`links`▪️`copy-links`▪️`copy-unsafe-links`▪️`safe-links`▪️`copy-dirlinks`▪️`keep-dirlinks`▪️`hard-links`▪️`perms`▪️`executability`▪️`chmod:`▪️`acls`▪️`xattrs`▪️`owner`▪️`group`▪️`devices`▪️`specials`▪️`devices`▪️`specials`▪️`times`▪️`omit-dir-times`▪️`super`▪️`fake-super`▪️`sparse`▪️`dry-run`▪️`whole-file`▪️`one-file-system`▪️`existing`▪️`ignore-existing`▪️`remove-soucre-files`▪️`del`▪️`delete`▪️`delete-before`▪️`delete-during`▪️`delete-delay`▪️`delete-after`▪️`delete-excluded`▪️`ignore-errors`▪️`force`▪️`partial`▪️`delay-updates`▪️`prune-empty-dirs`▪️`numeric-ids`▪️`ignore-times`▪️`size-only`▪️`compress`▪️`cvs-exclude`▪️`F`▪️`from0`▪️`protect-args`▪️`blocking-io`▪️`stats`▪️`8-bit-output`▪️`human-readable`▪️`progress`▪️`P`▪️`itemize-changes`▪️`list-only`
 
-  - `block-size:`▪️`rsh:`▪️`rsync-path:`▪️`max-delete:`▪️`max-size:`▪️`max-size:`▪️`partial-dir:`▪️`timeout:`▪️`contimeout:`▪️`modify-window:`▪️`temp-dir:`▪️`fuzzy:`▪️`compare-dest:`▪️`copy-dest:`▪️`link-dest:`▪️`compress-level:`▪️`skip-compress:`▪️`filter:`▪️`exclude:`▪️`exclude-from:`▪️`include:`▪️`include-from:`▪️`files-from:`▪️`address:`▪️`port:`▪️`sockopts:`▪️`out-format:`▪️`log-file:`▪️`log-file-format:`▪️`password-file:`▪️`bwlimit:`▪️`write-batch:`▪️`only-write-batch:`▪️`read-batch:`▪️`protocol:`▪️`iconv:`▪️`checksum-seed:`
+    - `block-size:`▪️`rsh:`▪️`rsync-path:`▪️`max-delete:`▪️`max-size:`▪️`max-size:`▪️`partial-dir:`▪️`timeout:`▪️`contimeout:`▪️`modify-window:`▪️`temp-dir:`▪️`fuzzy:`▪️`compare-dest:`▪️`copy-dest:`▪️`link-dest:`▪️`compress-level:`▪️`skip-compress:`▪️`filter:`▪️`exclude:`▪️`exclude-from:`▪️`include:`▪️`include-from:`▪️`files-from:`▪️`address:`▪️`port:`▪️`sockopts:`▪️`out-format:`▪️`log-file:`▪️`log-file-format:`▪️`password-file:`▪️`bwlimit:`▪️`write-batch:`▪️`only-write-batch:`▪️`read-batch:`▪️`protocol:`▪️`iconv:`▪️`checksum-seed:`
 
 
 #### 🟡 `cli` variables
 
-In `make` we can change internal variables (eg.`env`,`file`) from the command line in this way:
+- **Named**
 
-```bash
-make file=/dist/main.js
-make env=prod file=/dist/main.js
-make compile env=prod file=/dist/main.js
-```
-in remotemon the same thing can do done :
+  In `make` we can change internal variables (eg.`env`,`file`) from the command line in this way:
 
-```bash
-remotemon file=/dist/main.js
-```
+  ```bash
+  make file=/dist/main.js
+  make env=prod file=/dist/main.js
+  make compile env=prod file=/dist/main.js
+  ```
+  in remotemon the same thing can do done :
 
-it changes the internal value(s) of **associated key** in `global`:
+  ```bash
+  remotemon file=/dist/main.js
+  ```
 
-```yaml
-global:
+  it changes the internal value(s) of **associated key** in `global`:
+
+  ```yaml
+  global:
   file: /dist/main.js # <-- old value replaced with value taken from commandline
-remotehost: pi@192.152.65.12
-remotefold: ~/test
-exec-locale: make local {{global.file}}
-exec-remote: make remote
-```
+  remotehost: pi@192.152.65.12
+  remotefold: ~/test
+  exec-locale: make local {{global.file}}
+  exec-remote: make remote
+  ```
 
-this way we can edit the values of our makefile without opening either `.remotemon.yaml` or `makefile` ☺️.
+  this way we can edit the values of our makefile without opening either `.remotemon.yaml` or `makefile`.
 
-##### 🟡 misc features
+- **Unnamed**
+
+  Sometimes it's more convenient to not have to name your variables.
+
+  Instead of `remotemon file=/dist/main.js` we would like to do `remotemon /dist/main.js`.
+
+  We can in situation like that use numbered templating `{{0}}`,`{{1}}` in our config file.
+
+  `defargs` field can also be used to provide default values if the user does not specify them.
+
+  If we know the most common file name is `/dist/main.js` we could use `defargs: [/dist/main.js]` to not have to always provide the filename as an argument.
+
+***When not to use remotemon ?***
+
+- when your build process gets complicated enough to warrant the use of gulpfiles, makefiles, etc.
+
+- `remotemon` is meant for situations where you are constantly having to configure linux system files, but also developing and running code on remote machines, that involves complicated `rsync` and `ssh` commands, but prefer to change those files from the comfort of your favorite local text editor - not everybody uses vim.
+
+##### 🟡 all commandline options
 
 - `--watch-config-file` or `-w`  restarts on config file change by default.
 
@@ -213,51 +228,18 @@ this way we can edit the values of our makefile without opening either `.remotem
 
 - `-l,--list` to see all the different commands from the command line itself.
 
+- `-m --auto-make-directory` make remote directory if it doesn't exist.
+
+- `-V --version` displays version number
+
+- `-c --config` path to YAML configuration file
+
 ##### 🔴 Bugs
 
 - [same object ref doesn't work #6](https://github.com/arthurlacoste/tampa/issues/6)
 
 For now it's not possible for `remotemon` to do two levels of referencing in config file, as `remotemon` uses `tampax`, and the issue is with `tampax`, write your config files to work around the issue ( for now ).
 
-##### 🟡 changelog
-
-`1.3.0`
-
-- informs user if unable to `ssh` into `remotehost`, provides option to create remote directory.
-
-- added `-m --auto-make-directory   make remote directory if it doesn't exist` option.
-
-- major internal refactor.
-
-`1.2.4`
-
-- `description` field added for usercmd.
-
-`1.2.3`
-
-- `verbose` level can be hardcoded for each separate command.
-
-`1.2.2`
-
-- `rsync` accepts multiple values, which means it can be called on multiple destination folder.
-
-- `remotemon` only accepts a single command.
-
-- `-vv` multiple level of verbose logging.
-
-- multiple config files can be used.
-
-- `-l,--list` to see all the different commands from the command line itself.
-
-`1.1.2`
-
-- custom build accepts array.str ( defaults to `exec-locale` values).
-
-- all `exec.*` changed to `exec-*`
-
-`1.0.0`
-
-- `remotemon` no longer uses a custom parser with `!join` operator, but uses [`tampax`](https://github.com/arthurlacoste/tampa/) ( much ♥️ ) for yaml parsing.
 
 #### LICENCE
 
