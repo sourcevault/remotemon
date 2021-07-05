@@ -15,14 +15,14 @@
     "remotemon": "dist/cmdline.js"
   },
   "dependencies": {
-    "update-notifier": "*",
     "@most/create": "*",
-    "option-parser": "*",
     "chokidar": "*",
-    "tampax": "*",
     "hoplon": "*",
+    "most": "*",
+    "option-parser": "*",
     "ramda": "*",
-    "most": "*"
+    "tampax": "*",
+    "update-notifier": "*"
   },
   "keywords": [
     "remote",
