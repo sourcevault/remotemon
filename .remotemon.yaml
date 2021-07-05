@@ -13,6 +13,8 @@ global:
 
 remotehost: pi@192.168.43.50
 
+ssh: -tt -o LogLevel=QUIET -p {{global.sshport}}
+
 remotefold: ~/test3
 
 defargs: [pi@192.168.43.50,package.json,-tt]
@@ -22,9 +24,8 @@ defargs: [pi@192.168.43.50,package.json,-tt]
 # remotehost: pi@192.168.43.50
 
 
-watch:
-  - .editorconfig
-  - .remotemon.yaml
+watch: false
+rsync: false
 
 ignore:
   - /mnt/c/code/remotemon/.remotemon.yaml
@@ -74,6 +75,11 @@ ytv:
   watch: false
   exec-locale:
     - youtube-dl -f 18 {{0}}
+
+
+echo:
+  exec-remote:
+    - echo 'hello world'
 
 
   # verbose: 0

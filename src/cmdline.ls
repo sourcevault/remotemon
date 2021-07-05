@@ -1243,9 +1243,11 @@ check_if_remotedir_present = (data) ->*
 
       userinput = yield new Promise (resolve,reject) ->
 
+
         Q = lit do
           ["[#{metadata.name}]"," #{lconfig.remotefold}"," not on remote, create directory ","#{lconfig.remotehost}:#{lconfig.remotefold}"," ? [r (as root)|y (as user)|n] "]
           [c.ok,c.warn,c.grey,c.warn,c.grey]
+
 
         lconfig.rl.question Q,(input) !->
 
@@ -1258,7 +1260,7 @@ check_if_remotedir_present = (data) ->*
               \err
               " exec-remote"
               lit do
-                ["cannot continue exec-remote without remotefolder ",lconfig.remotefold," terminating procedure","."]
+                ["cannot continue exec-remote without remotefolder ",lconfig.remotefold,"."]
                 [c.er1,c.warn,c.er1,c.er1]
 
             reject \error
@@ -1443,7 +1445,12 @@ print_final_message = (log,lconfig,info) -> (signal) !->
 
   signal = resolve_signal signal,log
 
-  if (lconfig.watch.length is 0) then return
+
+  if (lconfig.watch.length is 0)
+
+    lconfig.rl.close!
+
+    return
 
   if info.options.watch_config_file
 
@@ -1494,6 +1501,16 @@ ms_create_watch = (lconfig,info,log) ->
 
       # add info.cmd_filename  # delete when done
 
+    rl = readline.createInterface {input:process.stdin,output:process.stdout,terminal:false}
+
+    rl.on \line,(input) !->
+
+      process.stdout.write input
+
+    lconfig.rl = rl
+
+    #--------------------------------------------------------------------------------------
+
     if lconfig.watch.length > 0
 
       watcher = chokidar.watch do
@@ -1503,14 +1520,6 @@ ms_create_watch = (lconfig,info,log) ->
          ignorePermissionErrors:true
 
       watcher.on \change,add
-
-      rl = readline.createInterface {input:process.stdin,output:process.stdout,terminal:false}
-
-      rl.on \line,(input) !->
-
-        process.stdout.write input
-
-      lconfig.rl = rl
 
       !->
         watcher.close!
@@ -1561,7 +1570,6 @@ ms_create_watch = (lconfig,info,log) ->
 
 
   ms.drain!
-
 
 restart = (info,log)->*
 

@@ -839,7 +839,7 @@ check_if_remotedir_present = function*(data){
             resolve('r');
             break;
           default:
-            log.normal('err', " exec-remote", lit(["cannot continue exec-remote without remotefolder ", lconfig.remotefold, " terminating procedure", "."], [c.er1, c.warn, c.er1, c.er1]));
+            log.normal('err', " exec-remote", lit(["cannot continue exec-remote without remotefolder ", lconfig.remotefold, "."], [c.er1, c.warn, c.er1, c.er1]));
             reject('error');
           }
         });
@@ -962,6 +962,7 @@ print_final_message = function(log, lconfig, info){
     var msg;
     signal = resolve_signal(signal, log);
     if (lconfig.watch.length === 0) {
+      lconfig.rl.close();
       return;
     }
     if (info.options.watch_config_file) {
@@ -1004,10 +1005,19 @@ ms_create_watch = function(lconfig, info, log){
     }()).join(" "));
   }
   ms_file_watch = most_create(function(add, end, error){
-    var watcher, rl;
+    var rl, watcher;
     if (lconfig.initialize) {
       add(null);
     }
+    rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      terminal: false
+    });
+    rl.on('line', function(input){
+      process.stdout.write(input);
+    });
+    lconfig.rl = rl;
     if (lconfig.watch.length > 0) {
       watcher = chokidar.watch(lconfig.watch, {
         awaitWriteFinish: true,
@@ -1015,15 +1025,6 @@ ms_create_watch = function(lconfig, info, log){
         ignorePermissionErrors: true
       });
       watcher.on('change', add);
-      rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        terminal: false
-      });
-      rl.on('line', function(input){
-        process.stdout.write(input);
-      });
-      lconfig.rl = rl;
       return function(){
         watcher.close();
         rl.close();
