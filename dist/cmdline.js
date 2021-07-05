@@ -16,6 +16,7 @@ parser.addOption('w', 'watch-config-file', null, 'watch_config_file');
 parser.addOption('c', 'config', null, 'config').argument('FILE');
 parser.addOption('l', 'list', null, 'list');
 parser.addOption('m', 'auto-make-directory', null, 'auto_make_directory');
+parser.addOption('n', 'no-watch', null, 'no_watch');
 if (!metadata.name) {
   return false;
 }
@@ -34,7 +35,7 @@ try {
   notifier.notify();
 } catch (e$) {}
 if (parser.help.count() > 0) {
-  str = "remotemon version " + metadata.version + "\n\noptions:\n\n  -v --verbose               more detail\n\n  -vv                        much more detail\n\n  -h --help                  display help message\n\n  -V --version               displays version number\n\n  -d --dry-run               perform a trial run without making any changes\n\n  -w --watch-config-file     restart on config file change by default.\n\n  -c --config                path to YAML configuration file\n\n  -l --list                  list all user commands\n\n  -m --auto-make-directory   make remote directory if it doesn't exist.\n\n  ---- shorthands ----\n\n  CF <-- for configuration file\n\nBy default remotemon will look for .remotemon.yaml in current directory and one level up (only).\n\nusing --config <filename>.yaml option will direct remotemon to use <filename>.yaml as config file :\n\n> remotemon --config custom.yaml\n> remotemon --config custom.yaml -v\n\nvalues for internal variables (using .global object) can be changed using '=' (similar to makefiles) :\n\n> remotemon --config custom.yaml --verbose file=dist/main.js\n\n[ documentation ] @ [ https://github.com/sourcevault/remotemon#readme.md ]\n";
+  str = "remotemon version " + metadata.version + "\n\noptions:\n\n  -v --verbose               more detail\n\n  -vv                        much more detail\n\n  -h --help                  display help message\n\n  -V --version               displays version number\n\n  -d --dry-run               perform a trial run without making any changes\n\n  -w --watch-config-file     restart on config file change\n\n  -c --config                path to YAML configuration file\n\n  -l --list                  list all user commands\n\n  -m --auto-make-directory   make remote directory if it doesn't exist\n\n  -n --no-watch              force disable any and all watches\n\n  ---- shorthands ----\n\n  CF <-- for configuration file\n\nBy default remotemon will look for .remotemon.yaml in current directory and one level up (only).\n\nusing --config <filename>.yaml option will direct remotemon to use <filename>.yaml as config file :\n\n> remotemon --config custom.yaml\n> remotemon --config custom.yaml -v\n\nvalues for internal variables (using .global object) can be changed using '=' (similar to makefiles) :\n\n> remotemon --config custom.yaml --verbose file=dist/main.js\n\n[ documentation ] @ [ https://github.com/sourcevault/remotemon#readme.md ]\n";
   l(str);
   return;
 }
@@ -113,6 +114,7 @@ y$.dryRun = parser.dryRun.count();
 y$.watch_config_file = wcf;
 y$.list = parser.list.count();
 y$.auto_make_directory = parser.auto_make_directory.count();
+y$.no_watch = parser.no_watch.count();
 vre = /(\s*#\s*){0,1}(\s*)(\S*):/;
 yaml_tokenize = function(data){
   var lines, all, i$, len$, I, torna, __, iscommeted, spaces, name, asbool, acc, temp, to$, current;
@@ -766,7 +768,7 @@ execFinale = function*(data){
   var info, lconfig, log, cont, postscript, i$, len$, cmd, results$ = [];
   info = data.info, lconfig = data.lconfig, log = data.log, cont = data.cont;
   postscript = lconfig['exec-finale'];
-  log.normal(postscript.length, 'ok', " exec-finale", c.warn("[" + postscript.length + "] "));
+  log.normal(postscript.length, 'ok', " exec-finale", c.warn("(" + postscript.length + ") "));
   for (i$ = 0, len$ = postscript.length; i$ < len$; ++i$) {
     cmd = postscript[i$];
     log.verbose(cmd);
@@ -864,7 +866,7 @@ remote_main_proc = function*(data, remotetask){
   var lconfig, log, cont, remotehost, remotefold, disp, i$, len$, I, cmd, results$ = [];
   lconfig = data.lconfig, log = data.log, cont = data.cont;
   remotehost = lconfig.remotehost, remotefold = lconfig.remotefold;
-  disp = lit(["[" + remotetask.length + "] ", remotehost + ":" + remotefold], [c.warn, c.grey]);
+  disp = lit(["(" + remotetask.length + ") ", remotehost + ":" + remotefold], [c.warn, c.grey]);
   log.normal(remotetask.length, 'ok', " exec-remote", disp);
   for (i$ = 0, len$ = remotetask.length; i$ < len$; ++i$) {
     I = remotetask[i$];
@@ -890,7 +892,7 @@ onchange = function*(data){
   remotehost = lconfig.remotehost, remotefold = lconfig.remotefold;
   locale = lconfig['exec-locale'];
   remotetask = lconfig['exec-remote'];
-  log.normal(locale.length, 'ok', " exec-locale", c.warn("[" + locale.length + "]"));
+  log.normal(locale.length, 'ok', " exec-locale", c.warn("(" + locale.length + ")"));
   for (i$ = 0, len$ = locale.length; i$ < len$; ++i$) {
     cmd = locale[i$];
     log.verbose(cmd);
@@ -961,7 +963,7 @@ print_final_message = function(log, lconfig, info){
   return function(signal){
     var msg;
     signal = resolve_signal(signal, log);
-    if (lconfig.watch.length === 0) {
+    if (lconfig.watch.length === 0 || info.options.no_watch > 0) {
       lconfig.rl.close();
       return;
     }
@@ -980,14 +982,15 @@ print_final_message = function(log, lconfig, info){
   };
 };
 ms_create_watch = function(lconfig, info, log){
-  var disp, I, ms_file_watch, cont, ms;
-  if (lconfig.watch.length > 0) {
+  var should_I_watch, disp, I, ms_file_watch, cont, ms;
+  should_I_watch = lconfig.watch.length > 0 && info.options.no_watch === 0;
+  if (should_I_watch) {
     disp = lconfig.watch;
     if (info.options.watch_config_file && disp.length > 0) {
       disp = R.drop(1, disp);
       disp.unshift(c.pink("CF"));
     }
-    log.normal(lconfig.watch.length, 'err_light', "    watching", (function(){
+    log.normal(should_I_watch, 'err_light', "    watching", (function(){
       var i$, ref$, len$, results$ = [];
       for (i$ = 0, len$ = (ref$ = disp).length; i$ < len$; ++i$) {
         I = ref$[i$];
@@ -995,7 +998,7 @@ ms_create_watch = function(lconfig, info, log){
       }
       return results$;
     }()).join(" "));
-    log.normal(lconfig.ignore.length, 'err_light', "     ignored", (function(){
+    log.normal(should_I_watch && lconfig.ignore.length, 'err_light', "     ignored", (function(){
       var i$, ref$, len$, results$ = [];
       for (i$ = 0, len$ = (ref$ = lconfig.ignore).length; i$ < len$; ++i$) {
         I = ref$[i$];
@@ -1018,7 +1021,7 @@ ms_create_watch = function(lconfig, info, log){
       process.stdout.write(input);
     });
     lconfig.rl = rl;
-    if (lconfig.watch.length > 0) {
+    if (should_I_watch) {
       watcher = chokidar.watch(lconfig.watch, {
         awaitWriteFinish: true,
         ignored: lconfig.ignore,
