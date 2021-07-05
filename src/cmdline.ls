@@ -37,6 +37,7 @@ parser.addOption \l,'list',null,\list
 
 parser.addOption \m,'auto-make-directory',null,\auto_make_directory
 
+parser.addOption \n,'no-watch',null,\no_watch
 
 if not (metadata.name) then return false
 
@@ -78,13 +79,15 @@ if (parser.help.count!) > 0
 
       -d --dry-run               perform a trial run without making any changes
 
-      -w --watch-config-file     restart on config file change by default.
+      -w --watch-config-file     restart on config file change
 
       -c --config                path to YAML configuration file
 
       -l --list                  list all user commands
 
-      -m --auto-make-directory   make remote directory if it doesn't exist.
+      -m --auto-make-directory   make remote directory if it doesn't exist
+
+      -n --no-watch              force disable any and all watches
 
       ---- shorthands ----
 
@@ -205,6 +208,8 @@ info = {}
     ..watch_config_file   = wcf
     ..list                = parser.list.count!
     ..auto_make_directory = parser.auto_make_directory.count!
+    ..no_watch            = parser.no_watch.count!
+
 
 
 # [handle vars parsing gets really messy, be careful ]
@@ -1130,14 +1135,13 @@ exec-finale = (data) ->*
     postscript.length
     \ok
     " exec-finale"
-    c.warn "[#{postscript.length}] "
+    c.warn "(#{postscript.length}) "
 
   for cmd in postscript
 
     log.verbose cmd
 
     yield from cont cmd
-
 
 exec_rsync = (data,each) ->*
 
@@ -1287,7 +1291,7 @@ remote_main_proc = (data,remotetask) ->*
 
   {remotehost,remotefold} = lconfig
 
-  disp = lit [("[#{remotetask.length}] "),(remotehost + ":" + remotefold)],[c.warn,c.grey]
+  disp = lit [("(#{remotetask.length}) "),(remotehost + ":" + remotefold)],[c.warn,c.grey]
 
   log.normal do
     remotetask.length
@@ -1339,7 +1343,7 @@ onchange = (data) ->*
     locale.length
     \ok
     " exec-locale"
-    c.warn "[#{locale.length}]"
+    c.warn "(#{locale.length})"
 
   for cmd in locale
 
@@ -1446,7 +1450,7 @@ print_final_message = (log,lconfig,info) -> (signal) !->
   signal = resolve_signal signal,log
 
 
-  if (lconfig.watch.length is 0)
+  if (lconfig.watch.length is 0) or (info.options.no_watch > 0)
 
     lconfig.rl.close!
 
@@ -1469,7 +1473,9 @@ print_final_message = (log,lconfig,info) -> (signal) !->
 
 ms_create_watch = (lconfig,info,log) ->
 
-  if (lconfig.watch.length > 0)
+  should_I_watch = (lconfig.watch.length > 0) and (info.options.no_watch is 0)
+
+  if should_I_watch
 
     disp = lconfig.watch
 
@@ -1480,16 +1486,17 @@ ms_create_watch = (lconfig,info,log) ->
       disp.unshift c.pink "CF"
 
     log.normal do
-      lconfig.watch.length
+      should_I_watch
       \err_light
       "    watching"
       [(c.warn I) for I in disp].join " "
 
     log.normal do
-      lconfig.ignore.length
+      (should_I_watch and lconfig.ignore.length)
       \err_light
       "     ignored"
       [(c.warn I) for I in lconfig.ignore].join " "
+
 
   ms_file_watch = do
 
@@ -1511,7 +1518,7 @@ ms_create_watch = (lconfig,info,log) ->
 
     #--------------------------------------------------------------------------------------
 
-    if lconfig.watch.length > 0
+    if should_I_watch
 
       watcher = chokidar.watch do
         lconfig.watch
@@ -1616,6 +1623,7 @@ restart = (info,log)->*
   [lconfig,log] = vari
 
   ms_create_watch lconfig,info,log
+
 
 
 get_all = (info) ->*

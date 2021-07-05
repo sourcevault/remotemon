@@ -24,7 +24,7 @@ defargs: [pi@192.168.43.50,package.json,-tt]
 # remotehost: pi@192.168.43.50
 
 
-watch: false
+# watch: false
 rsync: false
 
 ignore:
