@@ -78,7 +78,7 @@ ytv:
 
 
 echo:
-  exec-remote:
+  exec-locale:
     - echo 'hello world'
 
 

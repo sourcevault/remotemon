@@ -234,6 +234,10 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 
 - `-c --config` path to YAML configuration file
 
+- `-n --no-watch` force disable any and all watches
+
+- `-s --no-header` do not show header message
+
 ##### 🔴 Bugs
 
 - [same object ref doesn't work #6](https://github.com/arthurlacoste/tampa/issues/6)

@@ -30,7 +30,7 @@ compile:
 
 # 	remotemon longname -w foo bar
 
-	remotemon echo -n
+	remotemon echo -n -s
 
 
 

@@ -39,6 +39,8 @@ parser.addOption \m,'auto-make-directory',null,\auto_make_directory
 
 parser.addOption \n,'no-watch',null,\no_watch
 
+parser.addOption \s,'no-header',null,\no_header
+
 if not (metadata.name) then return false
 
 try
@@ -89,6 +91,8 @@ if (parser.help.count!) > 0
 
       -n --no-watch              force disable any and all watches
 
+      -s --no-header             do not show header messages
+
       ---- shorthands ----
 
       CF <-- for configuration file
@@ -112,7 +116,11 @@ if (parser.help.count!) > 0
 
   return
 
-print.show-header!
+no_header = parser.no_header.count!
+
+if not no_header
+
+  print.show-header!
 
 if (parser.version.count! > 0)
   return
@@ -167,9 +175,11 @@ findfile = (filename) ->
 
   filenames =  [(c.er1 I) for I in allfiles].join c.warn " > "
 
-  l lit do
-    ["[#{metadata.name}]"," using ",filenames]
-    [c.er1,c.er1,c.er1]
+  if not no_header
+
+    l lit do
+      ["[#{metadata.name}]"," using ",filenames]
+      [c.er1,c.er1,c.er1]
 
   return allfiles
 
@@ -209,6 +219,7 @@ info = {}
     ..list                = parser.list.count!
     ..auto_make_directory = parser.auto_make_directory.count!
     ..no_watch            = parser.no_watch.count!
+    ..no_header           = no_header
 
 
 
