@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, data, com, print, global_data, readJson, most, j, exec, chokidar, most_create, updateNotifier, fs, metadata, optionParser, tampax, readline, dotpat, spawn, l, z, zj, R, lit, c, wait, noop, be, parser, rest, E, pkg, notifier, str, no_header, isvar, vars, args, search_for_default_config_file, get_all_yaml_files, findfile, user_config_file, all_files, wcf, x$, info, y$, vre, yaml_tokenize, isref, modify_yaml, nPromise, rmdef, only_str, exec_list_option, tampax_parse, V, mergeArray, defargs_main, unu, is_false, is_true, rsync_arr2obj, organize_rsync, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, get_all, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, data, com, print, global_data, readJson, most, j, exec, chokidar, most_create, updateNotifier, fs, metadata, optionParser, tampax, readline, dotpat, spawn, l, z, zj, R, lit, c, wait, noop, be, parser, rest, E, pkg, notifier, str, silent, isvar, vars, args, search_for_default_config_file, get_all_yaml_files, findfile, user_config_file, all_files, wcf, x$, info, y$, vre, yaml_tokenize, isref, modify_yaml, nPromise, rmdef, only_str, exec_list_option, tampax_parse, V, mergeArray, defargs_main, unu, is_false, is_true, rsync_arr2obj, organize_rsync, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, get_all, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), data = ref$.data, com = ref$.com, print = ref$.print;
 global_data = data;
 readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, updateNotifier = com.updateNotifier, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
@@ -17,7 +17,7 @@ parser.addOption('c', 'config', null, 'config').argument('FILE');
 parser.addOption('l', 'list', null, 'list');
 parser.addOption('m', 'auto-make-directory', null, 'auto_make_directory');
 parser.addOption('n', 'no-watch', null, 'no_watch');
-parser.addOption('s', 'no-header', null, 'no_header');
+parser.addOption('s', 'silent', null, 'silent');
 if (!metadata.name) {
   return false;
 }
@@ -36,12 +36,12 @@ try {
   notifier.notify();
 } catch (e$) {}
 if (parser.help.count() > 0) {
-  str = "remotemon version " + metadata.version + "\n\noptions:\n\n  -v --verbose               more detail\n\n  -vv                        much more detail\n\n  -h --help                  display help message\n\n  -V --version               displays version number\n\n  -d --dry-run               perform a trial run without making any changes\n\n  -w --watch-config-file     restart on config file change\n\n  -c --config                path to YAML configuration file\n\n  -l --list                  list all user commands\n\n  -m --auto-make-directory   make remote directory if it doesn't exist\n\n  -n --no-watch              force disable any and all watches\n\n  -s --no-header             do not show header messages\n\n  ---- shorthands ----\n\n  CF <-- for configuration file\n\nBy default remotemon will look for .remotemon.yaml in current directory and one level up (only).\n\nusing --config <filename>.yaml option will direct remotemon to use <filename>.yaml as config file :\n\n> remotemon --config custom.yaml\n> remotemon --config custom.yaml -v\n\nvalues for internal variables (using .global object) can be changed using '=' (similar to makefiles) :\n\n> remotemon --config custom.yaml --verbose file=dist/main.js\n\n[ documentation ] @ [ https://github.com/sourcevault/remotemon#readme.md ]\n";
+  str = "remotemon version " + metadata.version + "\n\noptions:\n\n  -v --verbose               more detail\n\n  -vv                        much more detail\n\n  -h --help                  display help message\n\n  -V --version               displays version number\n\n  -d --dry-run               perform a trial run without making any changes\n\n  -w --watch-config-file     restart on config file change\n\n  -c --config                path to YAML configuration file\n\n  -l --list                  list all user commands\n\n  -m --auto-make-directory   make remote directory if it doesn't exist\n\n  -n --no-watch              force disable any and all watches\n\n  -s --silent                do not show remotemon messages\n\n  ---- shorthands ----\n\n  CF <-- for configuration file\n\nBy default remotemon will look for .remotemon.yaml in current directory and one level up (only).\n\nusing --config <filename>.yaml option will direct remotemon to use <filename>.yaml as config file :\n\n> remotemon --config custom.yaml\n> remotemon --config custom.yaml -v\n\nvalues for internal variables (using .global object) can be changed using '=' (similar to makefiles) :\n\n> remotemon --config custom.yaml --verbose file=dist/main.js\n\n[ documentation ] @ [ https://github.com/sourcevault/remotemon#readme.md ]\n";
   l(str);
   return;
 }
-no_header = parser.no_header.count();
-if (!no_header) {
+silent = parser.silent.count();
+if (!silent) {
   print.showHeader();
 }
 if (parser.version.count() > 0) {
@@ -91,7 +91,7 @@ findfile = function(filename){
     }
     return results$;
   }()).join(c.warn(" > "));
-  if (!no_header) {
+  if (!silent) {
     l(lit(["[" + metadata.name + "]", " using ", filenames], [c.er1, c.er1, c.er1]));
   }
   return allfiles;
@@ -121,7 +121,7 @@ y$.watch_config_file = wcf;
 y$.list = parser.list.count();
 y$.auto_make_directory = parser.auto_make_directory.count();
 y$.no_watch = parser.no_watch.count();
-y$.no_header = no_header;
+y$.silent = silent;
 vre = /(\s*#\s*){0,1}(\s*)(\S*):/;
 yaml_tokenize = function(data){
   var lines, all, i$, len$, I, torna, __, iscommeted, spaces, name, asbool, acc, temp, to$, current;
@@ -680,7 +680,7 @@ create_logger = function(info, gconfig){
   } else {
     verbose = info.options.verbose;
   }
-  log = print.create_logger(buildname, verbose);
+  log = print.create_logger(buildname, verbose, info.options.silent);
   return [lconfig, log, buildname];
 };
 update = function*(lconfig, yaml_text, info){
@@ -789,8 +789,8 @@ exec_rsync = function*(data, each){
   remotehost = lconfig.remotehost, remotefold = lconfig.remotefold;
   cmd = create_rsync_cmd(each, remotehost);
   disp = each.src.join(" ") + " ->" + " " + remotehost + ":" + each.des;
-  log.normal('ok', lit([" rsync", " start"], [0, c.warn]), c.grey(disp));
-  log.verbose("....", cmd);
+  log.normal(true, 'ok', lit([" rsync", " start"], [0, c.warn]), c.grey(disp));
+  log.verbose("rsync ... ", cmd);
   status = (yield* cont(cmd, 'sync'));
   if (status !== 'ok') {
     log.normal('err_light', lit([" rsync", " break"], [c.pink, c.er2]), "");
@@ -798,7 +798,7 @@ exec_rsync = function*(data, each){
       return reject(status);
     }));
   } else {
-    return log.normal('ok', lit([" rsync ", "✔️ ok"], [0, c.ok]), "");
+    return log.normal(true, 'ok', lit([" rsync ", "✔️ ok"], [0, c.ok]), "");
   }
 };
 bko = be.known.obj;
@@ -870,8 +870,8 @@ check_if_remotedir_present = function*(data){
   }
 };
 remote_main_proc = function*(data, remotetask){
-  var lconfig, log, cont, remotehost, remotefold, disp, i$, len$, I, cmd, results$ = [];
-  lconfig = data.lconfig, log = data.log, cont = data.cont;
+  var lconfig, log, cont, info, remotehost, remotefold, disp, i$, len$, I, cmd, results$ = [];
+  lconfig = data.lconfig, log = data.log, cont = data.cont, info = data.info;
   remotehost = lconfig.remotehost, remotefold = lconfig.remotefold;
   disp = lit(["(" + remotetask.length + ") ", remotehost + ":" + remotefold], [c.warn, c.grey]);
   log.normal(remotetask.length, 'ok', " exec-remote", disp);
