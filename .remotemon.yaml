@@ -91,6 +91,13 @@ echo:
     - archive
     - recursive
 
+dry:
+  verbose: 1
+  exec-locale:
+    - echo 'from locale'
+  exec-remote:
+    - echo 'from remote'
+
 
 
 

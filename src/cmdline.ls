@@ -1189,7 +1189,6 @@ exec_rsync = (data,each) ->*
       lit [" rsync ","✔️ ok"],[0,c.ok]
       ""
 
-
 bko = be.known.obj
 
 check_if_remote_needed = bko
@@ -1257,7 +1256,6 @@ check_if_remotedir_present = (data) ->*
     else
 
       userinput = yield new Promise (resolve,reject) ->
-
 
         Q = lit do
           ["[#{metadata.name}]"," #{lconfig.remotefold}"," not on remote, create directory ","#{lconfig.remotehost}:#{lconfig.remotefold}"," ? [r (as root)|y (as user)|n] "]
@@ -1372,9 +1370,11 @@ onchange = (data) ->*
 
       yield from exec_rsync data,each
 
-  if remotetask.length and (not info.options.dryRun)
+  if remotetask.length
 
-    yield from check_if_remotedir_present data
+    if (not info.options.dryRun)
+
+      yield from check_if_remotedir_present data
 
     yield from remote_main_proc data,remotetask
 
