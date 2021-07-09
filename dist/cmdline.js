@@ -914,8 +914,10 @@ onchange = function*(data){
       (yield* exec_rsync(data, each));
     }
   }
-  if (remotetask.length && !info.options.dryRun) {
-    (yield* check_if_remotedir_present(data));
+  if (remotetask.length) {
+    if (!info.options.dryRun) {
+      (yield* check_if_remotedir_present(data));
+    }
     (yield* remote_main_proc(data, remotetask));
   }
   (yield* execFinale(data));
