@@ -353,7 +353,7 @@ normal_internal = hoplon.guard.unary
 
   (args,state) ->
 
-    if args[0]
+    if args[0] and not state.silent
 
       normal_internal (R.drop 1,args),state
 
@@ -511,13 +511,15 @@ show.verbose = !-> verbose_internal arguments,@
 
 # ----------------------------------------------------------------
 
-create_logger = (buildname,verbose) ->
+create_logger = (buildname,verbose,silent) ->
 
   instance                = Object.create show
 
   instance.buildname      = buildname
 
   instance.verbose_level  = verbose
+
+  instance.silent         = silent
 
   instance
 

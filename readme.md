@@ -236,7 +236,7 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 
 - `-n --no-watch` force disable any and all watches
 
-- `-s --no-header` do not show header message
+- `-s --silent` do not show `remotemon` message
 
 ##### 🔴 Bugs
 

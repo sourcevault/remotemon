@@ -11,7 +11,7 @@ global:
     - null
     - hungryhippo
 
-remotehost: pi@192.168.43.50
+remotehost: pi@192.168.43.51
 
 ssh: -tt -o LogLevel=QUIET -p {{global.sshport}}
 
@@ -78,8 +78,21 @@ ytv:
 
 
 echo:
+  verbose: 1
   exec-locale:
-    - echo 'hello world'
+    - echo 'from locale'
+  exec-remote:
+    - echo 'from remote'
+  rsync:
+    - exclude:
+      - node_modules
+      - .git
+    - rsh: ssh -p 45
+    - archive
+    - recursive
+
+
+
 
 
   # verbose: 0

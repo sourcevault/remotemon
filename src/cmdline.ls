@@ -39,7 +39,7 @@ parser.addOption \m,'auto-make-directory',null,\auto_make_directory
 
 parser.addOption \n,'no-watch',null,\no_watch
 
-parser.addOption \s,'no-header',null,\no_header
+parser.addOption \s,'silent',null,\silent
 
 if not (metadata.name) then return false
 
@@ -62,8 +62,6 @@ try
   notifier.notify!
 
 if (parser.help.count!) > 0
-
-  # -s --silent                ignore all remotemon messages
 
   str =
     """
@@ -91,7 +89,7 @@ if (parser.help.count!) > 0
 
       -n --no-watch              force disable any and all watches
 
-      -s --no-header             do not show header messages
+      -s --silent                do not show remotemon messages
 
       ---- shorthands ----
 
@@ -116,9 +114,9 @@ if (parser.help.count!) > 0
 
   return
 
-no_header = parser.no_header.count!
+silent = parser.silent.count!
 
-if not no_header
+if not silent
 
   print.show-header!
 
@@ -175,7 +173,7 @@ findfile = (filename) ->
 
   filenames =  [(c.er1 I) for I in allfiles].join c.warn " > "
 
-  if not no_header
+  if not silent
 
     l lit do
       ["[#{metadata.name}]"," using ",filenames]
@@ -219,7 +217,7 @@ info = {}
     ..list                = parser.list.count!
     ..auto_make_directory = parser.auto_make_directory.count!
     ..no_watch            = parser.no_watch.count!
-    ..no_header           = no_header
+    ..silent              = silent
 
 
 
@@ -1054,7 +1052,7 @@ create_logger = (info,gconfig) ->
 
     verbose = info.options.verbose
 
-  log = print.create_logger buildname,verbose
+  log = print.create_logger buildname,verbose,info.options.silent
 
   [lconfig,log,buildname]
 
@@ -1165,11 +1163,12 @@ exec_rsync = (data,each) ->*
   disp = (each.src.join " ") + " ->" + " " + remotehost + ":" + each.des
 
   log.normal do
+    true
     \ok
     lit [" rsync"," start"],[0,c.warn]
     c.grey disp
 
-  log.verbose "....",cmd
+  log.verbose "rsync ... ",cmd
 
   status = yield from cont cmd,\sync
 
@@ -1185,6 +1184,7 @@ exec_rsync = (data,each) ->*
   else
 
     log.normal do
+      true
       \ok
       lit [" rsync ","✔️ ok"],[0,c.ok]
       ""
@@ -1298,7 +1298,7 @@ check_if_remotedir_present = (data) ->*
 
 remote_main_proc = (data,remotetask) ->*
 
-  {lconfig,log,cont} = data
+  {lconfig,log,cont,info} = data
 
   {remotehost,remotefold} = lconfig
 
@@ -1459,7 +1459,6 @@ resolve_signal = be.arr
 print_final_message = (log,lconfig,info) -> (signal) !->
 
   signal = resolve_signal signal,log
-
 
   if (lconfig.watch.length is 0) or (info.options.no_watch > 0)
 

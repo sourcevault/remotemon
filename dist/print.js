@@ -180,7 +180,7 @@ normal_internal = hoplon.guard.unary.wh(function(arg$){
   type = arg$[0];
   return typeof type !== 'string';
 }, function(args, state){
-  if (args[0]) {
+  if (args[0] && !state.silent) {
     return normal_internal(R.drop(1, args), state);
   } else {}
 }).ar(1, function(arg$){
@@ -280,11 +280,12 @@ show.normal = function(){
 show.verbose = function(){
   verbose_internal(arguments, this);
 };
-create_logger = function(buildname, verbose){
+create_logger = function(buildname, verbose, silent){
   var instance;
   instance = Object.create(show);
   instance.buildname = buildname;
   instance.verbose_level = verbose;
+  instance.silent = silent;
   return instance;
 };
 print_wrap = function(f){
