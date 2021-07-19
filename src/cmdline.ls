@@ -135,7 +135,7 @@ args = R.reject isvar,rest
 
 search_for_default_config_file = (dirname) ->
 
-  out = " ls -lAh #{dirname} | grep -v '^d' | awk 'NR>1 {print $NF}'"
+  out = " ls -lAh #{dirname} 2>/dev/null | grep -v '^d' | awk 'NR>1 {print $NF}'"
 
   out
   |> exec
