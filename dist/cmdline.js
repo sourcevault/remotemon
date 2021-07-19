@@ -54,7 +54,7 @@ rest));
 args = R.reject(isvar, rest);
 search_for_default_config_file = function(dirname){
   var out;
-  out = " ls -lAh " + dirname + " | grep -v '^d' | awk 'NR>1 {print $NF}'";
+  out = " ls -lAh " + dirname + " 2>/dev/null | grep -v '^d' | awk 'NR>1 {print $NF}'";
   return R.map(function(x){
     return dirname + "/" + x;
   })(
