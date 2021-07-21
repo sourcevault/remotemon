@@ -463,6 +463,23 @@ V.check_config_file = be.known.obj
 
 mergeArray = (deflength,def,arr) ->
 
+  [...,tail] = def
+
+  if tail is Infinity
+
+    len =  def.length - 1
+
+    rest = arr.splice len,arr.length
+
+    if rest.length > 0
+
+      rest =  [rest.join " "]
+
+    arr = [...arr,...rest]
+
+    def[len] = ''
+
+
   fin = []
 
   for I from 0 til deflength
@@ -479,11 +496,12 @@ mergeArray = (deflength,def,arr) ->
 
       fin[I] = arr[I]
 
+
   fin
 
 # ----------------------------------------
 
-defargs_main = be.undefnull.cont (...,state)-> [\arr,state.cmdargs.length,[]]
+defarg_main = be.undefnull.cont (...,state)-> [\arr,state.cmdargs.length,[]]
 
 .alt be.arr.cont (arr,...,state) ->
 
@@ -497,17 +515,27 @@ defargs_main = be.undefnull.cont (...,state)-> [\arr,state.cmdargs.length,[]]
 
   [\arr,len,[str]]
 
+.or do
+
+  be (x) -> (x is Infinity)
+
+  .cont (...,state) ->
+
+    data = state.cmdargs.join " "
+
+    [\arr,1,[data]]
+
 .alt be.int.pos.cont (num,...,state) ->
 
   len = R.max num,state.cmdargs.length
 
   [\req,len,[]]
 
-.err [\:defargs.type,'is not of type array / str / int.pos']
+.err [\:defarg.type,'is not of type array / str / int.pos']
 
 # ----------------------------------------
 
-V.defargs = defargs_main
+V.defarg = defarg_main
 
 .cont (data,...,state) ->
 
@@ -517,19 +545,19 @@ V.defargs = defargs_main
 
   data
 
-.and (impdefargs,...,info) ->
+.and (impdefarg,...,info) ->
 
-  [type,len,list] = impdefargs
+  [type,len,list] = impdefarg
 
   if (type is \req) and (len > list.length)
 
-    return [false,[\:defargs.req,len]]
+    return [false,[\:defarg.req,len]]
 
   true
 
 .err (E,...,info) ->
 
-  path = [\defargs]
+  path = [\defarg]
 
   if info.cmdname
 
@@ -538,8 +566,8 @@ V.defargs = defargs_main
   [type,msg] = E
 
   F = switch type
-  | \:defargs.req  => print.defargs_req
-  | \:defargs.type => print.basicError
+  | \:defarg.req   => print.defarg_req
+  | \:defarg.type  => print.basicError
   | otherwise      => print.basicError
 
   F msg,path,info.cmd_filename
@@ -1058,11 +1086,11 @@ create_logger = (info,gconfig) ->
 
 update = (lconfig,yaml_text,info)->*
 
-  defargs = V.defargs.auth lconfig.defargs,info
+  defarg = V.defarg.auth lconfig.defarg,info
 
-  if defargs.error then return \error
+  if defarg.error then return \error
 
-  [...,args] = defargs.value
+  [...,args] = defarg.value
 
   [__,origin] = yield tampax_parse yaml_text,args,info.cmd_filename
 
@@ -1144,7 +1172,7 @@ exec-finale = (data) ->*
     postscript.length
     \ok
     " exec-finale"
-    c.warn "(#{postscript.length}) "
+    c.warn "#{postscript.length}"
 
   for cmd in postscript
 
@@ -1300,7 +1328,7 @@ remote_main_proc = (data,remotetask) ->*
 
   {remotehost,remotefold} = lconfig
 
-  disp = lit [("(#{remotetask.length}) "),(remotehost + ":" + remotefold)],[c.warn,c.grey]
+  disp = lit [("#{remotetask.length} "),"• ",(remotehost + ":" + remotefold)],[c.warn,c.ok,c.grey]
 
   log.normal do
     remotetask.length
@@ -1352,7 +1380,7 @@ onchange = (data) ->*
     locale.length
     \ok
     " exec-locale"
-    c.warn "(#{locale.length})"
+    c.warn "#{locale.length}"
 
   for cmd in locale
 
@@ -1618,13 +1646,13 @@ restart = (info,log)->*
 
     lconfig = gconfig[info.cmdname]
 
-    defargs = lconfig.defargs
+    defarg  = lconfig.defarg
 
   else
 
     lconfig = gconfig
 
-    defargs = gconfig.defargs
+    defarg  = gconfig.defarg
 
   vari = yield from update lconfig,yaml_text,info
 

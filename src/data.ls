@@ -43,7 +43,7 @@ data.selected_keys = {}
      \rsync
      \global
      \ignore
-     \defargs
+     \defarg
      \verbose
      \initialize
      \remotefold

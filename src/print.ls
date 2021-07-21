@@ -207,7 +207,7 @@ print.reqError = (props,path,filename) ->
 
   l c.er1 "  ." + props.join " ."
 
-print.defargs_req = (len) ->
+print.defarg_req = (len) ->
 
   l lit do
     ["[#{metadata.name}]"," • dataError •\n"]
