@@ -153,7 +153,7 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 - `ssh`         - custom `ssh` config options, default is `-tt -o LogLevel=QUIET`.
 - `verbose`     - hardcode verbose level of printing for command.
 - `description` - provide a brief description of what the command does.
-- `defargs`     - default values for empty commandline arguments, for enforcing minimum commandline arguments, a number can be provided.
+- `defarg`      - default values for empty commandline arguments, for enforcing minimum commandline arguments, a number can be provided.
 - `initialize`  - boolean value to specify if a first run is performed or not when command is run, default is `true`.
 - `chokidar`- options to use for ![chokidar](https://github.com/paulmillr/chokidar) module :
   - `awaitWriteFinish`
@@ -208,9 +208,9 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 
   We can in situation like that use numbered templating `{{0}}`,`{{1}}` in our config file.
 
-  `defargs` field can also be used to provide default values if the user does not specify them.
+  `defarg` field can also be used to provide default values if the user does not specify them.
 
-  If we know the most common file name is `/dist/main.js` we could use `defargs: [/dist/main.js]` to not have to always provide the filename as an argument.
+  If we know the most common file name is `/dist/main.js` we could use `defarg: [/dist/main.js]` to not have to always provide the filename as an argument.
 
 ***When not to use remotemon ?***
 

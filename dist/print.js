@@ -116,7 +116,7 @@ print.reqError = function(props, path, filename){
   l(lit(["  mandatory value " + c.er1("." + last) + " not present.\n\n", "  all mandatory value(s) :\n"], [c.grey, c.grey]));
   return l(c.er1("  ." + props.join(" .")));
 };
-print.defargs_req = function(len){
+print.defarg_req = function(len){
   l(lit(["[" + metadata.name + "]", " • dataError •\n"], [c.er2, c.er3]));
   return l(lit(["  command requires minimum of ", len, " commandline argument."], [c.er2, c.er3, c.er2]));
 };

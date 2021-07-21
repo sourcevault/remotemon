@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, data, com, print, global_data, readJson, most, j, exec, chokidar, most_create, updateNotifier, fs, metadata, optionParser, tampax, readline, dotpat, spawn, l, z, zj, R, lit, c, wait, noop, be, parser, rest, E, pkg, notifier, str, silent, isvar, vars, args, search_for_default_config_file, get_all_yaml_files, findfile, user_config_file, all_files, wcf, x$, info, y$, vre, yaml_tokenize, isref, modify_yaml, nPromise, rmdef, only_str, exec_list_option, tampax_parse, V, mergeArray, defargs_main, unu, is_false, is_true, rsync_arr2obj, organize_rsync, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, get_all, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, data, com, print, global_data, readJson, most, j, exec, chokidar, most_create, updateNotifier, fs, metadata, optionParser, tampax, readline, dotpat, spawn, l, z, zj, R, lit, c, wait, noop, be, parser, rest, E, pkg, notifier, str, silent, isvar, vars, args, search_for_default_config_file, get_all_yaml_files, findfile, user_config_file, all_files, wcf, x$, info, y$, vre, yaml_tokenize, isref, modify_yaml, nPromise, rmdef, only_str, exec_list_option, tampax_parse, V, mergeArray, defarg_main, unu, is_false, is_true, rsync_arr2obj, organize_rsync, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, get_all, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), data = ref$.data, com = ref$.com, print = ref$.print;
 global_data = data;
 readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, updateNotifier = com.updateNotifier, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
@@ -295,7 +295,17 @@ V.check_config_file = be.known.obj.on('cmd', be.str.and(function(cmd){
   return true;
 });
 mergeArray = function(deflength, def, arr){
-  var fin, i$, I;
+  var tail, len, rest, fin, i$, I;
+  tail = def[def.length - 1];
+  if (tail === Infinity) {
+    len = def.length - 1;
+    rest = arr.splice(len, arr.length);
+    if (rest.length > 0) {
+      rest = [rest.join(" ")];
+    }
+    arr = arrayFrom$(arr).concat(arrayFrom$(rest));
+    def[len] = '';
+  }
   fin = [];
   for (i$ = 0; i$ < deflength; ++i$) {
     I = i$;
@@ -309,7 +319,7 @@ mergeArray = function(deflength, def, arr){
   }
   return fin;
 };
-defargs_main = be.undefnull.cont(function(){
+defarg_main = be.undefnull.cont(function(){
   var state;
   state = arguments[arguments.length - 1];
   return ['arr', state.cmdargs.length, []];
@@ -323,39 +333,46 @@ defargs_main = be.undefnull.cont(function(){
   state = arguments[arguments.length - 1];
   len = R.max(1, state.cmdargs.length);
   return ['arr', len, [str]];
+})).or(be(function(x){
+  return x === Infinity;
+}).cont(function(){
+  var state, data;
+  state = arguments[arguments.length - 1];
+  data = state.cmdargs.join(" ");
+  return ['arr', 1, [data]];
 })).alt(be.int.pos.cont(function(num){
   var state, len;
   state = arguments[arguments.length - 1];
   len = R.max(num, state.cmdargs.length);
   return ['req', len, []];
-})).err([':defargs.type', 'is not of type array / str / int.pos']);
-V.defargs = defargs_main.cont(function(data){
+})).err([':defarg.type', 'is not of type array / str / int.pos']);
+V.defarg = defarg_main.cont(function(data){
   var state, __, len, list;
   state = arguments[arguments.length - 1];
   __ = data[0], len = data[1], list = data[2];
   data[2] = mergeArray(len, data[2], state.cmdargs);
   return data;
-}).and(function(impdefargs){
+}).and(function(impdefarg){
   var info, type, len, list;
   info = arguments[arguments.length - 1];
-  type = impdefargs[0], len = impdefargs[1], list = impdefargs[2];
+  type = impdefarg[0], len = impdefarg[1], list = impdefarg[2];
   if (type === 'req' && len > list.length) {
-    return [false, [':defargs.req', len]];
+    return [false, [':defarg.req', len]];
   }
   return true;
 }).err(function(E){
   var info, path, type, msg, F;
   info = arguments[arguments.length - 1];
-  path = ['defargs'];
+  path = ['defarg'];
   if (info.cmdname) {
     path.unshift(info.cmdname);
   }
   type = E[0], msg = E[1];
   F = (function(){
     switch (type) {
-    case ':defargs.req':
-      return print.defargs_req;
-    case ':defargs.type':
+    case ':defarg.req':
+      return print.defarg_req;
+    case ':defarg.type':
       return print.basicError;
     default:
       return print.basicError;
@@ -684,12 +701,12 @@ create_logger = function(info, gconfig){
   return [lconfig, log, buildname];
 };
 update = function*(lconfig, yaml_text, info){
-  var defargs, ref$, args, __, origin, vout, gconfig, log, buildname;
-  defargs = V.defargs.auth(lconfig.defargs, info);
-  if (defargs.error) {
+  var defarg, ref$, args, __, origin, vout, gconfig, log, buildname;
+  defarg = V.defarg.auth(lconfig.defarg, info);
+  if (defarg.error) {
     return 'error';
   }
-  ref$ = defargs.value, args = ref$[ref$.length - 1];
+  ref$ = defarg.value, args = ref$[ref$.length - 1];
   ref$ = (yield tampax_parse(yaml_text, args, info.cmd_filename)), __ = ref$[0], origin = ref$[1];
   vout = V.def.auth(origin, {
     def: {},
@@ -775,7 +792,7 @@ execFinale = function*(data){
   var info, lconfig, log, cont, postscript, i$, len$, cmd, results$ = [];
   info = data.info, lconfig = data.lconfig, log = data.log, cont = data.cont;
   postscript = lconfig['exec-finale'];
-  log.normal(postscript.length, 'ok', " exec-finale", c.warn("(" + postscript.length + ") "));
+  log.normal(postscript.length, 'ok', " exec-finale", c.warn(postscript.length + ""));
   for (i$ = 0, len$ = postscript.length; i$ < len$; ++i$) {
     cmd = postscript[i$];
     log.verbose(cmd);
@@ -873,7 +890,7 @@ remote_main_proc = function*(data, remotetask){
   var lconfig, log, cont, info, remotehost, remotefold, disp, i$, len$, I, cmd, results$ = [];
   lconfig = data.lconfig, log = data.log, cont = data.cont, info = data.info;
   remotehost = lconfig.remotehost, remotefold = lconfig.remotefold;
-  disp = lit(["(" + remotetask.length + ") ", remotehost + ":" + remotefold], [c.warn, c.grey]);
+  disp = lit([remotetask.length + " ", "• ", remotehost + ":" + remotefold], [c.warn, c.ok, c.grey]);
   log.normal(remotetask.length, 'ok', " exec-remote", disp);
   for (i$ = 0, len$ = remotetask.length; i$ < len$; ++i$) {
     I = remotetask[i$];
@@ -899,7 +916,7 @@ onchange = function*(data){
   remotehost = lconfig.remotehost, remotefold = lconfig.remotefold;
   locale = lconfig['exec-locale'];
   remotetask = lconfig['exec-remote'];
-  log.normal(locale.length, 'ok', " exec-locale", c.warn("(" + locale.length + ")"));
+  log.normal(locale.length, 'ok', " exec-locale", c.warn(locale.length + ""));
   for (i$ = 0, len$ = locale.length; i$ < len$; ++i$) {
     cmd = locale[i$];
     log.verbose(cmd);
@@ -1069,7 +1086,7 @@ ms_create_watch = function(lconfig, info, log){
   return ms.drain();
 };
 restart = function*(info, log){
-  var msg, filename, yaml_text, E, fup, gconfig, lconfig, defargs, vari;
+  var msg, filename, yaml_text, E, fup, gconfig, lconfig, defarg, vari;
   msg = lit([info.cmd_filename + "", " changed, restarting watch"], [c.warn, c.er1]);
   log.normal('err', msg);
   filename = info.cmd_filename;
@@ -1087,10 +1104,10 @@ restart = function*(info, log){
   filename = fup[0], gconfig = fup[1];
   if (info.cmdname) {
     lconfig = gconfig[info.cmdname];
-    defargs = lconfig.defargs;
+    defarg = lconfig.defarg;
   } else {
     lconfig = gconfig;
-    defargs = gconfig.defargs;
+    defarg = gconfig.defarg;
   }
   vari = (yield* update(lconfig, yaml_text, info));
   if (vari === 'error') {
