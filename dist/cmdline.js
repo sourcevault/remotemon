@@ -615,14 +615,14 @@ V.user = be.obj.or(be.undefnull.cont(function(){
   return {};
 })).and(be.restricted(global_data.selected_keys.arr)).alt(V.strlist.empty.cont(function(list){
   return {
-    'exec-locale': list
+    'locale': list
   };
-})).on('initialize', V.maybe.bool).on('watch', V.watch.user).on('verbose', be.num.or(unu)).on('ignore', V.ignore.user).on('ssh', be.str.or(unu)).on(['exec-remote', 'exec-locale', 'exec-finale'], V.execlist).on('rsync', V.rsync.init).on(['remotehost', 'remotefold'], be.str.or(unu.cont(function(v, key){
+})).on('initialize', V.maybe.bool).on('watch', V.watch.user).on('verbose', be.num.or(unu)).on('ignore', V.ignore.user).on('ssh', be.str.or(unu)).on(['remote', 'locale', 'finale'], V.execlist).on('rsync', V.rsync.init).on(['remotehost', 'remotefold'], be.str.or(unu.cont(function(v, key){
   var origin;
   origin = arguments[arguments.length - 1];
   return origin[key];
 }))).cont(organize_rsync).and(V.rsync.throw_if_error);
-V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on('verbose', be.num.or(unu.cont(false))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', V.watch.def).on('ignore', V.ignore.def).on('ssh', be.str.or(be.undefnull.cont(global_data.def.ssh))).on(['exec-locale', 'exec-finale', 'exec-remote'], V.execlist).on('rsync', V.rsync.init).cont(organize_rsync).and(V.rsync.throw_if_error).map(function(value, key){
+V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on('verbose', be.num.or(unu.cont(false))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', V.watch.def).on('ignore', V.ignore.def).on('ssh', be.str.or(be.undefnull.cont(global_data.def.ssh))).on(['locale', 'finale', 'remote'], V.execlist).on('rsync', V.rsync.init).cont(organize_rsync).and(V.rsync.throw_if_error).map(function(value, key){
   var ref$, def, user, origin, put;
   ref$ = arguments[arguments.length - 1], def = ref$.def, user = ref$.user, origin = ref$.origin;
   switch (global_data.selected_keys.set.has(key)) {
@@ -681,7 +681,7 @@ V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on('verbose', be
 zero = function(arr){
   return arr.length === 0;
 };
-check_if_empty = be.known.obj.on('exec-locale', zero).on('exec-finale', zero).on('exec-remote', zero).on('rsync', be.arr.and(zero).or(V.isFalse)).cont(true).fix(false).wrap();
+check_if_empty = be.known.obj.on('locale', zero).on('finale', zero).on('remote', zero).on('rsync', be.arr.and(zero).or(V.isFalse)).cont(true).fix(false).wrap();
 create_logger = function(info, gconfig){
   var cmdname, lconfig, buildname, verbose, log;
   cmdname = info.cmdname;
@@ -791,8 +791,8 @@ create_rsync_cmd = function(rsync, remotehost){
 execFinale = function*(data){
   var info, lconfig, log, cont, postscript, i$, len$, cmd, results$ = [];
   info = data.info, lconfig = data.lconfig, log = data.log, cont = data.cont;
-  postscript = lconfig['exec-finale'];
-  log.normal(postscript.length, 'ok', " exec-finale", c.warn(postscript.length + ""));
+  postscript = lconfig['finale'];
+  log.normal(postscript.length, 'ok', " finale", c.warn(postscript.length + ""));
   for (i$ = 0, len$ = postscript.length; i$ < len$; ++i$) {
     cmd = postscript[i$];
     log.verbose(cmd);
@@ -819,7 +819,7 @@ exec_rsync = function*(data, each){
   }
 };
 bko = be.known.obj;
-check_if_remote_needed = bko.on('remotehost', be.undef).or(bko.on('remotefold', be.undef)).and(bko.on('exec-remote', be.not(zero)).or(bko.on('rsync', be.not(V.isFalse)))).cont(true).fix(false).wrap();
+check_if_remote_needed = bko.on('remotehost', be.undef).or(bko.on('remotefold', be.undef)).and(bko.on('remote', be.not(zero)).or(bko.on('rsync', be.not(V.isFalse)))).cont(true).fix(false).wrap();
 check_if_remotehost_present = function*(data){
   var lconfig, log, tryToSSH, E;
   lconfig = data.lconfig, log = data.log;
@@ -865,7 +865,7 @@ check_if_remotedir_present = function*(data){
             resolve('r');
             break;
           default:
-            log.normal('err', " exec-remote", lit(["cannot continue exec-remote without remotefolder ", lconfig.remotefold, "."], [c.er1, c.warn, c.er1, c.er1]));
+            log.normal('err', " remote", lit(["cannot continue exec-remote without remotefolder ", lconfig.remotefold, "."], [c.er1, c.warn, c.er1, c.er1]));
             reject('error');
           }
         });
@@ -882,7 +882,7 @@ check_if_remotedir_present = function*(data){
       }())), cmd = ref$[0], msg = ref$[1];
       mkdir = "ssh " + lconfig.ssh + " " + lconfig.remotehost + " '" + cmd + " " + lconfig.remotefold + "'";
       (yield* cont(mkdir));
-      return log.normal('ok', " exec-remote", lit([' ✔️ ok •', " " + lconfig.remotehost + ":" + lconfig.remotefold + " ", "created with ", msg + "", " permissions."], [c.ok, c.warn, c.grey, c.ok, c.grey]));
+      return log.normal('ok', " remote", lit([' ✔️ ok •', " " + lconfig.remotehost + ":" + lconfig.remotefold + " ", "created with ", msg + "", " permissions."], [c.ok, c.warn, c.grey, c.ok, c.grey]));
     }
   }
 };
@@ -891,7 +891,7 @@ remote_main_proc = function*(data, remotetask){
   lconfig = data.lconfig, log = data.log, cont = data.cont, info = data.info;
   remotehost = lconfig.remotehost, remotefold = lconfig.remotefold;
   disp = lit([remotetask.length + " ", "• ", remotehost + ":" + remotefold], [c.warn, c.ok, c.grey]);
-  log.normal(remotetask.length, 'ok', " exec-remote", disp);
+  log.normal(remotetask.length, 'ok', " remote", disp);
   for (i$ = 0, len$ = remotetask.length; i$ < len$; ++i$) {
     I = remotetask[i$];
     cmd = ("ssh " + lconfig.ssh + " ") + remotehost + " '" + ("cd " + remotefold + ";") + I + "'";
@@ -914,9 +914,9 @@ onchange = function*(data){
     return;
   }
   remotehost = lconfig.remotehost, remotefold = lconfig.remotefold;
-  locale = lconfig['exec-locale'];
-  remotetask = lconfig['exec-remote'];
-  log.normal(locale.length, 'ok', " exec-locale", c.warn(locale.length + ""));
+  locale = lconfig['locale'];
+  remotetask = lconfig['remote'];
+  log.normal(locale.length, 'ok', " locale", c.warn(locale.length + ""));
   for (i$ = 0, len$ = locale.length; i$ < len$; ++i$) {
     cmd = locale[i$];
     log.verbose(cmd);
