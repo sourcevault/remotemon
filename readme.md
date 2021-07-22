@@ -18,9 +18,149 @@ remotemon rpi.zsh # install zsh and get oh-my-zsh on the raspberry pi 😏
 remotemon ssh45 # to change default ssh port to 45 👮🏼‍♂️
 ```
 
-<!-- ![](https://github.com/sourcevault/remotemon/blob/dev/example.png) -->
-![](./example.png)
+```yaml
+# Example Config File
+add-ssh:
+  locale:
+    - ssh-copy-id {{remotehost}}
+  remote:
+    - chmod go-w /home/{{global.username}} # permission of home has to be correct
 
+ssh45:
+  locale:
+    - scp sshd_config {{remotehost}}:/tmp/sshd_config
+  remote:
+    - sudo mv /tmp/sshd_config /etc/ssh/sshd_config
+    - sudo systemctl restart ssh.service
+
+install.zsh:
+  locale:
+    - scp -P {{global.port}} install_oh_my_zsh.sh {{remotehost}}:/tmp
+  remote:
+    - sudo apt-get install zsh curl git -y
+    - sudo apt-get -y --fix-missing update && sudo apt-get -y --fix-missing upgrade
+    - yes | sudo apt install runit-systemd
+    - yes | sudo apt-get install iptables-persistent
+    - rm -rf /home/pi/.oh-my-zsh
+    - sh /tmp/install_oh_my_zsh.sh --unattended
+    - sudo git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+    - sudo touch ~/.hushlogin
+    - chsh -s $(which zsh)
+    - sudo apt-get install hostapd -y
+    - sudo apt-get install dnsmasq -y
+    - sudo apt-get install lshw -y
+    - yes | sudo apt install samba -y
+  finale:
+    - scp -P {{global.port}} .zshrc {{remotehost}}:~/.zshrc
+    - scp -P {{global.port}} custom.zsh-theme {{remotehost}}:~/.oh-my-zsh/themes/custom.zsh-theme
+
+
+install.wifi:
+  remote:
+    - sudo wget http://downloads.fars-robotics.net/wifi-drivers/install-wifi  -O /usr/bin/install-wifi
+    - sudo chmod +x /usr/bin/install-wifi
+    - sudo install-wifi -u 8188eu
+    - sudo install-wifi -u 8192eu
+
+iptable.init:
+  description: copy iptable setting
+  locale:
+    - scp -P {{global.port}} iptables.sh {{remotehost}}:{{remotefold}}/iptables.sh
+  remote:
+    - sudo {{remotefold}}/iptables.sh
+    - sudo netfilter-persistent save
+
+copy-dhcp-dns:
+  locale:
+    - scp -P {{global.port}} dnsmasq.conf {{remotehost}}:/tmp/dnsmasq.conf
+    - scp -P {{global.port}} sysctl.conf {{remotehost}}:/tmp/sysctl.conf
+    - scp -P {{global.port}} dhcpcd.conf {{remotehost}}:/etc/dhcpcd.conf
+
+  remote:
+    - sudo mv /tmp/dnsmasq.conf /etc/dnsmasq.conf
+    - sudo mv /tmp/sysctl.conf /etc/sysctl.conf
+    - sudo systemctl daemon-reload
+      # The service command is a wrapper script that allows system administrators
+      # to start, stop, and check the status of services without worrying too much
+      # about the actual init system being used.
+    - sudo service dhcpcd restart
+    - sudo systemctl restart dnsmasq
+
+hostapd.cp:
+  description:
+    - create a symbolic link to runit directory from workind directory.
+    - copy our hostapd setting to remote machine, and then create a log directory for svlog.
+  # watch: hostapd
+  # locale:
+  #   - scp -r -P {{global.port}} hostapd {{remotehost}}:{{remotefold}}
+
+  rsync:
+    - src: hostapd
+    - des: '{{remotefold}}'
+    - archive
+    - recursive
+    - rsh: ssh -p {{global.port}}
+
+  remote:
+    - sudo ln -sf {{remotefold}}/hostapd /etc/service/hostapd
+    - sudo mkdir -p /var/log/hostapd
+
+reboot:
+  remote:
+    - sudo reboot
+
+shutdown:
+  remote:
+    - shutdown -h now
+
+# --------------------------------------------------------------------------------------------------------
+
+scp.send:
+  description: remote_file_name local_file_name
+  locale:
+    - scp -P {{global.port}} {{1}} {{remotehost}}:/tmp/
+  remote:
+    - sudo mv /tmp/{{1}} {{0}}
+
+scp.get:
+  description: remote_file_name local_file_name
+  locale:
+    - scp -P {{global.port}} {{remotehost}}:{{0}} {{1}}
+
+catr:
+  defargs: 1
+  remote:
+    - cat {{remotefold}}/{{0}}
+
+cat:
+  defargs: 1
+  remote:
+    - sudo cat {{0}}
+
+dnsmasq.status:
+  description: 'check status of dnsmasq server, should be Active: active (running).'
+  remote:
+    - sudo systemctl status dnsmasq
+
+
+dnsmasq.restart:
+  description: restart dnsmasq server.
+  remote:
+    - sudo systemctl restart dnsmasq
+
+hostapd.start:
+  remote:
+    - sudo sv start hostapd
+
+hostapd.stop:
+  remote:
+    - sudo sv stop hostapd
+
+hostapd.log:
+  description: show hostapd logs.
+  remote:
+    - sudo tail -f /var/log/hostapd/current
+```
 #### 🟡 How to Use
 
 `remotemon` operates using `YAML` configuration files ( similar to makefiles ), by default it assumes a file named `.remotemon.yaml` as the configuration file to use.
@@ -52,26 +192,22 @@ First argument to `remotemon` is the name of the build routine to use, specified
 ```yaml
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  exec-locale: make local
-  exec-remote: make remote
+  locale: make local
+  remote: make remote
 ```
 
 ```yaml
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  exec-locale: make local
-  exec-remote: make remote
-  chokidar:                     # chokidar options
-    awaitWriteFinish: true
+  locale: make local
+  remote: make remote
 ```
 
 ```yaml
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  exec-locale: make local
-  exec-remote: make remote
-  chokidar:
-    awaitWriteFinish: true
+  locale: make local
+  remote: make remote
   rsync:                        # rsync options
     - recursive
     - exclude:
@@ -83,10 +219,8 @@ First argument to `remotemon` is the name of the build routine to use, specified
 ```yaml
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  exec-locale: make local
-  exec-remote: make remote
-  chokidar:
-    awaitWriteFinish: true
+  locale: make local
+  remote: make remote
   rsync:
     - recursive
     - exclude:
@@ -100,20 +234,20 @@ First argument to `remotemon` is the name of the build routine to use, specified
 
 - **Creating named builds**
 
-  Named builds can be created at top-level as long as the name does not clash with selected keywords ( ,`remotehost`,`remotefold`,`exec-locale`,`exec-remote`,`chokidar`,`initialize`,`ssh`,`watch` and `rsync` ).
+  Named builds can be created at top-level as long as the name does not clash with selected keywords ( ,`remotehost`,`remotefold`,`locale`,`remote`,`initialize`,`ssh`,`watch` and `rsync` ).
 
 
 ```yaml
 mybuild1:
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  exec-locale: make pi1
-  exec-remote: make mybuild1
+  locale: make pi1
+  remote: make mybuild1
 mybuild2:
   remotehost: pi@192.168.43.51
   remotefold: ~/build
-  exec-locale: make pi2
-  exec-remote: make mybuild2
+  locale: make pi2
+  remote: make mybuild2
 ```
 
 values not provided in a build are merged with default provided at top-level, in case defaults don't exist at top level then values are extracted from module's internal defaults.
@@ -128,13 +262,13 @@ rsync:
 mybuild1:
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  exec-locale: make pi1
-  exec-remote: make mybuild1
+  locale: make pi1
+  remote: make mybuild1
 mybuild2:
   remotehost: pi@192.152.65.12
   remotefold: ~/build
-  exec-locale: make pi2
-  exec-remote: make mybuild2
+  locale: make pi2
+  remote: make mybuild2
 ```
 
 In the above config file for example, `mybuild1` and `mybuild2` get their rsync values from the common `rsync` field.
@@ -147,9 +281,9 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 - `remotefold`  - folder in remote client where we want to execute our script.
 - `watch`       - local file(s) or folders(s) to watch for changes.
 - `ignore`      - files to **not** watch.
-- `exec-locale` - local script to run before copying files to remote client and executing our scripts.
-- `exec-remote` - command to execute in remote client.
-- `exec-finale` - command to execute after `exec-remote` returns `exit 0`.
+- `locale`      - local script to run before copying files to remote client and executing our scripts.
+- `remote`      - command to execute in remote client.
+- `finale`      - command to execute after `remote` returns `exit 0`.
 - `ssh`         - custom `ssh` config options, default is `-tt -o LogLevel=QUIET`.
 - `verbose`     - hardcode verbose level of printing for command.
 - `description` - provide a brief description of what the command does.
@@ -194,8 +328,8 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
   file: /dist/main.js # <-- old value replaced with value taken from commandline
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  exec-locale: make local {{global.file}}
-  exec-remote: make remote
+  locale: make local {{global.file}}
+  remote: make remote
   ```
 
   this way we can edit the values of our makefile without opening either `.remotemon.yaml` or `makefile`.

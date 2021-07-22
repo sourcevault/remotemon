@@ -1,5 +1,9 @@
 # changelog
 
+`1.2.7`
+
+- all `exec-*` changed to `*`.
+
 `1.2.6`
 
 - informs user if unable to `ssh` into `remotehost`, provides option to create remote directory.

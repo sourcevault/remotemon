@@ -44,29 +44,31 @@ data.selected_keys = {}
      \global
      \ignore
      \defarg
+     \locale
+     \remote
+     \finale
      \verbose
      \initialize
      \remotefold
      \remotehost
      \description
-     \exec-locale
-     \exec-remote
-     \exec-finale
 
   ..undef =
      \ssh
      \watch
 
+     \locale
+     \remote
+     \finale
+
      \global
      \ignore
      \verbose
+
      \initialize
      \remotefold
      \remotehost
 
-     \exec-locale
-     \exec-remote
-     \exec-finale
 
 data.selected_keys.set = new Set data.selected_keys.arr
 

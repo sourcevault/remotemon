@@ -930,7 +930,7 @@ V.user = be.obj
 
 .alt do
   V.strlist.empty
-  .cont (list) -> {'exec-locale':list}
+  .cont (list) -> {'locale':list}
 
 .on \initialize               , V.maybe.bool
 
@@ -942,7 +942,7 @@ V.user = be.obj
 
 .on \ssh                      , be.str.or unu
 
-.on [\exec-remote,\exec-locale,\exec-finale] , V.execlist
+.on [\remote,\locale,\finale] , V.execlist
 
 .on \rsync                    , V.rsync.init
 
@@ -969,7 +969,7 @@ V.def = be.obj
 
 .on \ssh         , be.str.or be.undefnull.cont global_data.def.ssh
 
-.on [\exec-locale,\exec-finale,\exec-remote] , V.execlist
+.on [\locale,\finale,\remote] , V.execlist
 
 .on \rsync       , V.rsync.init
 
@@ -1046,9 +1046,9 @@ V.def = be.obj
 zero = (arr) -> (arr.length is 0)
 
 check_if_empty = be.known.obj
-.on \exec-locale,zero
-.on \exec-finale,zero
-.on \exec-remote,zero
+.on \locale,zero
+.on \finale,zero
+.on \remote,zero
 .on \rsync,(be.arr.and zero).or V.isFalse
 .cont true
 .fix false
@@ -1166,12 +1166,12 @@ exec-finale = (data) ->*
 
   {info,lconfig,log,cont} = data
 
-  postscript = lconfig['exec-finale']
+  postscript = lconfig['finale']
 
   log.normal do
     postscript.length
     \ok
-    " exec-finale"
+    " finale"
     c.warn "#{postscript.length}"
 
   for cmd in postscript
@@ -1227,7 +1227,7 @@ check_if_remote_needed = bko
 
 .and do
 
-  bko.on \exec-remote , be.not zero
+  bko.on \remote , be.not zero
   .or do
     bko.on \rsync     , be.not V.isFalse
 
@@ -1289,7 +1289,6 @@ check_if_remotedir_present = (data) ->*
           ["[#{metadata.name}]"," #{lconfig.remotefold}"," not on remote, create directory ","#{lconfig.remotehost}:#{lconfig.remotefold}"," ? [r (as root)|y (as user)|n] "]
           [c.ok,c.warn,c.grey,c.warn,c.grey]
 
-
         lconfig.rl.question Q,(input) !->
 
           switch input
@@ -1299,7 +1298,7 @@ check_if_remotedir_present = (data) ->*
 
             log.normal do
               \err
-              " exec-remote"
+              " remote"
               lit do
                 ["cannot continue exec-remote without remotefolder ",lconfig.remotefold,"."]
                 [c.er1,c.warn,c.er1,c.er1]
@@ -1318,7 +1317,7 @@ check_if_remotedir_present = (data) ->*
 
       log.normal do
         \ok
-        " exec-remote"
+        " remote"
         lit [' ✔️ ok •'," #{lconfig.remotehost}:#{lconfig.remotefold} ", "created with ","#{msg}"," permissions."],[c.ok,c.warn,c.grey,c.ok,c.grey]
 
 
@@ -1333,7 +1332,7 @@ remote_main_proc = (data,remotetask) ->*
   log.normal do
     remotetask.length
     \ok
-    " exec-remote"
+    " remote"
     disp
 
   for I in remotetask
@@ -1372,14 +1371,14 @@ onchange = (data) ->*
 
   {remotehost,remotefold} = lconfig
 
-  locale                  = lconfig['exec-locale']
+  locale                  = lconfig['locale']
 
-  remotetask              = lconfig['exec-remote']
+  remotetask              = lconfig['remote']
 
   log.normal do
     locale.length
     \ok
-    " exec-locale"
+    " locale"
     c.warn "#{locale.length}"
 
   for cmd in locale
@@ -1451,7 +1450,6 @@ handle_inf = (log,lconfig) -> (db,ob) ->
   else
 
     fin.value = most.just ob.value
-
 
   fin
 
@@ -1661,8 +1659,6 @@ restart = (info,log)->*
   [lconfig,log] = vari
 
   ms_create_watch lconfig,info,log
-
-
 
 get_all = (info) ->*
 

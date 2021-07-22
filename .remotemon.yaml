@@ -50,7 +50,7 @@ longname:
   verbose: 0
   defarg: [foo,bar,paper]
   ssh: -tt -o LogLevel=QUIET -p 45
-  exec-locale:
+  locale:
     - echo 'hello world 11'
     # - echo {{1}}
     # - echo {{global.file}}
@@ -73,15 +73,15 @@ longname:
 ytv:
   defarg: 1
   watch: false
-  exec-locale:
+  locale:
     - youtube-dl -f 18 {{0}}
 
 
 echo:
   verbose: 1
-  exec-locale:
+  locale:
     - echo 'from locale'
-  exec-remote:
+  remote:
     - echo 'from remote'
   rsync:
     - exclude:
@@ -94,7 +94,7 @@ echo:
 dry:
   verbose: 1
   defarg: [1,2]
-  exec-locale:
+  locale:
     - node {{0}}
 
 
@@ -137,5 +137,5 @@ dry:
 
 bar:
   defarg: [--version,.inf]
-  exec-locale:
+  locale:
     - node {{0}} {{1}}
