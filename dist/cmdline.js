@@ -615,7 +615,7 @@ organize_rsync = function(data, cmdname){
       } else {
         ssh = [];
       }
-      obnormal.push.apply(obnormal, ssh);
+      obnormal.push(arrayFrom$(ssh));
     }
   }
   return data;
