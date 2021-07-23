@@ -868,8 +868,9 @@ rsync_arr2obj = (data,cmdname,remotefold) ->
 
   fin
 
+ifrsh = ([key]) -> (key is \rsh)
 
-organize_rsync = (data,cmdname) ->
+organize_rsync = (data,cmdname,...,state) ->
 
   {rsync,remotefold} = data
 
@@ -899,6 +900,19 @@ organize_rsync = (data,cmdname) ->
 
   data.rsync = fin
 
+  for {obnormal} in data.rsync
+
+    if not (R.find ifrsh,obnormal)
+
+      if data.ssh
+        ssh = [\rsh,"ssh #{data.ssh}"]
+      else if state.ssh
+        ssh = [\rsh,"ssh #{state.ssh}"]
+      else
+        ssh = []
+
+      obnormal.push ...ssh
+
   data
 
 # ------------------------------------------------------------------------
@@ -914,7 +928,7 @@ V.rsync.init = be.bool
   .err (msg,key) ->
 
     switch key
-    | undefined => [\:def,'not array']
+    | undefined => [\:rsync_top,'not array']
     | otherwise => [\not_array_of_array,key]
 
 .or do
@@ -1015,11 +1029,13 @@ V.def = be.obj
 
   {user,def}
 
+
 .err (message,path,...,{info}) !->
 
   [topmsg] = be.flatro message
 
   [loc,Error] = topmsg
+
 
   F = switch loc
 
@@ -1029,7 +1045,9 @@ V.def = be.obj
 
   | \:rsync                => print.rsyncError         # mostly okay
 
-  | \:ob_in_str_list       => print.ob_in_str_list     #
+  | \:ob_in_str_list       => print.ob_in_str_list
+
+  | \:rsync_top            => print.basicError
 
   | otherwise              =>
 
@@ -1524,13 +1542,13 @@ ms_create_watch = (lconfig,info,log) ->
     log.normal do
       should_I_watch
       \err_light
-      "    watching"
+      "  watch"
       [(c.warn I) for I in disp].join " "
 
     log.normal do
       (should_I_watch and lconfig.ignore.length)
       \err_light
-      "     ignored"
+      " ignore"
       [(c.warn I) for I in lconfig.ignore].join " "
 
 

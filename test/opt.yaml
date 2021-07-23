@@ -33,7 +33,7 @@ chokidar:
 
 # ssh: '{{2}} -o LogLevel=QUIET -p {{global.sshport}}'
 
-longname:=
+longname:
   watch: true
   defargs: [hello,world]
   verbose: 1

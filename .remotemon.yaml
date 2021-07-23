@@ -11,9 +11,9 @@ global:
     - null
     - hungryhippo
 
-remotehost: pi@192.168.43.51
+remotehost: pi@192.168.43.50
 
-ssh: -tt -o LogLevel=QUIET -p {{global.sshport}}
+# ssh: -tt -o LogLevel=QUIET -p {{global.sshport}}
 
 remotefold: ~/test3
 
@@ -55,13 +55,13 @@ longname:
     # - echo {{1}}
     # - echo {{global.file}}
 
-  rsync:
-    - exclude:
-        - node_modules
-        - .git
-    - rsh: ssh -p 45
-    - archive
-    - recursive
+  # rsync:
+  #   - exclude:
+  #       - node_modules
+  #       - .git
+  #   - rsh: ssh -p 45
+  #   - archive
+  #   - recursive
 
   # exec-remote:
   #   - echo 'hello world'
@@ -83,13 +83,13 @@ echo:
     - echo 'from locale'
   remote:
     - echo 'from remote'
-  rsync:
-    - exclude:
-      - node_modules
-      - .git
-    - rsh: ssh -p 45
-    - archive
-    - recursive
+  # rsync:
+  #   - exclude:
+  #     - node_modules
+  #     - .git
+  #   - rsh: ssh -p 45
+  #   - archive
+  #   - recursive
 
 dry:
   verbose: 1
@@ -139,3 +139,6 @@ bar:
   defarg: [--version,.inf]
   locale:
     - node {{0}} {{1}}
+  rsync: true
+
+

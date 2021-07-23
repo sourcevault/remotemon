@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, data, com, print, global_data, readJson, most, j, exec, chokidar, most_create, updateNotifier, fs, metadata, optionParser, tampax, readline, dotpat, spawn, l, z, zj, R, lit, c, wait, noop, be, parser, rest, E, pkg, notifier, str, silent, isvar, vars, args, search_for_default_config_file, get_all_yaml_files, findfile, user_config_file, all_files, wcf, x$, info, y$, vre, yaml_tokenize, isref, modify_yaml, nPromise, rmdef, only_str, exec_list_option, tampax_parse, V, mergeArray, defarg_main, unu, is_false, is_true, rsync_arr2obj, organize_rsync, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, get_all, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, data, com, print, global_data, readJson, most, j, exec, chokidar, most_create, updateNotifier, fs, metadata, optionParser, tampax, readline, dotpat, spawn, l, z, zj, R, lit, c, wait, noop, be, parser, rest, E, pkg, notifier, str, silent, isvar, vars, args, search_for_default_config_file, get_all_yaml_files, findfile, user_config_file, all_files, wcf, x$, info, y$, vre, yaml_tokenize, isref, modify_yaml, nPromise, rmdef, only_str, exec_list_option, tampax_parse, V, mergeArray, defarg_main, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, get_all, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), data = ref$.data, com = ref$.com, print = ref$.print;
 global_data = data;
 readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, updateNotifier = com.updateNotifier, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
@@ -575,8 +575,14 @@ rsync_arr2obj = function(data, cmdname, remotefold){
   }
   return fin;
 };
+ifrsh = function(arg$){
+  var key;
+  key = arg$[0];
+  return key === 'rsh';
+};
 organize_rsync = function(data, cmdname){
-  var rsync, remotefold, fin, i$, to$, I, st;
+  var state, rsync, remotefold, fin, i$, to$, I, st, ref$, len$, obnormal, ssh;
+  state = arguments[arguments.length - 1];
   rsync = data.rsync, remotefold = data.remotefold;
   if (rsync === false) {
     return data;
@@ -599,12 +605,25 @@ organize_rsync = function(data, cmdname){
     }
   }
   data.rsync = fin;
+  for (i$ = 0, len$ = (ref$ = data.rsync).length; i$ < len$; ++i$) {
+    obnormal = ref$[i$].obnormal;
+    if (!R.find(ifrsh, obnormal)) {
+      if (data.ssh) {
+        ssh = ['rsh', "ssh " + data.ssh];
+      } else if (state.ssh) {
+        ssh = ['rsh', "ssh " + state.ssh];
+      } else {
+        ssh = [];
+      }
+      obnormal.push.apply(obnormal, ssh);
+    }
+  }
   return data;
 };
 V.rsync.init = be.bool.or(be.undefnull.cont(false)).or(be.arr.map(be.arr).err(function(msg, key){
   switch (key) {
   case undefined:
-    return [':def', 'not array'];
+    return [':rsync_top', 'not array'];
   default:
     return ['not_array_of_array', key];
   }
@@ -671,6 +690,8 @@ V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on('verbose', be
       return print.rsyncError;
     case ':ob_in_str_list':
       return print.ob_in_str_list;
+    case ':rsync_top':
+      return print.basicError;
     default:
       Error = message[0];
       return print.basicError;
@@ -1016,7 +1037,7 @@ ms_create_watch = function(lconfig, info, log){
       disp = R.drop(1, disp);
       disp.unshift(c.pink("CF"));
     }
-    log.normal(should_I_watch, 'err_light', "    watching", (function(){
+    log.normal(should_I_watch, 'err_light', "  watch", (function(){
       var i$, ref$, len$, results$ = [];
       for (i$ = 0, len$ = (ref$ = disp).length; i$ < len$; ++i$) {
         I = ref$[i$];
@@ -1024,7 +1045,7 @@ ms_create_watch = function(lconfig, info, log){
       }
       return results$;
     }()).join(" "));
-    log.normal(should_I_watch && lconfig.ignore.length, 'err_light', "     ignored", (function(){
+    log.normal(should_I_watch && lconfig.ignore.length, 'err_light', " ignore", (function(){
       var i$, ref$, len$, results$ = [];
       for (i$ = 0, len$ = (ref$ = lconfig.ignore).length; i$ < len$; ++i$) {
         I = ref$[i$];
