@@ -911,7 +911,7 @@ organize_rsync = (data,cmdname,...,state) ->
       else
         ssh = []
 
-      obnormal.push ...ssh
+      obnormal.push [...ssh]
 
   data
 

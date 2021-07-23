@@ -13,7 +13,7 @@ global:
 
 remotehost: pi@192.168.43.50
 
-# ssh: -tt -o LogLevel=QUIET -p {{global.sshport}}
+ssh: -tt -o LogLevel=QUIET -p {{global.sshport}}
 
 remotefold: ~/test3
 
@@ -25,7 +25,7 @@ defarg: [pi@192.168.43.50,package.json,-tt]
 
 
 # watch: false
-rsync: false
+# rsync: false
 
 ignore:
   - /mnt/c/code/remotemon/.remotemon.yaml
@@ -137,6 +137,7 @@ dry:
 
 bar:
   defarg: [--version,.inf]
+  verbose: 2
   locale:
     - node {{0}} {{1}}
   rsync: true
