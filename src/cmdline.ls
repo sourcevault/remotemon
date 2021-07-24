@@ -1198,6 +1198,7 @@ exec-finale = (data) ->*
 
     yield from cont cmd
 
+
 exec_rsync = (data,each) ->*
 
   {info,lconfig,log,cont} = data
@@ -1206,13 +1207,16 @@ exec_rsync = (data,each) ->*
 
   cmd = create_rsync_cmd each,remotehost
 
-  disp = (each.src.join " ") + " ->" + " " + remotehost + ":" + each.des
+  disp =  lit do
+    [(remotehost + ":" + each.des),(c.warn " <- "),(each.src.join " , ")]
+    [c.grey,c.warn,c.grey]
 
   log.normal do
     true
     \ok
-    lit [" rsync"," start"],[0,c.warn]
+    lit [" sync"," start"],[0,c.warn]
     c.grey disp
+
 
   log.verbose "rsync ... ",cmd
 
@@ -1222,7 +1226,7 @@ exec_rsync = (data,each) ->*
 
     log.normal do
       \err_light
-      lit [" rsync"," break"],[c.pink,c.er2]
+      lit [" sync"," break"],[c.pink,c.er2]
       ""
 
     yield nPromise (resolve,reject) -> reject status
@@ -1232,7 +1236,7 @@ exec_rsync = (data,each) ->*
     log.normal do
       true
       \ok
-      lit [" rsync ","✔️ ok"],[0,c.ok]
+      lit [" sync ","✔️ ok"],[0,c.ok]
       ""
 
 bko = be.known.obj
@@ -1257,13 +1261,13 @@ check_if_remote_needed = bko
 
 check_if_remotehost_present = (data) ->*
 
-  {lconfig,log} = data
+  {lconfig,log,cont} = data
 
   tryToSSH = "ssh #{lconfig.ssh} #{lconfig.remotehost} 'ls'"
 
   try
 
-    exec tryToSSH
+    cont tryToSSH,'sync'
 
   catch E
 
@@ -1318,7 +1322,7 @@ check_if_remotedir_present = (data) ->*
               \err
               " remote"
               lit do
-                ["cannot continue exec-remote without remotefolder ",lconfig.remotefold,"."]
+                ["cannot continue remote without remotefolder ",lconfig.remotefold,"."]
                 [c.er1,c.warn,c.er1,c.er1]
 
             reject \error
@@ -1516,7 +1520,7 @@ print_final_message = (log,lconfig,info) -> (signal) !->
 
   else
 
-    msg = "returning to watch"
+    msg = c.warn "returning to watch"
 
   switch signal
   | \error =>

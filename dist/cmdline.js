@@ -826,27 +826,27 @@ exec_rsync = function*(data, each){
   info = data.info, lconfig = data.lconfig, log = data.log, cont = data.cont;
   remotehost = lconfig.remotehost, remotefold = lconfig.remotefold;
   cmd = create_rsync_cmd(each, remotehost);
-  disp = each.src.join(" ") + " ->" + " " + remotehost + ":" + each.des;
-  log.normal(true, 'ok', lit([" rsync", " start"], [0, c.warn]), c.grey(disp));
+  disp = lit([remotehost + ":" + each.des, c.warn(" <- "), each.src.join(" , ")], [c.grey, c.warn, c.grey]);
+  log.normal(true, 'ok', lit([" sync", " start"], [0, c.warn]), c.grey(disp));
   log.verbose("rsync ... ", cmd);
   status = (yield* cont(cmd, 'sync'));
   if (status !== 'ok') {
-    log.normal('err_light', lit([" rsync", " break"], [c.pink, c.er2]), "");
+    log.normal('err_light', lit([" sync", " break"], [c.pink, c.er2]), "");
     return (yield nPromise(function(resolve, reject){
       return reject(status);
     }));
   } else {
-    return log.normal(true, 'ok', lit([" rsync ", "✔️ ok"], [0, c.ok]), "");
+    return log.normal(true, 'ok', lit([" sync ", "✔️ ok"], [0, c.ok]), "");
   }
 };
 bko = be.known.obj;
 check_if_remote_needed = bko.on('remotehost', be.undef).or(bko.on('remotefold', be.undef)).and(bko.on('remote', be.not(zero)).or(bko.on('rsync', be.not(V.isFalse)))).cont(true).fix(false).wrap();
 check_if_remotehost_present = function*(data){
-  var lconfig, log, tryToSSH, E;
-  lconfig = data.lconfig, log = data.log;
+  var lconfig, log, cont, tryToSSH, E;
+  lconfig = data.lconfig, log = data.log, cont = data.cont;
   tryToSSH = "ssh " + lconfig.ssh + " " + lconfig.remotehost + " 'ls'";
   try {
-    return exec(tryToSSH);
+    return cont(tryToSSH, 'sync');
   } catch (e$) {
     E = e$;
     log.normal('err', "", lit(["unable to ssh to remote address ", lconfig.remotehost, "."], [c.er1, c.er2, c.er1]));
@@ -886,7 +886,7 @@ check_if_remotedir_present = function*(data){
             resolve('r');
             break;
           default:
-            log.normal('err', " remote", lit(["cannot continue exec-remote without remotefolder ", lconfig.remotefold, "."], [c.er1, c.warn, c.er1, c.er1]));
+            log.normal('err', " remote", lit(["cannot continue remote without remotefolder ", lconfig.remotefold, "."], [c.er1, c.warn, c.er1, c.er1]));
             reject('error');
           }
         });
@@ -1017,7 +1017,7 @@ print_final_message = function(log, lconfig, info){
     if (info.options.watch_config_file) {
       msg = c.pink("*CF") + c.er2(" returning to watch");
     } else {
-      msg = "returning to watch";
+      msg = c.warn("returning to watch");
     }
     switch (signal) {
     case 'error':

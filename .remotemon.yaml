@@ -137,9 +137,11 @@ dry:
 
 bar:
   defarg: [--version,.inf]
-  verbose: 2
+  # verbose: 2
   locale:
     - node {{0}} {{1}}
   rsync: true
+  remote:
+    - echo 'hello world'
 
 
