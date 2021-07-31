@@ -11,7 +11,7 @@ global:
     - null
     - hungryhippo
 
-remotehost: pi@192.168.43.50
+remotehost: pi@192.168.43.51
 
 ssh: -tt -o LogLevel=QUIET -p {{global.sshport}}
 
@@ -50,7 +50,7 @@ longname:
   verbose: 0
   defarg: [foo,bar,paper]
   ssh: -tt -o LogLevel=QUIET -p 45
-  locale:
+  local:
     - echo 'hello world 11'
     # - echo {{1}}
     # - echo {{global.file}}
@@ -73,13 +73,13 @@ longname:
 ytv:
   defarg: 1
   watch: false
-  locale:
+  local:
     - youtube-dl -f 18 {{0}}
 
 
 echo:
   verbose: 1
-  locale:
+  local:
     - echo 'from locale'
   remote:
     - echo 'from remote'
@@ -94,7 +94,7 @@ echo:
 dry:
   verbose: 1
   defarg: [1,2]
-  locale:
+  local:
     - node {{0}}
 
 
@@ -138,10 +138,13 @@ dry:
 bar:
   defarg: [--version,.inf]
   # verbose: 2
-  locale:
+  local:
     - node {{0}} {{1}}
   rsync: true
   remote:
     - echo 'hello world'
+  final:
+    - echo 'hello world'
+
 
 

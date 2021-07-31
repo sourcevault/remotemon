@@ -21,20 +21,20 @@ remotemon ssh45 # to change default ssh port to 45 👮🏼‍♂️
 ```yaml
 # Example Config File
 add-ssh:
-  locale:
+  local:
     - ssh-copy-id {{remotehost}}
   remote:
     - chmod go-w /home/{{global.username}} # permission of home has to be correct
 
 ssh45:
-  locale:
+  local:
     - scp sshd_config {{remotehost}}:/tmp/sshd_config
   remote:
     - sudo mv /tmp/sshd_config /etc/ssh/sshd_config
     - sudo systemctl restart ssh.service
 
 install.zsh:
-  locale:
+  local:
     - scp -P {{global.port}} install_oh_my_zsh.sh {{remotehost}}:/tmp
   remote:
     - sudo apt-get install zsh curl git -y
@@ -50,7 +50,7 @@ install.zsh:
     - sudo apt-get install dnsmasq -y
     - sudo apt-get install lshw -y
     - yes | sudo apt install samba -y
-  finale:
+  final:
     - scp -P {{global.port}} .zshrc {{remotehost}}:~/.zshrc
     - scp -P {{global.port}} custom.zsh-theme {{remotehost}}:~/.oh-my-zsh/themes/custom.zsh-theme
 
@@ -64,14 +64,14 @@ install.wifi:
 
 iptable.init:
   description: copy iptable setting
-  locale:
+  local:
     - scp -P {{global.port}} iptables.sh {{remotehost}}:{{remotefold}}/iptables.sh
   remote:
     - sudo {{remotefold}}/iptables.sh
     - sudo netfilter-persistent save
 
 copy-dhcp-dns:
-  locale:
+  local:
     - scp -P {{global.port}} dnsmasq.conf {{remotehost}}:/tmp/dnsmasq.conf
     - scp -P {{global.port}} sysctl.conf {{remotehost}}:/tmp/sysctl.conf
     - scp -P {{global.port}} dhcpcd.conf {{remotehost}}:/etc/dhcpcd.conf
@@ -91,7 +91,7 @@ hostapd.cp:
     - create a symbolic link to runit directory from workind directory.
     - copy our hostapd setting to remote machine, and then create a log directory for svlog.
   # watch: hostapd
-  # locale:
+  # local:
   #   - scp -r -P {{global.port}} hostapd {{remotehost}}:{{remotefold}}
 
   rsync:
@@ -117,14 +117,14 @@ shutdown:
 
 scp.send:
   description: remote_file_name local_file_name
-  locale:
+  local:
     - scp -P {{global.port}} {{1}} {{remotehost}}:/tmp/
   remote:
     - sudo mv /tmp/{{1}} {{0}}
 
 scp.get:
   description: remote_file_name local_file_name
-  locale:
+  local:
     - scp -P {{global.port}} {{remotehost}}:{{0}} {{1}}
 
 catr:
@@ -192,21 +192,21 @@ First argument to `remotemon` is the name of the build routine to use, specified
 ```yaml
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  locale: make local
+  local: make local
   remote: make remote
 ```
 
 ```yaml
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  locale: make local
+  local: make local
   remote: make remote
 ```
 
 ```yaml
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  locale: make local
+  local: make local
   remote: make remote
   rsync:                        # rsync options
     - recursive
@@ -219,7 +219,7 @@ First argument to `remotemon` is the name of the build routine to use, specified
 ```yaml
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  locale: make local
+  local: make local
   remote: make remote
   rsync:
     - recursive
@@ -234,19 +234,19 @@ First argument to `remotemon` is the name of the build routine to use, specified
 
 - **Creating named builds**
 
-  Named builds can be created at top-level as long as the name does not clash with selected keywords ( ,`remotehost`,`remotefold`,`locale`,`remote`,`initialize`,`ssh`,`watch` and `rsync` ).
+  Named builds can be created at top-level as long as the name does not clash with selected keywords ( ,`remotehost`,`remotefold`,`local`,`remote`,`initialize`,`ssh`,`watch` and `rsync` ).
 
 
 ```yaml
 mybuild1:
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  locale: make pi1
+  local: make pi1
   remote: make mybuild1
 mybuild2:
   remotehost: pi@192.168.43.51
   remotefold: ~/build
-  locale: make pi2
+  local: make pi2
   remote: make mybuild2
 ```
 
@@ -262,12 +262,12 @@ rsync:
 mybuild1:
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  locale: make pi1
+  local: make pi1
   remote: make mybuild1
 mybuild2:
   remotehost: pi@192.152.65.12
   remotefold: ~/build
-  locale: make pi2
+  local: make pi2
   remote: make mybuild2
 ```
 
@@ -281,9 +281,9 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 - `remotefold`  - folder in remote client where we want to execute our script.
 - `watch`       - local file(s) or folders(s) to watch for changes.
 - `ignore`      - files to **not** watch.
-- `locale`      - local script to run before copying files to remote client and executing our scripts.
+- `local`       - local script to run before copying files to remote client and executing our scripts.
 - `remote`      - command to execute in remote client.
-- `finale`      - command to execute after `remote` returns `exit 0`.
+- `final`       - command to execute after `remote` returns `exit 0`.
 - `ssh`         - custom `ssh` config options, default is `-tt -o LogLevel=QUIET`.
 - `verbose`     - hardcode verbose level of printing for command.
 - `description` - provide a brief description of what the command does.
@@ -328,7 +328,7 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
   file: /dist/main.js # <-- old value replaced with value taken from commandline
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  locale: make local {{global.file}}
+  local: make local {{global.file}}
   remote: make remote
   ```
 

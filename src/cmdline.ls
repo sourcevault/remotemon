@@ -31,6 +31,7 @@ parser.addOption \d,'dry-run',null,\dryRun
 parser.addOption \w,'watch-config-file',null,\watch_config_file
 
 parser.addOption \c,'config',null,\config
+
 .argument \FILE
 
 parser.addOption \l,'list',null,\list
@@ -106,7 +107,7 @@ if (parser.help.count!) > 0
 
     > remotemon --config custom.yaml --verbose file=dist/main.js
 
-    [ documentation ] @ [ https://github.com/sourcevault/remotemon\#readme.md ]
+    [ documentation ] @ [ #{metadata.homepage} ]
 
     """
 
@@ -944,7 +945,7 @@ V.user = be.obj
 
 .alt do
   V.strlist.empty
-  .cont (list) -> {'locale':list}
+  .cont (list) -> {'local':list}
 
 .on \initialize               , V.maybe.bool
 
@@ -956,7 +957,7 @@ V.user = be.obj
 
 .on \ssh                      , be.str.or unu
 
-.on [\remote,\locale,\finale] , V.execlist
+.on [\remote,\local,\final]   , V.execlist
 
 .on \rsync                    , V.rsync.init
 
@@ -983,7 +984,7 @@ V.def = be.obj
 
 .on \ssh         , be.str.or be.undefnull.cont global_data.def.ssh
 
-.on [\locale,\finale,\remote] , V.execlist
+.on [\local,\final,\remote] , V.execlist
 
 .on \rsync       , V.rsync.init
 
@@ -1064,8 +1065,8 @@ V.def = be.obj
 zero = (arr) -> (arr.length is 0)
 
 check_if_empty = be.known.obj
-.on \locale,zero
-.on \finale,zero
+.on \local,zero
+.on \final,zero
 .on \remote,zero
 .on \rsync,(be.arr.and zero).or V.isFalse
 .cont true
@@ -1184,12 +1185,12 @@ exec-finale = (data) ->*
 
   {info,lconfig,log,cont} = data
 
-  postscript = lconfig['finale']
+  postscript = lconfig['final']
 
   log.normal do
     postscript.length
     \ok
-    " finale"
+    "  final"
     c.warn "#{postscript.length}"
 
   for cmd in postscript
@@ -1373,7 +1374,7 @@ onchange = (data) ->*
 
     log.normal do
       \err
-      " ⚡️ ⚡️ error"
+      " ⚡️⚡️ error"
       c.er2 ".remotehost/.remotefold ( required for task ) not defined."
 
     yield \error
@@ -1384,7 +1385,7 @@ onchange = (data) ->*
 
     log.normal do
       \err
-      " ⚡️ ⚡️ error"
+      " ⚡️⚡️ error"
       c.er1 "empty execution, no user command to execute."
 
     yield \error
@@ -1393,17 +1394,17 @@ onchange = (data) ->*
 
   {remotehost,remotefold} = lconfig
 
-  locale                  = lconfig['locale']
+  local                   = lconfig['local']
 
   remotetask              = lconfig['remote']
 
   log.normal do
-    locale.length
+    local.length
     \ok
-    " locale"
-    c.warn "#{locale.length}"
+    "  local"
+    c.warn "#{local.length}"
 
-  for cmd in locale
+  for cmd in local
 
     log.verbose cmd
 
@@ -1458,13 +1459,13 @@ handle_inf = (log,lconfig) -> (db,ob) ->
 
     log.normal do
       \err
-      " ⚡️ ⚡️ error"
+      " ⚡️⚡️ error"
       c.er1("infinite loop detected ") + (c.warn ob.value) + c.er1(" is offending file, ignoring event.")
 
     if (lconfig.watch.length > 0)
 
       log.normal do
-        \ok
+        \err
         " returing to watch "
 
     fin.value = ms_empty
@@ -1494,7 +1495,7 @@ resolve_signal = be.arr
 
   log.normal do
     \err_light
-    " ⚡️ ⚡️ error"
+    " ⚡️⚡️ error"
     cmdtxt
 
   \error

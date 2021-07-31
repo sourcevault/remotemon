@@ -42,7 +42,6 @@ be                   = hoplon.types
 com.readline         = readline
 
 
-
 R = hoplon.utils.R
 
 dotpat = be.str.edit R.split "."
@@ -320,7 +319,7 @@ print.custom_build = (msg,path,filename)->
     [
       (c.grey "unrecognized value provided.") + "\n"
       c.grey "only acceptable value types :\n"
-      c.pink "- array of string ( defaults to exec-locale )."
+      c.pink "- array of string ( defaults to local )."
       c.pink "- object with restricted keys :"
       c.warn "\n  - "+ data.selected_keys.arr.join "\n  - "
     ].join "\n "

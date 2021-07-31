@@ -41,12 +41,12 @@ data.selected_keys = {}
      \ssh
      \watch
      \rsync
+     \local
+     \final
      \global
      \ignore
      \defarg
-     \locale
      \remote
-     \finale
      \verbose
      \initialize
      \remotefold
@@ -57,9 +57,9 @@ data.selected_keys = {}
      \ssh
      \watch
 
-     \locale
+     \local
      \remote
-     \finale
+     \final
 
      \global
      \ignore
