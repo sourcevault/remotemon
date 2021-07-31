@@ -36,7 +36,7 @@ try {
   notifier.notify();
 } catch (e$) {}
 if (parser.help.count() > 0) {
-  str = "remotemon version " + metadata.version + "\n\noptions:\n\n  -v --verbose               more detail\n\n  -vv                        much more detail\n\n  -h --help                  display help message\n\n  -V --version               displays version number\n\n  -d --dry-run               perform a trial run without making any changes\n\n  -w --watch-config-file     restart on config file change\n\n  -c --config                path to YAML configuration file\n\n  -l --list                  list all user commands\n\n  -m --auto-make-directory   make remote directory if it doesn't exist\n\n  -n --no-watch              force disable any and all watches\n\n  -s --silent                do not show remotemon messages\n\n  ---- shorthands ----\n\n  CF <-- for configuration file\n\nBy default remotemon will look for .remotemon.yaml in current directory and one level up (only).\n\nusing --config <filename>.yaml option will direct remotemon to use <filename>.yaml as config file :\n\n> remotemon --config custom.yaml\n> remotemon --config custom.yaml -v\n\nvalues for internal variables (using .global object) can be changed using '=' (similar to makefiles) :\n\n> remotemon --config custom.yaml --verbose file=dist/main.js\n\n[ documentation ] @ [ https://github.com/sourcevault/remotemon#readme.md ]\n";
+  str = "remotemon version " + metadata.version + "\n\noptions:\n\n  -v --verbose               more detail\n\n  -vv                        much more detail\n\n  -h --help                  display help message\n\n  -V --version               displays version number\n\n  -d --dry-run               perform a trial run without making any changes\n\n  -w --watch-config-file     restart on config file change\n\n  -c --config                path to YAML configuration file\n\n  -l --list                  list all user commands\n\n  -m --auto-make-directory   make remote directory if it doesn't exist\n\n  -n --no-watch              force disable any and all watches\n\n  -s --silent                do not show remotemon messages\n\n  ---- shorthands ----\n\n  CF <-- for configuration file\n\nBy default remotemon will look for .remotemon.yaml in current directory and one level up (only).\n\nusing --config <filename>.yaml option will direct remotemon to use <filename>.yaml as config file :\n\n> remotemon --config custom.yaml\n> remotemon --config custom.yaml -v\n\nvalues for internal variables (using .global object) can be changed using '=' (similar to makefiles) :\n\n> remotemon --config custom.yaml --verbose file=dist/main.js\n\n[ documentation ] @ [ " + metadata.homepage + " ]\n";
   l(str);
   return;
 }
@@ -634,14 +634,14 @@ V.user = be.obj.or(be.undefnull.cont(function(){
   return {};
 })).and(be.restricted(global_data.selected_keys.arr)).alt(V.strlist.empty.cont(function(list){
   return {
-    'locale': list
+    'local': list
   };
-})).on('initialize', V.maybe.bool).on('watch', V.watch.user).on('verbose', be.num.or(unu)).on('ignore', V.ignore.user).on('ssh', be.str.or(unu)).on(['remote', 'locale', 'finale'], V.execlist).on('rsync', V.rsync.init).on(['remotehost', 'remotefold'], be.str.or(unu.cont(function(v, key){
+})).on('initialize', V.maybe.bool).on('watch', V.watch.user).on('verbose', be.num.or(unu)).on('ignore', V.ignore.user).on('ssh', be.str.or(unu)).on(['remote', 'local', 'final'], V.execlist).on('rsync', V.rsync.init).on(['remotehost', 'remotefold'], be.str.or(unu.cont(function(v, key){
   var origin;
   origin = arguments[arguments.length - 1];
   return origin[key];
 }))).cont(organize_rsync).and(V.rsync.throw_if_error);
-V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on('verbose', be.num.or(unu.cont(false))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', V.watch.def).on('ignore', V.ignore.def).on('ssh', be.str.or(be.undefnull.cont(global_data.def.ssh))).on(['locale', 'finale', 'remote'], V.execlist).on('rsync', V.rsync.init).cont(organize_rsync).and(V.rsync.throw_if_error).map(function(value, key){
+V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on('verbose', be.num.or(unu.cont(false))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', V.watch.def).on('ignore', V.ignore.def).on('ssh', be.str.or(be.undefnull.cont(global_data.def.ssh))).on(['local', 'final', 'remote'], V.execlist).on('rsync', V.rsync.init).cont(organize_rsync).and(V.rsync.throw_if_error).map(function(value, key){
   var ref$, def, user, origin, put;
   ref$ = arguments[arguments.length - 1], def = ref$.def, user = ref$.user, origin = ref$.origin;
   switch (global_data.selected_keys.set.has(key)) {
@@ -702,7 +702,7 @@ V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on('verbose', be
 zero = function(arr){
   return arr.length === 0;
 };
-check_if_empty = be.known.obj.on('locale', zero).on('finale', zero).on('remote', zero).on('rsync', be.arr.and(zero).or(V.isFalse)).cont(true).fix(false).wrap();
+check_if_empty = be.known.obj.on('local', zero).on('final', zero).on('remote', zero).on('rsync', be.arr.and(zero).or(V.isFalse)).cont(true).fix(false).wrap();
 create_logger = function(info, gconfig){
   var cmdname, lconfig, buildname, verbose, log;
   cmdname = info.cmdname;
@@ -812,8 +812,8 @@ create_rsync_cmd = function(rsync, remotehost){
 execFinale = function*(data){
   var info, lconfig, log, cont, postscript, i$, len$, cmd, results$ = [];
   info = data.info, lconfig = data.lconfig, log = data.log, cont = data.cont;
-  postscript = lconfig['finale'];
-  log.normal(postscript.length, 'ok', " finale", c.warn(postscript.length + ""));
+  postscript = lconfig['final'];
+  log.normal(postscript.length, 'ok', "  final", c.warn(postscript.length + ""));
   for (i$ = 0, len$ = postscript.length; i$ < len$; ++i$) {
     cmd = postscript[i$];
     log.verbose(cmd);
@@ -922,24 +922,24 @@ remote_main_proc = function*(data, remotetask){
   return results$;
 };
 onchange = function*(data){
-  var info, lconfig, log, cont, remotehost, remotefold, locale, remotetask, i$, len$, cmd, ref$, each;
+  var info, lconfig, log, cont, remotehost, remotefold, local, remotetask, i$, len$, cmd, ref$, each;
   info = data.info, lconfig = data.lconfig, log = data.log, cont = data.cont;
   if (check_if_remote_needed(lconfig)) {
-    log.normal('err', " ⚡️ ⚡️ error", c.er2(".remotehost/.remotefold ( required for task ) not defined."));
+    log.normal('err', " ⚡️⚡️ error", c.er2(".remotehost/.remotefold ( required for task ) not defined."));
     (yield 'error');
     return;
   }
   if (check_if_empty(lconfig)) {
-    log.normal('err', " ⚡️ ⚡️ error", c.er1("empty execution, no user command to execute."));
+    log.normal('err', " ⚡️⚡️ error", c.er1("empty execution, no user command to execute."));
     (yield 'error');
     return;
   }
   remotehost = lconfig.remotehost, remotefold = lconfig.remotefold;
-  locale = lconfig['locale'];
+  local = lconfig['local'];
   remotetask = lconfig['remote'];
-  log.normal(locale.length, 'ok', " locale", c.warn(locale.length + ""));
-  for (i$ = 0, len$ = locale.length; i$ < len$; ++i$) {
-    cmd = locale[i$];
+  log.normal(local.length, 'ok', "  local", c.warn(local.length + ""));
+  for (i$ = 0, len$ = local.length; i$ < len$; ++i$) {
+    cmd = local[i$];
     log.verbose(cmd);
     (yield* cont(cmd));
   }
@@ -979,9 +979,9 @@ handle_inf = function(log, lconfig){
     };
     if (first === second) {
       fin.value = ['err', ob.value];
-      log.normal('err', " ⚡️ ⚡️ error", c.er1("infinite loop detected ") + c.warn(ob.value) + c.er1(" is offending file, ignoring event."));
+      log.normal('err', " ⚡️⚡️ error", c.er1("infinite loop detected ") + c.warn(ob.value) + c.er1(" is offending file, ignoring event."));
       if (lconfig.watch.length > 0) {
-        log.normal('ok', " returing to watch ");
+        log.normal('err', " returing to watch ");
       }
       fin.value = ms_empty;
     } else {
@@ -1003,7 +1003,7 @@ resolve_signal = be.arr.on(0, be.str.fix('<< program screwed up >>').cont(functi
 })).cont(function(arg$, log){
   var cmdtxt;
   cmdtxt = arg$[0];
-  log.normal('err_light', " ⚡️ ⚡️ error", cmdtxt);
+  log.normal('err_light', " ⚡️⚡️ error", cmdtxt);
   return 'error';
 }).alt(be.str).wrap();
 print_final_message = function(log, lconfig, info){
