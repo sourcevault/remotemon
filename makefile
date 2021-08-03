@@ -30,7 +30,7 @@ compile:
 
 # 	remotemon longname -w foo bar
 
-	remotemon bar
+	remotemon -w bar
 
 
 

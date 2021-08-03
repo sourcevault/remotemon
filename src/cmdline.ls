@@ -13,7 +13,6 @@ global_data = data
 
 {l,z,zj,j,R,lit,c,wait,noop} = com.hoplon.utils
 
-
 be = com.hoplon.types
 
 #--------------------------------------------
@@ -1517,7 +1516,7 @@ print_final_message = (log,lconfig,info) -> (signal) !->
 
   if info.options.watch_config_file
 
-    msg = (c.pink "*CF") + (c.er2 " returning to watch")
+    msg = (c.warn " returning to watch ") + (c.pink "*CF")
 
   else
 

@@ -1015,7 +1015,7 @@ print_final_message = function(log, lconfig, info){
       return;
     }
     if (info.options.watch_config_file) {
-      msg = c.pink("*CF") + c.er2(" returning to watch");
+      msg = c.warn(" returning to watch ") + c.pink("*CF");
     } else {
       msg = c.warn("returning to watch");
     }
