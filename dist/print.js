@@ -203,7 +203,7 @@ normal_internal = hoplon.guard.unary.wh(function(arg$){
     brac_color = c.er3;
     txt_color = c.er2;
   }
-  txt_1 = lit(["{ ", txt_1, " }"], [brac_color, txt_color, brac_color]);
+  txt_1 = lit([txt_1], [brac_color, txt_color, brac_color]);
   normal_internal([type, false, txt_1], state);
 }).ar(3, function(arg$, state){
   var type, txt_1, disp, buildname, color_process_name, color_buildname_dot, color_buildname, color_finaltxt, procname, procdot;
@@ -234,12 +234,10 @@ normal_internal = hoplon.guard.unary.wh(function(arg$){
     color_buildname = c.er1;
     color_finaltxt = c.er1;
   }
-  procname = color_buildname_dot(" •") + color_buildname(txt_1);
-  if (txt_1) {
-    procdot = " •";
-  } else {
+  procname = color_buildname_dot(" • ") + color_buildname(txt_1);
+  procdot = " •";
+  if (!txt_1) {
     procname = "";
-    procdot = " •";
   }
   if (buildname) {
     buildname = color_buildname_dot(" • ") + color_buildname(buildname);

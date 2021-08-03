@@ -74,5 +74,5 @@ data.selected_keys.set = new Set data.selected_keys.arr
 
 data.def.rsync = [(src:\.),\recursive,\quiet]
 
-data.def.ssh = "-tt -o LogLevel=QUIET"
+data.def.ssh = "-t -o LogLevel=QUIET"
 

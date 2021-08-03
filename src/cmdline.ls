@@ -878,7 +878,9 @@ organize_rsync = (data,cmdname,...,state) ->
 
   if (rsync is true)
 
-    rsync = [(global_data.def.rsync.concat (des:remotefold))]
+    add = [(des:remotefold)]
+
+    rsync = [(global_data.def.rsync.concat add)]
 
   fin = []
 
@@ -905,13 +907,13 @@ organize_rsync = (data,cmdname,...,state) ->
     if not (R.find ifrsh,obnormal)
 
       if data.ssh
-        ssh = [\rsh,"ssh #{data.ssh}"]
-      else if state.ssh
-        ssh = [\rsh,"ssh #{state.ssh}"]
+        ssh = [[\rsh,"ssh #{data.ssh}"]]
+      else if state.origin.ssh
+        ssh = [[\rsh,"ssh #{state.origin.ssh}"]]
       else
         ssh = []
 
-      obnormal.push [...ssh]
+      obnormal.push ...ssh
 
   data
 
@@ -954,18 +956,18 @@ V.user = be.obj
 
 .on \ignore                   , V.ignore.user
 
-.on \ssh                      , be.str.or unu
 
 .on [\remote,\local,\final]   , V.execlist
 
 .on \rsync                    , V.rsync.init
 
-.on [\remotehost,\remotefold] , be.str.or unu.cont (v,key,...,origin) -> origin[key]
+.on [\remotehost,\remotefold] , be.str.or unu.cont (v,key,...,{origin}) -> origin[key]
 
 .cont organize_rsync
 
 .and V.rsync.throw_if_error
 
+.on \ssh                      , be.str.or unu
 
 #----------------------------------------------------
 
@@ -981,8 +983,6 @@ V.def = be.obj
 
 .on \ignore      , V.ignore.def
 
-.on \ssh         , be.str.or be.undefnull.cont global_data.def.ssh
-
 .on [\local,\final,\remote] , V.execlist
 
 .on \rsync       , V.rsync.init
@@ -991,7 +991,11 @@ V.def = be.obj
 
 .and V.rsync.throw_if_error
 
-.map (value,key,...,{def,user,origin}) ->
+.on \ssh         , be.str.or be.undefnull.cont global_data.def.ssh
+
+.map (value,key,...,state) ->
+
+  {def,user} = state
 
   switch global_data.selected_keys.set.has key
 
@@ -1001,7 +1005,7 @@ V.def = be.obj
 
   | false =>
 
-    put = V.user.auth value,key,origin
+    put = V.user.auth value,key,state
 
     if put.continue
 
@@ -1189,7 +1193,7 @@ exec-finale = (data) ->*
   log.normal do
     postscript.length
     \ok
-    "  final"
+    " final"
     c.warn "#{postscript.length}"
 
   for cmd in postscript
@@ -1214,9 +1218,8 @@ exec_rsync = (data,each) ->*
   log.normal do
     true
     \ok
-    lit [" sync"," start"],[0,c.warn]
+    lit ["sync"," start"],[0,c.warn]
     c.grey disp
-
 
   log.verbose "rsync ... ",cmd
 
@@ -1226,7 +1229,7 @@ exec_rsync = (data,each) ->*
 
     log.normal do
       \err_light
-      lit [" sync"," break"],[c.pink,c.er2]
+      lit ["sync"," break"],[c.pink,c.er2]
       ""
 
     yield nPromise (resolve,reject) -> reject status
@@ -1236,7 +1239,7 @@ exec_rsync = (data,each) ->*
     log.normal do
       true
       \ok
-      lit [" sync ","✔️ ok"],[0,c.ok]
+      lit ["sync ","✔️ ok"],[0,c.ok]
       ""
 
 bko = be.known.obj
@@ -1320,7 +1323,7 @@ check_if_remotedir_present = (data) ->*
 
             log.normal do
               \err
-              " remote"
+              "remote"
               lit do
                 ["cannot continue remote without remotefolder ",lconfig.remotefold,"."]
                 [c.er1,c.warn,c.er1,c.er1]
@@ -1339,7 +1342,7 @@ check_if_remotedir_present = (data) ->*
 
       log.normal do
         \ok
-        " remote"
+        "remote"
         lit [' ✔️ ok •'," #{lconfig.remotehost}:#{lconfig.remotefold} ", "created with ","#{msg}"," permissions."],[c.ok,c.warn,c.grey,c.ok,c.grey]
 
 
@@ -1354,7 +1357,7 @@ remote_main_proc = (data,remotetask) ->*
   log.normal do
     remotetask.length
     \ok
-    " remote"
+    "remote"
     disp
 
   for I in remotetask
@@ -1400,7 +1403,7 @@ onchange = (data) ->*
   log.normal do
     local.length
     \ok
-    "  local"
+    "local"
     c.warn "#{local.length}"
 
   for cmd in local
@@ -1490,12 +1493,14 @@ resolve_signal = be.arr
 
     else then return cmd
 
-.cont ([cmdtxt],log)->
+.cont ([cmdtxt],log,info)->
 
-  log.normal do
-    \err_light
-    " ⚡️⚡️ error"
-    cmdtxt
+  l ""
+
+  if info.options.verbose is 2
+    log.normal \err_light,"exit 1",cmdtxt
+  else
+    log.normal \err_light,"exit 1"
 
   \error
 
@@ -1506,7 +1511,7 @@ resolve_signal = be.arr
 
 print_final_message = (log,lconfig,info) -> (signal) !->
 
-  signal = resolve_signal signal,log
+  signal = resolve_signal signal,log,info
 
   if (lconfig.watch.length is 0) or (info.options.no_watch > 0)
 
@@ -1516,7 +1521,7 @@ print_final_message = (log,lconfig,info) -> (signal) !->
 
   if info.options.watch_config_file
 
-    msg = (c.warn " returning to watch ") + (c.pink "*CF")
+    msg = (c.warn "returning to watch ") + (c.pink "*CF")
 
   else
 
@@ -1546,13 +1551,13 @@ ms_create_watch = (lconfig,info,log) ->
     log.normal do
       should_I_watch
       \err_light
-      "  watch"
+      "watch"
       [(c.warn I) for I in disp].join " "
 
     log.normal do
       (should_I_watch and lconfig.ignore.length)
       \err_light
-      " ignore"
+      "ignore"
       [(c.warn I) for I in lconfig.ignore].join " "
 
 
@@ -1566,9 +1571,13 @@ ms_create_watch = (lconfig,info,log) ->
 
       # add info.cmd_filename  # delete when done
 
+    # rl = readline.createInterface {terminal:false}
+
     rl = readline.createInterface {input:process.stdin,output:process.stdout,terminal:false}
 
     rl.on \line,(input) !->
+
+      z [input]
 
       process.stdout.write input
 
@@ -1762,5 +1771,3 @@ get_all = (info) ->*
 most.generate get_all,info
 
 .drain!
-
-

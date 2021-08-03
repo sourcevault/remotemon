@@ -30,7 +30,7 @@ compile:
 
 # 	remotemon longname -w foo bar
 
-	remotemon -w bar
+# 	remotemon -w --config "/mnt/c/code/autousb/.remotemon.yaml" r.run -vv
 
 
 

@@ -385,7 +385,7 @@ normal_internal = hoplon.guard.unary
 
     txt_color = c.er2
 
-  txt_1 = lit ["{ ",txt_1," }"],[brac_color,txt_color,brac_color]
+  txt_1 = lit [txt_1],[brac_color,txt_color,brac_color]
 
   normal_internal [type,false,txt_1],state
 
@@ -434,18 +434,13 @@ normal_internal = hoplon.guard.unary
 
     color_finaltxt      = c.er1
 
-  procname = (color_buildname_dot  " •") + (color_buildname txt_1)
+  procname = (color_buildname_dot  " • ") + (color_buildname txt_1)
 
+  procdot = " •"
 
-  if txt_1
-
-    procdot = " •"
-
-  else
+  if not txt_1
 
     procname = ""
-
-    procdot  = " •"
 
 
   if buildname

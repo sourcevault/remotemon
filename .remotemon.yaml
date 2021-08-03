@@ -13,7 +13,7 @@ global:
 
 remotehost: pi@192.168.43.142
 
-ssh: -tt -o LogLevel=QUIET -p {{global.sshport}}
+ssh: -t -o LogLevel=QUIET -p {{global.sshport}}
 
 remotefold: ~/test3
 
