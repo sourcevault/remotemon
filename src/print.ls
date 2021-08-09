@@ -33,6 +33,10 @@ com.optionParser     = require \option-parser
 
 com.tampax           = require \tampax
 
+com.yaml             = require \yaml
+
+com.yamlTypes        = require \yaml/types
+
 com.child_process    = child_process
 
 cp                   = child_process
@@ -58,12 +62,20 @@ com.dotpat = dotpat
 
 # ----------------------------------------------------------------------------
 
-com.spawn = (cmd) ->
+com.spawn = (cmd,dir,inpwd) ->
+
+  if inpwd
+
+    cwd = undefined
+
+  else
+
+    cwd =  "../" + dir
 
   cp.spawnSync do
     cmd
     []
-    {shell:'bash',stdio:'inherit',windowsVerbatimArguments:true}
+    {shell:'bash',stdio:'inherit',windowsVerbatimArguments:true,cwd:cwd}
 
 # ----------------------------------------------------------------------------
 
@@ -450,7 +462,6 @@ normal_internal = hoplon.guard.unary
   else
 
     buildname = ""
-
 
   l lit do
     ["[#{metadata.name}]",      buildname,       procname,            procdot,     " " + disp]

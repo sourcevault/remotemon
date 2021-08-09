@@ -1,143 +1,58 @@
 global:
-  file: dist/main.js
-  proj: utils
+  file: us
+  proj:
+    etc: service
+    name:
+      - utils
+      - next
   sshport: 45
-  first: &first
+  first:
     - verbose
-  second: &second
-    - recursive
-  files: &files
+  second: recursive
+  files:
     - test/opt.yaml
     - null
     - hungryhippo
-
 remotehost: pi@192.168.43.142
-
 ssh: -t -o LogLevel=QUIET -p {{global.sshport}}
-
 remotefold: ~/test3
-
-defarg: [pi@192.168.43.50,package.json,-tt]
-
-# remotehost: 'hello world {{0}}'
-
-# remotehost: pi@192.168.43.50
-
-
-# watch: false
-# rsync: false
-
+defarg:
+  - pi@192.168.43.50
+  - package.json
+  - -tt
 ignore:
   - /mnt/c/code/remotemon/.remotemon.yaml
-
-# rsync:
-#   - - exclude:
-#       - node_modules
-#       - .git
-#     - rsh: ssh -p 45
-#     - archive
-#     - recursive
-#     - verbose
-#     - ukraine
-
-# verbose: 0
-
-# ssh: -tt -o 'RequestTTY no' -p 45
-
-# ssh: '{{2}} -o LogLevel=QUIET -p {{global.sshport}}'
-
 longname:
   verbose: 0
-  defarg: [foo,bar,paper]
+  defarg:
+    - foo
+    - bar
+    - paper
   ssh: -tt -o LogLevel=QUIET -p 45
   local:
     - echo 'hello world 11'
-    # - echo {{1}}
-    # - echo {{global.file}}
-
-  # rsync:
-  #   - exclude:
-  #       - node_modules
-  #       - .git
-  #   - rsh: ssh -p 45
-  #   - archive
-  #   - recursive
-
-  # exec-remote:
-  #   - echo 'hello world'
-    # - sudo rm -rf {{remotefold}}
-
-  # exec-finale:
-  #   - ls
-
 ytv:
   defarg: 1
   watch: false
   local:
     - youtube-dl -f 18 {{0}}
-
-
 echo:
   verbose: 1
   local:
     - echo 'from locale'
   remote:
     - echo 'from remote'
-  # rsync:
-  #   - exclude:
-  #     - node_modules
-  #     - .git
-  #   - rsh: ssh -p 45
-  #   - archive
-  #   - recursive
-
 dry:
   verbose: 1
-  defarg: [1,2]
+  defarg:
+    - 1
+    - 2
   local:
     - node {{0}}
-
-
-
-
-
-  # verbose: 0
-
-  # watch: false
-
-# compile.all:
-  # exec-finale:
-#     - echo
-    # - *pkg
-    # - lsc -bco dist src
-  # - lsc -bc test
-    # - node {{global.file}}
-
-    # - lsc -bco dist/{{global.proj}} src/{{global.proj}}
-    # - lsc -bc test/{{global.proj}}
-    # - node {{global.file}}
-
-# exec-remote:
-#   - echo 'hello world'
-#   - rm -rf {{remotefold}}
-
-# exec-locale:
-#   - echo 'hello world 3'
-
-
-#   - rsh: ssh
-#   - verbose
-#   - recursive
-#   - exclude:
-#     - .git
-#     - node_modules
-
-# version.update: update-version src/package.yaml remotemon
-
-
 bar:
-  defarg: [--version,.inf]
-  # verbose: 2
+  defarg:
+    - --version
+    - .inf
   local:
     - node {{0}} {{1}}
   rsync: true
@@ -146,5 +61,6 @@ bar:
   final:
     - echo 'hello world'
 
-
+local:
+  - echo "hello world"
 

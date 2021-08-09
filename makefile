@@ -30,8 +30,14 @@ compile:
 
 # 	remotemon longname -w foo bar
 
-# 	remotemon -w --config "/mnt/c/code/autousb/.remotemon.yaml" r.run -vv
+# 	remotemon -l
 
+# 	remotemon --project test
+
+# 	remotemon -l -e global.proj.name="us" remotehost=192.168.43.1
+
+
+# 	remotemon -l
 
 
 # 	remotemon -c ./test/opt.yaml version.update

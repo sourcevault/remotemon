@@ -9,11 +9,15 @@ global_data = data
 
 {read-json,most,j,exec,chokidar,most_create,updateNotifier,fs,metadata,optionParser,tampax,readline} = com
 
-{dotpat,spawn} = com
+{dotpat,spawn,yaml,yamlTypes} = com
 
 {l,z,zj,j,R,lit,c,wait,noop} = com.hoplon.utils
 
 be = com.hoplon.types
+
+#--------------------------------------------
+
+CONFIG_FILE_NAME = ".remotemon.yaml"
 
 #--------------------------------------------
 
@@ -29,10 +33,6 @@ parser.addOption \d,'dry-run',null,\dryRun
 
 parser.addOption \w,'watch-config-file',null,\watch_config_file
 
-parser.addOption \c,'config',null,\config
-
-.argument \FILE
-
 parser.addOption \l,'list',null,\list
 
 parser.addOption \m,'auto-make-directory',null,\auto_make_directory
@@ -40,6 +40,16 @@ parser.addOption \m,'auto-make-directory',null,\auto_make_directory
 parser.addOption \n,'no-watch',null,\no_watch
 
 parser.addOption \s,'silent',null,\silent
+
+#--------------------------------------------
+
+parser.addOption \e,'edit',null,\edit
+
+parser.addOption \p,'project',null,\project
+
+.argument \PROJECT
+
+#--------------------------------------------
 
 if not (metadata.name) then return false
 
@@ -65,7 +75,7 @@ if (parser.help.count!) > 0
 
   str =
     """
-    remotemon version #{metadata.version}
+    #{metadata.name} version #{metadata.version}
 
     options:
 
@@ -81,30 +91,27 @@ if (parser.help.count!) > 0
 
       -w --watch-config-file     restart on config file change
 
-      -c --config                path to YAML configuration file
-
       -l --list                  list all user commands
 
-      -m --auto-make-directory   make remote directory if it doesn't exist
+      -m --auto-make-directory   make remote directory if it doesn't exist ( with user permission )
+
+        -mm                      ( with root permission )
 
       -n --no-watch              force disable any and all watches
 
-      -s --silent                do not show remotemon messages
+      -s --silent                do not show #{metadata.name} messages
+
+      -e --edit                  make permanent edits to #{CONFIG_FILE_NAME} values
+
+      -p --project               folder name to look for #{CONFIG_FILE_NAME}
 
       ---- shorthands ----
 
       CF <-- for configuration file
 
-    By default remotemon will look for .remotemon.yaml in current directory and one level up (only).
-
-    using --config <filename>.yaml option will direct remotemon to use <filename>.yaml as config file :
-
-    > remotemon --config custom.yaml
-    > remotemon --config custom.yaml -v
-
     values for internal variables (using .global object) can be changed using '=' (similar to makefiles) :
 
-    > remotemon --config custom.yaml --verbose file=dist/main.js
+    > #{metadata.name} --verbose file=dist/main.js
 
     [ documentation ] @ [ #{metadata.homepage} ]
 
@@ -116,78 +123,71 @@ if (parser.help.count!) > 0
 
 silent = parser.silent.count!
 
-if not silent
+edit   = parser.edit.count!
+
+if not (silent or edit)
 
   print.show-header!
 
 if (parser.version.count! > 0)
   return
 
-isvar = R.test /^\w+=/
+isvar = R.test /^[\.\w]+=/
+
 
 vars = rest
 |> R.filter isvar
-|> R.map R.split '='
+|> R.map R.pipe do
+  R.split '='
+  R.over do
+    R.lensIndex 0
+    R.pipe do
+      R.split "."
+      (key) ->
+
+        if key.length is 1
+
+          name = key[0]
+
+          if not global_data.selected_keys.set.has name
+
+            key.unshift "global"
+
+          return key
+
+        key
 
 args = R.reject isvar,rest
 
-#-------------[find file]-------------
+# args = ['hostapd.restart']
 
-search_for_default_config_file = (dirname) ->
-
-  out = " ls -lAh #{dirname} 2>/dev/null | grep -v '^d' | awk 'NR>1 {print $NF}'"
-
-  out
-  |> exec
-  |> R.split "\n"
-  |> R.filter (str) -> str is ".#{metadata.name}.yaml"
-  |> R.map (x) -> dirname + "/" + x
-
-get_all_yaml_files = (custom) ->
-
-  fin = []
-
-  if (fs.existsSync custom)
-
-    fin.push custom
-
-  fin.push ...search_for_default_config_file process.cwd!
-
-  upper-path = (R.init ((process.cwd!).split "/")).join "/"
-
-  fin.push ...search_for_default_config_file upper-path
-
-  fin
-
-findfile = (filename) ->
-
-  allfiles = get_all_yaml_files filename
-
-  if (allfiles.length is 0)
-
-    l lit do
-      ["[#{metadata.name}]"," • Error •"," cannot find ANY configuration file."]
-      [c.er3,c.er1,c.warn]
-
-    return false
-
-  filenames =  [(c.er1 I) for I in allfiles].join c.warn " > "
-
-  if not silent
-
-    l lit do
-      ["[#{metadata.name}]"," using ",filenames]
-      [c.er1,c.er1,c.er1]
-
-  return allfiles
+# vars = [ [ 'file', 'changelog.md' ] ]
 
 #-------------[looking for '.remotemon.yaml']---------------
 
-user_config_file = parser.config.value!
+project_name = parser.project.value!
 
-all_files = findfile user_config_file
+if not project_name
 
-if not all_files then return void
+  project_name = process.cwd!
+  |> R.split '/'
+  |> R.last
+
+config_file_name = "../" + project_name + "/" + CONFIG_FILE_NAME
+
+if not (fs.existsSync config_file_name)
+
+  l do
+    c.er3 "[#{metadata.name}]"
+    c.er3 "• Error •"
+    c.er1 "project"
+    c.warn project_name
+    c.er1 "does not have a"
+    c.warn CONFIG_FILE_NAME
+    c.er1 "file."
+
+  return
+
 
 if (parser.list.count! > 0)
 
@@ -203,8 +203,7 @@ info = {}
   ..cmdname               = args[0]
   ..cmdargs               = R.drop 1,args
   ..vars                  = vars
-  ..all_files             = all_files
-  ..cmd_filename          = null
+  ..filename              = config_file_name
 
   ..timedata              = [0,0,0]
 
@@ -218,165 +217,106 @@ info = {}
     ..auto_make_directory = parser.auto_make_directory.count!
     ..no_watch            = parser.no_watch.count!
     ..silent              = silent
+    ..edit                = edit
+    ..project             = project_name
 
 
+modyaml = (info) ->
 
-# [handle vars parsing gets really messy, be careful ]
+  data = info.filename |> fs.readFileSync |> R.toString
 
-vre = /(\s*#\s*){0,1}(\s*)(\S*):/
+  doc = yaml.parseDocument data
 
-yaml_tokenize = (data) ->
+  vars = info.vars
 
-  lines = data.split "\n"
+  doc-items = doc.contents.items
 
-  all = []
+  glob = R.find do
+    R.pathEq [\key,\value],\global
+    doc-items
 
-  for I in lines
+  if not glob
 
-    torna = vre.exec I
+    glob = new yamlTypes.Pair do
+      ({value:"global",range:[0,6],type:"PLAIN"})
+      new yamlTypes.YAMLMap!
 
-    if not (torna is null)
+    doc-items.unshift glob
 
-      [__,iscommeted,spaces,name] = torna
+  # z doc-items[0].value.items[1].value.items[1].value.items
 
-      asbool = (be.not.undef.auth iscommeted).continue
+  # z doc-items[0].value.items[1].value.items[1].value.value
 
-      all.push do
-        {
-          name:name
-          iscommeted:asbool
-          nodec:false
-          txt:I
-          space:spaces.length
-        }
+  for [key,value] in vars
+
+    toreach  = R.init key
+
+    finalkey = R.last key
+
+    current  = doc-items
+
+    stop     = false
+
+    for I in toreach
+
+      next = R.find do
+        R.pathEq [\key,\value],I
+        current
+
+      if next
+
+        current = next.value.items
+
+      else
+
+        stop = true
+
+        break
+
+    if stop then continue
+
+    innermost = R.find do
+      R.pathEq [\key,\value],finalkey
+      current
+
+    if innermost
+
+      if (innermost.value is null)
+
+        innermost.value = new yamlTypes.Scalar value
+
+      else
+
+        tochange = innermost.value
+
+        if tochange.value
+
+          tochange.value = value
+
+          if tochange.range
+
+            tochange.range = [tochange.range[0],tochange.range[0] + value.length]
+
+        else if tochange.items
+
+          seq = new yamlTypes.YAMLSeq!
+
+          innermost.value = seq
+
+          seq.items = [(new yamlTypes.Scalar value)]
 
     else
 
-      all.push do
-        {
-          nodec:true
-          space:0
-          txt:I
-        }
-
-  acc = []
-
-  temp = []
-
-  for I from 0 til all.length
-
-    current = all[I]
-
-    if (not (current.nodec) and (current.space is 0))
-
-      if (I > 0)
-
-        acc.push temp
-
-      temp = [current]
-
-    else
-
-      temp.push current
-
-  acc.push temp
-
-  acc
-
-vars = {}
-
-vars.get = (tokens) ->
-
-  index = null
-
-  I = 0
-
-  all = []
-
-  while I < tokens.length
-
-    current = tokens[I]
-
-    if (current[0].name is \global)
-
-      index = I
-
-      K = 0
-
-      while K < current.length
-
-        edit = []
-
-        do
-
-          edit.push current[K]
-
-          K += 1
-
-        while (K < current.length) and (current[K].nodec)
-
-        all.push edit
-
-    I += 1
-
-  [index,all]
-
-isref = /\s*\w*:\s*(&\w+\s*){0,1}/
-
-vars.edit = ([index,all],vars,tokens) ->
-
-  for [name,txt] in vars
-
-    for I from 1 til all.length
-
-      current = all[I]
-
-      if current[0].name is name
-
-        firstline = current[0]
-
-        isr = isref.exec firstline.txt
-
-        old_txt = current[0].txt
-
-        current[0].txt = isr[0] + txt
-
-        all[I] = [current[0]]
-
-  if index
-
-    tokens[index] = R.flatten all
-
-  tokens
-
-vars.stringify = (tokens) ->
-
-  str = ""
-
-  for I in tokens
-
-    str += I.txt + '\n'
-
-  str
-
-modify_yaml = (filename,cmdargs) ->
-
-  data = filename |> fs.readFileSync |> R.toString
-
-  tokens = yaml_tokenize data
-
-  torna = vars.get tokens
-
-  torna = vars.edit torna,cmdargs,tokens
-
-  torna = R.flatten torna
-
-  yaml_text = vars.stringify torna
-
-  yaml_text
+      current.push do
+        new yamlTypes.Pair do
+          finalkey
+          new yamlTypes.Scalar value
 
 
-# modify_yaml = (filename,cmdargs)
+  yaml.stringify doc
+
+
+
 
 nPromise = (f) -> new Promise f
 
@@ -398,27 +338,26 @@ only_str = be.str.cont (str) -> " - " + str
 
 .wrap!
 
-exec_list_option = (alldata) ->
+function exec_list_option yjson,info
 
-  for [filename,data] in R.reverse alldata
 
-    l lit ['> FILE ',filename],[c.warn,c.pink]
+  l lit ['> FILE ',info.filename],[c.warn,c.pink]
 
-    keys = Object.keys data
+  keys = Object.keys yjson
 
-    user_ones = rmdef keys
+  user_ones = rmdef keys
 
-    if user_ones.length is 0
+  if user_ones.length is 0
 
-      l lit ["  --- ","< EMPTY >"," ---"],[c.pink,c.warn,c.pink]
+    l lit ["  --- ","< EMPTY >"," ---"],[c.pink,c.warn,c.pink]
 
-    for I from 0 til user_ones.length
+  for I from 0 til user_ones.length
 
-      name = user_ones[I]
+    name = user_ones[I]
 
-      des = only_str data[name].description
+    des = only_str yjson[name].description
 
-      l lit [" • ",name,des],[c.warn,c.ok,null]
+    l lit [" • ",name,des],[c.warn,c.ok,null]
 
 
 # exec_list_option (alldata)
@@ -437,7 +376,7 @@ tampax_parse = (yaml_text,cmdargs,filename) ->
 
     return
 
-  resolve [filename,rawjson]
+  resolve rawjson
 
 V = {}
 
@@ -618,18 +557,6 @@ V.strlist.empty       = V.strlist -> []
 V.strlist.dot         = V.strlist -> ["."]
 
 V.strlist.false       = V.strlist false
-
-V.maybe               = {}
-
-V.maybe.bool          = be.bool.or unu
-
-V.maybe.num           = be.num.or unu
-
-V.maybe.str           = be.str.or unu
-
-V.maybe.obj           = be.obj.or unu
-
-V.maybe.arr           = be.arr.or unu
 
 #--------------------------------------------------------------
 
@@ -948,14 +875,13 @@ V.user = be.obj
   V.strlist.empty
   .cont (list) -> {'local':list}
 
-.on \initialize               , V.maybe.bool
+.on [\initialize,\inpwd]      , be.bool.or unu
 
 .on \watch                    , V.watch.user
 
 .on \verbose                  , be.num.or unu
 
 .on \ignore                   , V.ignore.user
-
 
 .on [\remote,\local,\final]   , V.execlist
 
@@ -974,6 +900,8 @@ V.user = be.obj
 V.def = be.obj
 
 .on [\remotehost,\remotefold]  , be.str.or unu
+
+.on \inpwd       , be.bool.or be.undefnull.cont false
 
 .on \verbose     , be.num.or unu.cont false
 
@@ -1114,7 +1042,7 @@ update = (lconfig,yaml_text,info)->*
 
   [...,args] = defarg.value
 
-  [__,origin] = yield tampax_parse yaml_text,args,info.cmd_filename
+  origin = yield tampax_parse yaml_text,args,info.filename
 
   vout = V.def.auth do
     origin
@@ -1128,12 +1056,12 @@ update = (lconfig,yaml_text,info)->*
 
   if info.options.watch_config_file
 
-    lconfig.watch.unshift info.cmd_filename
+    lconfig.watch.unshift info.filename
 
   [lconfig,log,buildname]
 
 
-init_continuation = (dryRun) -> (cmd,type = \async) ->*
+init_continuation = (dryRun,dir,inpwd) -> (cmd,type = \async) ->*
 
   if dryRun
 
@@ -1141,7 +1069,7 @@ init_continuation = (dryRun) -> (cmd,type = \async) ->*
 
   else
 
-    {status} = spawn cmd
+    {status} = spawn cmd,dir,inpwd
 
   if (status isnt 0)
 
@@ -1270,20 +1198,19 @@ check_if_remotehost_present = (data) ->*
 
   try
 
-    cont tryToSSH,'sync'
+    exec tryToSSH
 
   catch E
 
     log.normal do
       \err
-      ""
       lit do
         ["unable to ssh to remote address ",lconfig.remotehost,"."]
         [c.er1,c.er2,c.er1]
 
     yield nPromise (resolve,reject) -> reject \error
 
-    return
+  return
 
 
 check_if_remotedir_present = (data) ->*
@@ -1294,7 +1221,7 @@ check_if_remotedir_present = (data) ->*
 
   try
 
-    exec checkDir
+    exec checkDir,info.options.dryRun
 
   catch E
 
@@ -1577,8 +1504,6 @@ ms_create_watch = (lconfig,info,log) ->
 
     rl.on \line,(input) !->
 
-      z [input]
-
       process.stdout.write input
 
     lconfig.rl = rl
@@ -1601,8 +1526,10 @@ ms_create_watch = (lconfig,info,log) ->
         lconfig.rl = void
         end!
 
-
-  cont = init_continuation info.options.dryRun
+  cont = init_continuation do
+    info.options.dryRun
+    info.options.project
+    lconfig.inpwd
 
   ms = do
 
@@ -1642,7 +1569,6 @@ ms_create_watch = (lconfig,info,log) ->
 
       .drain!
 
-
   ms.drain!
 
 restart = (info,log)->*
@@ -1653,15 +1579,15 @@ restart = (info,log)->*
 
   log.normal \err,msg
 
-  filename = info.cmd_filename
+  {filename} = info
 
   try
 
-    yaml_text = modify_yaml filename,info.vars
+    yaml_text = modyaml filename,info.vars
 
   catch E
 
-    print.failed_in_custom_parser filename,E
+    print.failed_in_mod_yaml filename,E
 
     return
 
@@ -1693,35 +1619,29 @@ restart = (info,log)->*
 
 get_all = (info) ->*
 
-  raw = {}
+  try
 
-  raw.unparsed = {}
+    yaml_text = modyaml info
 
-  raw.parsed   = []
+    if info.options.edit
 
-  for filename in info.all_files
-
-    try
-
-      yaml_text = modify_yaml filename,info.vars
-
-      raw.unparsed[filename] = yaml_text
-
-    catch E
-
-      print.failed_in_custom_parser filename,E
+      fs.writeFileSync info.filename,yaml_text
 
       return
 
-    fup = yield tampax_parse yaml_text,info.cmdargs,filename
+  catch E
 
-    if (fup is \error.validator.tampaxparsing) then return
+    print.failed_in_mod_yaml filename,E
 
-    raw.parsed.push fup
+    return
+
+  yjson = yield tampax_parse yaml_text,info.cmdargs,info.filename
+
+  if (yjson is \error.validator.tampaxparsing) then return
 
   if info.options.list
 
-    exec_list_option raw.parsed
+    exec_list_option yjson,info
 
     return
 
@@ -1729,18 +1649,11 @@ get_all = (info) ->*
 
     if global_data.selected_keys.set.has info.cmdname
 
-      print.in_selected_key info.cmdname,info.cmdline
+        print.in_selected_key info.cmdname,info.cmdline
 
-      return
+        return
 
-    found = false
-
-    for [filename,gconfig] in raw.parsed
-
-      if gconfig[info.cmdname]
-        found = true
-        info.cmd_filename = filename
-        break
+    found = yjson[info.cmdname]
 
     if not found
 
@@ -1748,17 +1661,14 @@ get_all = (info) ->*
 
       return
 
-    lconfig = gconfig[info.cmdname]
+    lconfig = yjson[info.cmdname]
+
 
   else
 
-    [[filename,gconfig]]     = raw.parsed
+    lconfig = yjson
 
-    lconfig                  = gconfig
-
-    info.cmd_filename        = filename
-
-  vari = yield from update lconfig,raw.unparsed[info.cmd_filename],info
+  vari = yield from update lconfig,yaml_text,info
 
   if vari is \error then return
 

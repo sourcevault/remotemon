@@ -39,6 +39,7 @@ data.selected_keys = {}
 
   ..arr =
      \ssh
+     \inpwd
      \watch
      \rsync
      \local
@@ -56,18 +57,19 @@ data.selected_keys = {}
   ..undef =
      \ssh
      \watch
-
-     \local
-     \remote
-     \final
-
+     \inpwd
+     # \rsync
+     # \local
+     # \remote
+     # \final
+     # \defarg
      \global
      \ignore
      \verbose
-
      \initialize
      \remotefold
      \remotehost
+     # \description
 
 
 data.selected_keys.set = new Set data.selected_keys.arr
