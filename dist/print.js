@@ -19,6 +19,8 @@ child_process = require('child_process');
 readline = require('readline');
 com.optionParser = require('option-parser');
 com.tampax = require('tampax');
+com.yaml = require('yaml');
+com.yamlTypes = require('yaml/types');
 com.child_process = child_process;
 cp = child_process;
 be = hoplon.types;
@@ -31,11 +33,18 @@ dotpat.take = function(amount, signal){
   return R.take(amount, sig).join(".");
 };
 com.dotpat = dotpat;
-com.spawn = function(cmd){
+com.spawn = function(cmd, dir, inpwd){
+  var cwd;
+  if (inpwd) {
+    cwd = undefined;
+  } else {
+    cwd = "../" + dir;
+  }
   return cp.spawnSync(cmd, [], {
     shell: 'bash',
     stdio: 'inherit',
-    windowsVerbatimArguments: true
+    windowsVerbatimArguments: true,
+    cwd: cwd
   });
 };
 com.exec = function(cmd, dryRun){
