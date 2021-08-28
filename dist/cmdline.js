@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-var ref$, data, com, print, global_data, readJson, most, j, exec, chokidar, most_create, updateNotifier, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, yamlTypes, l, z, zj, R, lit, c, wait, noop, be, CONFIG_FILE_NAME, parser, rest, E, pkg, notifier, str, silent, edit, isvar, vars, args, project_name, config_file_name, wcf, x$, info, y$, modyaml, nPromise, rmdef, only_str, tampax_parse, V, mergeArray, defarg_main, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, get_all, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, data, com, print, global_data, readJson, most, j, exec, chokidar, most_create, updateNotifier, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, l, z, zj, R, lit, c, wait, noop, be, CONFIG_FILE_NAME, parser, rest, E, pkg, notifier, str, silent, edit, isvar, vars, args, project_name, config_file_name, wcf, x$, info, y$, modyaml, nPromise, rmdef, only_str, tampax_parse, V, mergeArray, defarg_main, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, get_all, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), data = ref$.data, com = ref$.com, print = ref$.print;
 global_data = data;
 readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, updateNotifier = com.updateNotifier, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
-dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, yamlTypes = com.yamlTypes;
+dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml;
 ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, zj = ref$.zj, j = ref$.j, R = ref$.R, lit = ref$.lit, c = ref$.c, wait = ref$.wait, noop = ref$.noop;
 be = com.hoplon.types;
 CONFIG_FILE_NAME = ".remotemon.yaml";
@@ -50,8 +50,8 @@ if (!(silent || edit)) {
 if (parser.version.count() > 0) {
   return;
 }
-isvar = R.test(/^[\.\w]+=/);
-vars = R.map(R.pipe(R.split('='), R.over(R.lensIndex(0), R.pipe(R.split("."), function(key){
+isvar = R.test(/^.+=/);
+vars = R.map(R.pipe(R.split('='), R.over(R.lensIndex(0), R.pipe(R.split("/"), function(key){
   var name;
   if (key.length === 1) {
     name = key[0];
@@ -61,7 +61,22 @@ vars = R.map(R.pipe(R.split('='), R.over(R.lensIndex(0), R.pipe(R.split("."), fu
     return key;
   }
   return key;
-}))))(
+})), R.over(R.lensIndex(1), function(str_data){
+  var isnum;
+  switch (str_data) {
+  case 'True':
+  case 'true':
+    return true;
+  case 'False':
+  case 'false':
+    return false;
+  }
+  isnum = parseFloat(str_data);
+  if (!deepEq$(isnum, NaN, '===')) {
+    return isnum;
+  }
+  return str_data;
+})))(
 R.filter(isvar)(
 rest));
 args = R.reject(isvar, rest);
@@ -99,63 +114,17 @@ y$.silent = silent;
 y$.edit = edit;
 y$.project = project_name;
 modyaml = function(info){
-  var data, doc, vars, docItems, glob, i$, len$, ref$, key, value, toreach, finalkey, current, stop, j$, len1$, I, next, innermost, tochange, seq;
+  var data, doc, vars, i$, len$, ref$, key, value;
   data = R.toString(
   fs.readFileSync(
   info.filename));
   doc = yaml.parseDocument(data);
   vars = info.vars;
-  docItems = doc.contents.items;
-  glob = R.find(R.pathEq(['key', 'value'], 'global'), docItems);
-  if (!glob) {
-    glob = new yamlTypes.Pair({
-      value: "global",
-      range: [0, 6],
-      type: "PLAIN"
-    }, new yamlTypes.YAMLMap());
-    docItems.unshift(glob);
-  }
   for (i$ = 0, len$ = vars.length; i$ < len$; ++i$) {
     ref$ = vars[i$], key = ref$[0], value = ref$[1];
-    toreach = R.init(key);
-    finalkey = R.last(key);
-    current = docItems;
-    stop = false;
-    for (j$ = 0, len1$ = toreach.length; j$ < len1$; ++j$) {
-      I = toreach[j$];
-      next = R.find(R.pathEq(['key', 'value'], I), current);
-      if (next) {
-        current = next.value.items;
-      } else {
-        stop = true;
-        break;
-      }
-    }
-    if (stop) {
-      continue;
-    }
-    innermost = R.find(R.pathEq(['key', 'value'], finalkey), current);
-    if (innermost) {
-      if (innermost.value === null) {
-        innermost.value = new yamlTypes.Scalar(value);
-      } else {
-        tochange = innermost.value;
-        if (tochange.value) {
-          tochange.value = value;
-          if (tochange.range) {
-            tochange.range = [tochange.range[0], tochange.range[0] + value.length];
-          }
-        } else if (tochange.items) {
-          seq = new yamlTypes.YAMLSeq();
-          innermost.value = seq;
-          seq.items = [new yamlTypes.Scalar(value)];
-        }
-      }
-    } else {
-      current.push(new yamlTypes.Pair(finalkey, new yamlTypes.Scalar(value)));
-    }
+    doc.setIn(key, value);
   }
-  return yaml.stringify(doc);
+  return String(doc);
 };
 nPromise = function(f){
   return new Promise(f);
@@ -203,16 +172,6 @@ tampax_parse = function(yaml_text, cmdargs, filename){
   });
 };
 V = {};
-V.check_config_file = be.known.obj.on('cmd', be.str.and(function(cmd){
-  return !global_data.selected_keys.set.has(cmd);
-}).or(be.undef)).err(function(msg, path, state){
-  return [':in_selected_key', [state.cmd, state.cmdline]];
-}).and(function(raw){
-  if (raw.cmd !== undefined && raw.origin[raw.cmd] === undefined) {
-    return [false, [':usercmd_not_defined', raw.cmd]];
-  }
-  return true;
-});
 mergeArray = function(deflength, def, arr){
   var tail, len, rest, fin, i$, I;
   tail = def[def.length - 1];
@@ -550,12 +509,12 @@ V.user = be.obj.or(be.undefnull.cont(function(){
   return {
     'local': list
   };
-})).on(['initialize', 'inpwd'], be.bool.or(unu)).on('watch', V.watch.user).on('verbose', be.num.or(unu)).on('ignore', V.ignore.user).on(['remote', 'local', 'final'], V.execlist).on('rsync', V.rsync.init).on(['remotehost', 'remotefold'], be.str.or(unu.cont(function(v, key){
+})).on(['initialize', 'inpwd'], be.bool.or(unu)).on('watch', V.watch.user).on('verbose', be.num.or(unu)).on('ignore', V.ignore.user).on(['pre', 'remote', 'local', 'final'], V.execlist).on('rsync', V.rsync.init).on(['remotehost', 'remotefold'], be.str.or(unu.cont(function(v, key){
   var origin;
   origin = arguments[arguments.length - 1].origin;
   return origin[key];
 }))).cont(organize_rsync).and(V.rsync.throw_if_error).on('ssh', be.str.or(unu));
-V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on('inpwd', be.bool.or(be.undefnull.cont(false))).on('verbose', be.num.or(unu.cont(false))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', V.watch.def).on('ignore', V.ignore.def).on(['local', 'final', 'remote'], V.execlist).on('rsync', V.rsync.init).cont(organize_rsync).and(V.rsync.throw_if_error).on('ssh', be.str.or(be.undefnull.cont(global_data.def.ssh))).map(function(value, key){
+V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on('inpwd', be.bool.or(be.undefnull.cont(false))).on('verbose', be.num.or(unu.cont(false))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', V.watch.def).on('ignore', V.ignore.def).on(['pre', 'local', 'final', 'remote'], V.execlist).on('rsync', V.rsync.init).cont(organize_rsync).and(V.rsync.throw_if_error).on('ssh', be.str.or(be.undefnull.cont(global_data.def.ssh))).map(function(value, key){
   var state, def, user, put;
   state = arguments[arguments.length - 1];
   def = state.def, user = state.user;
@@ -564,6 +523,9 @@ V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on('inpwd', be.b
     def[key] = value;
     break;
   case false:
+    if (key.match("/")) {
+      return [false, [':incorrect-custom-name']];
+    }
     put = V.user.auth(value, key, state);
     if (put['continue']) {
       user[key] = put.value;
@@ -607,6 +569,8 @@ V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on('inpwd', be.b
       return print.ob_in_str_list;
     case ':rsync_top':
       return print.basicError;
+    case ':incorrect-custom-name':
+      return print.incorrect_custom;
     default:
       Error = message[0];
       return print.basicError;
@@ -617,7 +581,7 @@ V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on('inpwd', be.b
 zero = function(arr){
   return arr.length === 0;
 };
-check_if_empty = be.known.obj.on('local', zero).on('final', zero).on('remote', zero).on('rsync', be.arr.and(zero).or(V.isFalse)).cont(true).fix(false).wrap();
+check_if_empty = be.known.obj.on(['pre', 'local', 'final', 'remote'], zero).on('rsync', be.arr.and(zero).or(V.isFalse)).cont(true).fix(false).wrap();
 create_logger = function(info, gconfig){
   var cmdname, lconfig, buildname, verbose, log;
   cmdname = info.cmdname;
@@ -850,8 +814,8 @@ onchange = function*(data){
     return;
   }
   remotehost = lconfig.remotehost, remotefold = lconfig.remotefold;
-  local = lconfig['local'];
-  remotetask = lconfig['remote'];
+  local = lconfig.local;
+  remotetask = lconfig.remote;
   log.normal(local.length, 'ok', "local", c.warn(local.length + ""));
   for (i$ = 0, len$ = local.length; i$ < len$; ++i$) {
     cmd = local[i$];
@@ -918,7 +882,7 @@ resolve_signal = be.arr.on(0, be.str.fix('<< program screwed up >>').cont(functi
 })).cont(function(arg$, log, info){
   var cmdtxt;
   cmdtxt = arg$[0];
-  l("");
+  process.stdout.cursorTo(0);
   if (info.options.verbose === 2) {
     log.normal('err_light', "exit 1", cmdtxt);
   } else {
@@ -948,8 +912,8 @@ print_final_message = function(log, lconfig, info){
     }
   };
 };
-ms_create_watch = function(lconfig, info, log){
-  var should_I_watch, disp, I, ms_file_watch, cont, ms;
+ms_create_watch = function*(lconfig, info, log){
+  var should_I_watch, disp, I, ms_file_watch, cont, pre, i$, len$, cmd, ms;
   should_I_watch = lconfig.watch.length > 0 && info.options.no_watch === 0;
   if (should_I_watch) {
     disp = lconfig.watch;
@@ -957,25 +921,25 @@ ms_create_watch = function(lconfig, info, log){
       disp = R.drop(1, disp);
       disp.unshift(c.pink("CF"));
     }
-    log.normal(should_I_watch, 'err_light', "watch", (function(){
+    log.normal(should_I_watch, 'err_light', "watch", (yield* (function*(){
       var i$, ref$, len$, results$ = [];
       for (i$ = 0, len$ = (ref$ = disp).length; i$ < len$; ++i$) {
         I = ref$[i$];
         results$.push(c.warn(I));
       }
       return results$;
-    }()).join(" "));
-    log.normal(should_I_watch && lconfig.ignore.length, 'err_light', "ignore", (function(){
+    }())).join(" "));
+    log.normal(should_I_watch && lconfig.ignore.length, 'err_light', "ignore", (yield* (function*(){
       var i$, ref$, len$, results$ = [];
       for (i$ = 0, len$ = (ref$ = lconfig.ignore).length; i$ < len$; ++i$) {
         I = ref$[i$];
         results$.push(c.warn(I));
       }
       return results$;
-    }()).join(" "));
+    }())).join(" "));
   }
   ms_file_watch = most_create(function(add, end, error){
-    var rl, watcher;
+    var rl, cwd, watcher;
     if (lconfig.initialize) {
       add(null);
     }
@@ -988,11 +952,17 @@ ms_create_watch = function(lconfig, info, log){
       process.stdout.write(input);
     });
     lconfig.rl = rl;
+    if (lconfig.inpwd) {
+      cwd = undefined;
+    } else {
+      cwd = "../" + info.options.project;
+    }
     if (should_I_watch) {
       watcher = chokidar.watch(lconfig.watch, {
         awaitWriteFinish: true,
         ignored: lconfig.ignore,
-        ignorePermissionErrors: true
+        ignorePermissionErrors: true,
+        cwd: cwd
       });
       watcher.on('change', add);
       return function(){
@@ -1004,6 +974,13 @@ ms_create_watch = function(lconfig, info, log){
     }
   });
   cont = init_continuation(info.options.dryRun, info.options.project, lconfig.inpwd);
+  pre = lconfig.pre;
+  log.normal(pre.length, 'ok', "pre", c.warn(pre.length + ""));
+  for (i$ = 0, len$ = pre.length; i$ < len$; ++i$) {
+    cmd = pre[i$];
+    log.verbose(cmd);
+    (yield* cont(cmd));
+  }
   ms = ms_file_watch.timestamp().loop(handle_inf(log, lconfig), info.timedata).switchLatest().takeWhile(function(filename){
     if (filename === info.cmd_filename) {
       return false;
@@ -1055,7 +1032,7 @@ restart = function*(info, log){
     return;
   }
   lconfig = vari[0], log = vari[1];
-  return ms_create_watch(lconfig, info, log);
+  return most.generate(ms_create_watch, lconfig, info, log);
 };
 get_all = function*(info){
   var yaml_text, E, yjson, found, lconfig, vari, log;
@@ -1067,7 +1044,7 @@ get_all = function*(info){
     }
   } catch (e$) {
     E = e$;
-    print.failed_in_mod_yaml(filename, E);
+    print.failed_in_mod_yaml(info.filename, E);
     return;
   }
   yjson = (yield tampax_parse(yaml_text, info.cmdargs, info.filename));
@@ -1097,6 +1074,93 @@ get_all = function*(info){
     return;
   }
   lconfig = vari[0], log = vari[1];
-  return ms_create_watch(lconfig, info, log);
+  return most.generate(ms_create_watch, lconfig, info, log).recoverWith(function(sig){
+    resolve_signal(sig, log, info);
+    return most.empty();
+  }).drain();
 };
 most.generate(get_all, info).drain();
+function deepEq$(x, y, type){
+  var toString = {}.toString, hasOwnProperty = {}.hasOwnProperty,
+      has = function (obj, key) { return hasOwnProperty.call(obj, key); };
+  var first = true;
+  return eq(x, y, []);
+  function eq(a, b, stack) {
+    var className, length, size, result, alength, blength, r, key, ref, sizeB;
+    if (a == null || b == null) { return a === b; }
+    if (a.__placeholder__ || b.__placeholder__) { return true; }
+    if (a === b) { return a !== 0 || 1 / a == 1 / b; }
+    className = toString.call(a);
+    if (toString.call(b) != className) { return false; }
+    switch (className) {
+      case '[object String]': return a == String(b);
+      case '[object Number]':
+        return a != +a ? b != +b : (a == 0 ? 1 / a == 1 / b : a == +b);
+      case '[object Date]':
+      case '[object Boolean]':
+        return +a == +b;
+      case '[object RegExp]':
+        return a.source == b.source &&
+               a.global == b.global &&
+               a.multiline == b.multiline &&
+               a.ignoreCase == b.ignoreCase;
+    }
+    if (typeof a != 'object' || typeof b != 'object') { return false; }
+    length = stack.length;
+    while (length--) { if (stack[length] == a) { return true; } }
+    stack.push(a);
+    size = 0;
+    result = true;
+    if (className == '[object Array]') {
+      alength = a.length;
+      blength = b.length;
+      if (first) {
+        switch (type) {
+        case '===': result = alength === blength; break;
+        case '<==': result = alength <= blength; break;
+        case '<<=': result = alength < blength; break;
+        }
+        size = alength;
+        first = false;
+      } else {
+        result = alength === blength;
+        size = alength;
+      }
+      if (result) {
+        while (size--) {
+          if (!(result = size in a == size in b && eq(a[size], b[size], stack))){ break; }
+        }
+      }
+    } else {
+      if ('constructor' in a != 'constructor' in b || a.constructor != b.constructor) {
+        return false;
+      }
+      for (key in a) {
+        if (has(a, key)) {
+          size++;
+          if (!(result = has(b, key) && eq(a[key], b[key], stack))) { break; }
+        }
+      }
+      if (result) {
+        sizeB = 0;
+        for (key in b) {
+          if (has(b, key)) { ++sizeB; }
+        }
+        if (first) {
+          if (type === '<<=') {
+            result = size < sizeB;
+          } else if (type === '<==') {
+            result = size <= sizeB
+          } else {
+            result = size === sizeB;
+          }
+        } else {
+          first = false;
+          result = size === sizeB;
+        }
+      }
+    }
+    stack.pop();
+    return result;
+  }
+}
