@@ -1,5 +1,13 @@
 # changelog
 
+`1.3.0`
+
+- `inpwd` added as a new key to enable control of where to run script.
+
+- `-e` `--edit` flag added to do file edits from commandline.
+
+- custom defined tasks **cannot** contain the character `/` which is now reserved for defining nesting for `-e` flag.
+
 `1.2.7`
 
 - all `exec-*` changed to `*`.

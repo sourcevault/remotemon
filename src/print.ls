@@ -35,8 +35,6 @@ com.tampax           = require \tampax
 
 com.yaml             = require \yaml
 
-com.yamlTypes        = require \yaml/types
-
 com.child_process    = child_process
 
 cp                   = child_process
@@ -204,6 +202,16 @@ print.incorrect_arg_num = ->
 
 # ----------------------------------------------------------------
 
+print.incorrect_custom = (__,key)->
+
+  l lit do
+    ["[#{metadata.name}]"," • incorrect custom task name ","\n"]
+    [c.er2,c.er3,c.er2,null]
+
+  l lit do
+    ["  ",key," <-- custom task name cannot contain"," \"/\" ","character. "]
+    [null,c.er3,c.er1,c.er3,c.er1]
+
 print.reqError = (props,path,filename) ->
 
   show_name filename
@@ -247,10 +255,10 @@ print.ob_in_str_list = (type,path,filename) ->
     path
     txt
 
-print.failed_in_custom_parser = (filename,E) ->
+print.failed_in_mod_yaml = (filename,E) ->
 
   l lit do
-    ["[#{metadata.name}]"," • parseError •"," unable to modify global variable in YAML file."]
+    ["[#{metadata.name}]"," • parseError •"," unable to modify variable value(s) in YAML file."]
     [c.warn,c.er3,c.er1]
 
   l "\n  " + c.er2 filename + "\n"
@@ -318,7 +326,7 @@ print.could_not_find_custom_cmd = (cmdname) ->
     [c.er2,c.er3]
 
   l lit do
-    [" unable to locate ","#{cmdname}"," task in config file(s)."]
+    [" unable to locate ","#{cmdname}"," task in config file."]
     [c.er1,c.warn,c.er1]
 
 

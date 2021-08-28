@@ -9,7 +9,7 @@ global_data = data
 
 {read-json,most,j,exec,chokidar,most_create,updateNotifier,fs,metadata,optionParser,tampax,readline} = com
 
-{dotpat,spawn,yaml,yamlTypes} = com
+{dotpat,spawn,yaml} = com
 
 {l,z,zj,j,R,lit,c,wait,noop} = com.hoplon.utils
 
@@ -132,8 +132,7 @@ if not (silent or edit)
 if (parser.version.count! > 0)
   return
 
-isvar = R.test /^[\.\w]+=/
-
+isvar = R.test /^.+=/
 
 vars = rest
 |> R.filter isvar
@@ -142,7 +141,7 @@ vars = rest
   R.over do
     R.lensIndex 0
     R.pipe do
-      R.split "."
+      R.split "/"
       (key) ->
 
         if key.length is 1
@@ -157,11 +156,39 @@ vars = rest
 
         key
 
+  R.over do
+    R.lensIndex 1
+    (str_data) ->
+
+      switch str_data
+      | \True,\true   => return true
+      | \False,\false =>  return false
+
+      isnum = parseFloat str_data
+
+      if not (isnum === NaN) then return isnum
+
+      return str_data
+
 args = R.reject isvar,rest
+
+#----------------------------
+
+# initial_edit_path_top_key = new Set!
+
+# for [[g]] in vars
+
+#   initial_edit_path_top_key.add g
+
+# global_edited = initial_edit_path_top_key.has \global
+
+#----------------------------
 
 # args = ['hostapd.restart']
 
 # vars = [ [ 'file', 'changelog.md' ] ]
+
+# global_edited = false
 
 #-------------[looking for '.remotemon.yaml']---------------
 
@@ -220,7 +247,6 @@ info = {}
     ..edit                = edit
     ..project             = project_name
 
-
 modyaml = (info) ->
 
   data = info.filename |> fs.readFileSync |> R.toString
@@ -229,91 +255,12 @@ modyaml = (info) ->
 
   vars = info.vars
 
-  doc-items = doc.contents.items
-
-  glob = R.find do
-    R.pathEq [\key,\value],\global
-    doc-items
-
-  if not glob
-
-    glob = new yamlTypes.Pair do
-      ({value:"global",range:[0,6],type:"PLAIN"})
-      new yamlTypes.YAMLMap!
-
-    doc-items.unshift glob
-
-  # z doc-items[0].value.items[1].value.items[1].value.items
-
-  # z doc-items[0].value.items[1].value.items[1].value.value
-
   for [key,value] in vars
 
-    toreach  = R.init key
+    doc.setIn key,value
 
-    finalkey = R.last key
+  String doc
 
-    current  = doc-items
-
-    stop     = false
-
-    for I in toreach
-
-      next = R.find do
-        R.pathEq [\key,\value],I
-        current
-
-      if next
-
-        current = next.value.items
-
-      else
-
-        stop = true
-
-        break
-
-    if stop then continue
-
-    innermost = R.find do
-      R.pathEq [\key,\value],finalkey
-      current
-
-    if innermost
-
-      if (innermost.value is null)
-
-        innermost.value = new yamlTypes.Scalar value
-
-      else
-
-        tochange = innermost.value
-
-        if tochange.value
-
-          tochange.value = value
-
-          if tochange.range
-
-            tochange.range = [tochange.range[0],tochange.range[0] + value.length]
-
-        else if tochange.items
-
-          seq = new yamlTypes.YAMLSeq!
-
-          innermost.value = seq
-
-          seq.items = [(new yamlTypes.Scalar value)]
-
-    else
-
-      current.push do
-        new yamlTypes.Pair do
-          finalkey
-          new yamlTypes.Scalar value
-
-
-  yaml.stringify doc
 
 
 
@@ -339,7 +286,6 @@ only_str = be.str.cont (str) -> " - " + str
 .wrap!
 
 function exec_list_option yjson,info
-
 
   l lit ['> FILE ',info.filename],[c.warn,c.pink]
 
@@ -379,24 +325,6 @@ tampax_parse = (yaml_text,cmdargs,filename) ->
   resolve rawjson
 
 V = {}
-
-V.check_config_file = be.known.obj
-
-.on \cmd do
-  be.str.and (cmd) -> not global_data.selected_keys.set.has cmd
-  .or be.undef
-
-.err (msg,path,state) ->
-
-  [\:in_selected_key,[state.cmd,state.cmdline]]
-
-.and (raw) ->
-
-  if (raw.cmd isnt undefined) and (raw.origin[raw.cmd] is undefined)
-
-    return [false,[\:usercmd_not_defined,raw.cmd]]
-
-  true
 
 # ----------------------------------------
 
@@ -875,19 +803,19 @@ V.user = be.obj
   V.strlist.empty
   .cont (list) -> {'local':list}
 
-.on [\initialize,\inpwd]      , be.bool.or unu
+.on [\initialize,\inpwd]         , be.bool.or unu
 
-.on \watch                    , V.watch.user
+.on \watch                       , V.watch.user
 
-.on \verbose                  , be.num.or unu
+.on \verbose                     , be.num.or unu
 
-.on \ignore                   , V.ignore.user
+.on \ignore                      , V.ignore.user
 
-.on [\remote,\local,\final]   , V.execlist
+.on [\pre,\remote,\local,\final] , V.execlist
 
-.on \rsync                    , V.rsync.init
+.on \rsync                       , V.rsync.init
 
-.on [\remotehost,\remotefold] , be.str.or unu.cont (v,key,...,{origin}) -> origin[key]
+.on [\remotehost,\remotefold]    , be.str.or unu.cont (v,key,...,{origin}) -> origin[key]
 
 .cont organize_rsync
 
@@ -899,21 +827,21 @@ V.user = be.obj
 
 V.def = be.obj
 
-.on [\remotehost,\remotefold]  , be.str.or unu
+.on [\remotehost,\remotefold]    , be.str.or unu
 
-.on \inpwd       , be.bool.or be.undefnull.cont false
+.on \inpwd                       , be.bool.or be.undefnull.cont false
 
-.on \verbose     , be.num.or unu.cont false
+.on \verbose                     , be.num.or unu.cont false
 
-.on \initialize  , be.bool.or be.undefnull.cont true
+.on \initialize                  , be.bool.or be.undefnull.cont true
 
-.on \watch       , V.watch.def
+.on \watch                       , V.watch.def
 
-.on \ignore      , V.ignore.def
+.on \ignore                      , V.ignore.def
 
-.on [\local,\final,\remote] , V.execlist
+.on [\pre,\local,\final,\remote] , V.execlist
 
-.on \rsync       , V.rsync.init
+.on \rsync                       , V.rsync.init
 
 .cont organize_rsync
 
@@ -932,6 +860,10 @@ V.def = be.obj
     def[key] = value
 
   | false =>
+
+    if (key.match "/")
+
+      return [false,[\:incorrect-custom-name]]
 
     put = V.user.auth value,key,state
 
@@ -961,27 +893,27 @@ V.def = be.obj
 
   {user,def}
 
-
 .err (message,path,...,{info}) !->
 
   [topmsg] = be.flatro message
 
   [loc,Error] = topmsg
 
-
   F = switch loc
 
-  | \:in_selected_key      => print.in_selected_key    # done checking
+  | \:in_selected_key        => print.in_selected_key    # done checking
 
-  | \:res                  => print.resError           # | not to rm |
+  | \:res                    => print.resError           # | not to rm |
 
-  | \:rsync                => print.rsyncError         # mostly okay
+  | \:rsync                  => print.rsyncError         # mostly okay
 
-  | \:ob_in_str_list       => print.ob_in_str_list
+  | \:ob_in_str_list         => print.ob_in_str_list
 
-  | \:rsync_top            => print.basicError
+  | \:rsync_top              => print.basicError
 
-  | otherwise              =>
+  | \:incorrect-custom-name  => print.incorrect_custom
+
+  | otherwise                =>
 
     [Error] = message
 
@@ -996,12 +928,15 @@ V.def = be.obj
 zero = (arr) -> (arr.length is 0)
 
 check_if_empty = be.known.obj
-.on \local,zero
-.on \final,zero
-.on \remote,zero
+
+.on [\pre,\local,\final,\remote],zero
+
 .on \rsync,(be.arr.and zero).or V.isFalse
+
 .cont true
+
 .fix false
+
 .wrap!
 
 # ----------------------------------------
@@ -1323,9 +1258,9 @@ onchange = (data) ->*
 
   {remotehost,remotefold} = lconfig
 
-  local                   = lconfig['local']
+  local                   = lconfig.local
 
-  remotetask              = lconfig['remote']
+  remotetask              = lconfig.remote
 
   log.normal do
     local.length
@@ -1422,11 +1357,14 @@ resolve_signal = be.arr
 
 .cont ([cmdtxt],log,info)->
 
-  l ""
+  process.stdout.cursorTo 0
 
   if info.options.verbose is 2
+
     log.normal \err_light,"exit 1",cmdtxt
+
   else
+
     log.normal \err_light,"exit 1"
 
   \error
@@ -1434,7 +1372,6 @@ resolve_signal = be.arr
 .alt be.str
 
 .wrap!
-
 
 print_final_message = (log,lconfig,info) -> (signal) !->
 
@@ -1461,7 +1398,7 @@ print_final_message = (log,lconfig,info) -> (signal) !->
     log.normal \ok,msg
 
 
-ms_create_watch = (lconfig,info,log) ->
+ms_create_watch = (lconfig,info,log) ->*
 
   should_I_watch = (lconfig.watch.length > 0) and (info.options.no_watch is 0)
 
@@ -1487,7 +1424,6 @@ ms_create_watch = (lconfig,info,log) ->
       "ignore"
       [(c.warn I) for I in lconfig.ignore].join " "
 
-
   ms_file_watch = do
 
     (add,end,error) <- most_create
@@ -1500,7 +1436,9 @@ ms_create_watch = (lconfig,info,log) ->
 
     # rl = readline.createInterface {terminal:false}
 
+
     rl = readline.createInterface {input:process.stdin,output:process.stdout,terminal:false}
+
 
     rl.on \line,(input) !->
 
@@ -1510,6 +1448,14 @@ ms_create_watch = (lconfig,info,log) ->
 
     #--------------------------------------------------------------------------------------
 
+    if lconfig.inpwd
+
+      cwd = undefined
+
+    else
+
+      cwd =  "../" + info.options.project
+
     if should_I_watch
 
       watcher = chokidar.watch do
@@ -1517,6 +1463,7 @@ ms_create_watch = (lconfig,info,log) ->
         *awaitWriteFinish:true
          ignored:lconfig.ignore
          ignorePermissionErrors:true
+         cwd:cwd
 
       watcher.on \change,add
 
@@ -1530,6 +1477,20 @@ ms_create_watch = (lconfig,info,log) ->
     info.options.dryRun
     info.options.project
     lconfig.inpwd
+
+  pre                   = lconfig.pre
+
+  log.normal do
+    pre.length
+    \ok
+    "pre"
+    c.warn "#{pre.length}"
+
+  for cmd in pre
+
+    log.verbose cmd
+
+    yield from cont cmd
 
   ms = do
 
@@ -1546,7 +1507,6 @@ ms_create_watch = (lconfig,info,log) ->
       if (filename is info.cmd_filename) then return false
 
       true
-
 
     .continueWith (filename) ->
 
@@ -1615,7 +1575,7 @@ restart = (info,log)->*
 
   [lconfig,log] = vari
 
-  ms_create_watch lconfig,info,log
+  most.generate ms_create_watch,lconfig,info,log
 
 get_all = (info) ->*
 
@@ -1631,7 +1591,7 @@ get_all = (info) ->*
 
   catch E
 
-    print.failed_in_mod_yaml filename,E
+    print.failed_in_mod_yaml info.filename,E
 
     return
 
@@ -1676,7 +1636,12 @@ get_all = (info) ->*
 
   # ---------------------------------------------------------
 
-  ms_create_watch lconfig,info,log
+  most.generate ms_create_watch,lconfig,info,log
+  .recoverWith (sig)->
+    resolve_signal sig,log,info
+    most.empty!
+  .drain!
+
 
 most.generate get_all,info
 

@@ -39,6 +39,7 @@ data.selected_keys = {}
 
   ..arr =
      \ssh
+     \pre
      \inpwd
      \watch
      \rsync
@@ -58,6 +59,7 @@ data.selected_keys = {}
      \ssh
      \watch
      \inpwd
+     # \pre
      # \rsync
      # \local
      # \remote

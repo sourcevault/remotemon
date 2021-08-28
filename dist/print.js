@@ -20,7 +20,6 @@ readline = require('readline');
 com.optionParser = require('option-parser');
 com.tampax = require('tampax');
 com.yaml = require('yaml');
-com.yamlTypes = require('yaml/types');
 com.child_process = child_process;
 cp = child_process;
 be = hoplon.types;
@@ -118,6 +117,10 @@ print.incorrect_arg_num = function(){
   l(lit(["[" + metadata.name + "]", " • inputError •\n"], [c.er2, c.er3]));
   return l(lit(["  ", "incorrect number of arguments for function."], [0, c.er1, c.er3, c.er1]));
 };
+print.incorrect_custom = function(__, key){
+  l(lit(["[" + metadata.name + "]", " • incorrect custom task name ", "\n"], [c.er2, c.er3, c.er2, null]));
+  return l(lit(["  ", key, " <-- custom task name cannot contain", " \"/\" ", "character. "], [null, c.er3, c.er1, c.er3, c.er1]));
+};
 print.reqError = function(props, path, filename){
   var ref$, init, last;
   show_name(filename);
@@ -145,8 +148,8 @@ print.ob_in_str_list = function(type, path, filename){
   }());
   return l(show_body(path, txt));
 };
-print.failed_in_custom_parser = function(filename, E){
-  l(lit(["[" + metadata.name + "]", " • parseError •", " unable to modify global variable in YAML file."], [c.warn, c.er3, c.er1]));
+print.failed_in_mod_yaml = function(filename, E){
+  l(lit(["[" + metadata.name + "]", " • parseError •", " unable to modify variable value(s) in YAML file."], [c.warn, c.er3, c.er1]));
   l("\n  " + c.er2(filename + "\n"));
   return l(c.grey(E));
 };
@@ -171,7 +174,7 @@ print.resError = function(props, path, filename){
 };
 print.could_not_find_custom_cmd = function(cmdname){
   l(lit(["[" + metadata.name + "]", " • dataError •\n"], [c.er2, c.er3]));
-  return l(lit([" unable to locate ", cmdname + "", " task in config file(s)."], [c.er1, c.warn, c.er1]));
+  return l(lit([" unable to locate ", cmdname + "", " task in config file."], [c.er1, c.warn, c.er1]));
 };
 print.custom_build = function(msg, path, filename){
   show_name(filename);

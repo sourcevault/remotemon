@@ -23,10 +23,7 @@ compile:
 	lsc -cb test
 	make pkg
 
-# 	remotemon --config ../router/.remotemon.yaml -w
-
 # 	remotemon --config test/opt.yaml -w foo
-
 
 # 	remotemon longname -w foo bar
 
@@ -34,8 +31,7 @@ compile:
 
 # 	remotemon --project test
 
-# 	remotemon -l -e global.proj.name="us" remotehost=192.168.43.1
-
+	remotemon -p autousb
 
 # 	remotemon -l
 

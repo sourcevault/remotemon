@@ -40,7 +40,7 @@ A local configuration files (`.remotemon.yaml`) is used to organize different su
 
 `⛔️ In remotemon lingo a project is just a directory. ⛔️`
 
-First argument to `remotemon` is the name of the build routine to use,, subsequent arguments can be used internally as variables using handlebar syntax (eg. `{{0}}`), or `.global` variables using `=` ( eg. `file=main.js` ).
+First argument to `remotemon` is the name of the build routine to use, subsequent arguments can be used internally as variables using handlebar syntax (eg. `{{0}}`), or `.global` variables using `=` ( eg. `file=main.js` ).
 
 ```zsh
 ~/app:(dev*) remotemon shutdown
@@ -98,9 +98,9 @@ Running `remotemon` without any arguments makes `remotemon` execute default rout
     remotefold: ~/test1
 ```
 
-- **Creating named builds**
+- **Creating custom named builds**
 
-  Named builds can be created at top-level as long as the name does not clash with selected keywords ( ,`remotehost`,`remotefold`,`local`,`remote`,`initialize`,`ssh`,`inpwd`,`watch` and `rsync` ).
+  Named builds can be created at top-level as long as the name does not clash with selected keywords ( ,`remotehost`,`remotefold`,`local`,`remote`,`initialize`,`ssh`,`inpwd`,`watch` and `rsync` ), they **cannot** also contain `/` character in their name ( e.g `mybui/ld1` would be considered incorrect ):
 
 ```yaml
 mybuild1:
@@ -145,7 +145,8 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 - `remotefold`  - folder in remote client where we want to execute our script.
 - `watch`       - local file(s) or folders(s) to watch for changes.
 - `ignore`      - files to **not** watch.
-- `local`       - local script to run before copying files to remote client and executing our scripts.
+- `pre`         - local commands to run before setting up watch, *runs only **once***.
+- `local`       - local commands to run after a change in file is detected.
 - `remote`      - command to execute in remote client.
 - `final`       - command to execute after `remote` returns `exit 0`.
 - `ssh`         - custom `ssh` config options, default is `-tt -o LogLevel=QUIET`.
@@ -153,6 +154,7 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 - `inpwd`       - specify if the command is run in the directory of the project, or in the working directory, by default(`false`) it runs in project directory.
 
 - `description` - provide a brief description of what the command does.
+
 - `defarg`      - default values for empty commandline arguments, for enforcing minimum commandline arguments, a number can be provided.
 - `initialize`  - boolean value to specify if a first run is performed or not when command is run, default is `true`.
 
@@ -211,6 +213,21 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 - when your build process gets complicated enough to warrant the use of gulpfiles, makefiles, etc.
 
 - `remotemon` is meant for situations where you are constantly having to configure linux system files, but also developing and running code on remote machines, that involves complicated `rsync` and `ssh` commands, but prefer to change those files from the comfort of your favorite local text editor - not everybody uses vim.
+
+- `--edit`
+
+  It's possible to make **permanent edits** on `.remotemon.yaml` without opening them using the `-e`/`--edit` flag.
+
+  For example if the IP address of the host has changed, you could do :
+
+  `remotemon -e remotehost=user@192.168.43.52`
+
+  and the remotehost field would have value of `user@192.168.43.52`
+
+  It's also possible to change inner values of custom defined tasks ( using `/` to define nesting ) :
+
+  `remotemon -e mybuild1/remotehost=user@192.168.43.52`
+
 
 ##### 🟡 all commandline options
 
