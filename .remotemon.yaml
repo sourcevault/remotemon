@@ -61,6 +61,8 @@ bar:
   final:
     - echo 'hello world'
 
+watch: false
+
 local:
-  - echo "hello world"
+  - echo "hello world 1 "
 

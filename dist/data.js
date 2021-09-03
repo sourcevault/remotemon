@@ -19,6 +19,6 @@ data.selected_keys.set = new Set(data.selected_keys.arr);
 data.def.rsync = [
   {
     src: '.'
-  }, 'recursive', 'quiet'
+  }, 'recursive', 'quiet', 'archive'
 ];
 data.def.ssh = "-t -o LogLevel=QUIET";

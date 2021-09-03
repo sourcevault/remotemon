@@ -230,7 +230,7 @@ info = {}
   ..cmdname               = args[0]
   ..cmdargs               = R.drop 1,args
   ..vars                  = vars
-  ..filename              = config_file_name
+  ..configfile            = config_file_name
 
   ..timedata              = [0,0,0]
 
@@ -249,7 +249,7 @@ info = {}
 
 modyaml = (info) ->
 
-  data = info.filename |> fs.readFileSync |> R.toString
+  data = info.configfile |> fs.readFileSync |> R.toString
 
   doc = yaml.parseDocument data
 
@@ -260,9 +260,6 @@ modyaml = (info) ->
     doc.setIn key,value
 
   String doc
-
-
-
 
 
 nPromise = (f) -> new Promise f
@@ -287,7 +284,7 @@ only_str = be.str.cont (str) -> " - " + str
 
 function exec_list_option yjson,info
 
-  l lit ['> FILE ',info.filename],[c.warn,c.pink]
+  l lit ['> FILE ',info.configfile],[c.warn,c.pink]
 
   keys = Object.keys yjson
 
@@ -977,7 +974,7 @@ update = (lconfig,yaml_text,info)->*
 
   [...,args] = defarg.value
 
-  origin = yield tampax_parse yaml_text,args,info.filename
+  origin = yield tampax_parse yaml_text,args,info.configfile
 
   vout = V.def.auth do
     origin
@@ -991,7 +988,7 @@ update = (lconfig,yaml_text,info)->*
 
   if info.options.watch_config_file
 
-    lconfig.watch.unshift info.filename
+    lconfig.watch.unshift info.configfile
 
   [lconfig,log,buildname]
 
@@ -1504,14 +1501,14 @@ ms_create_watch = (lconfig,info,log) ->*
 
     .takeWhile (filename) ->
 
-      if (filename is info.cmd_filename) then return false
+      if (filename is CONFIG_FILE_NAME) then return false
 
       true
 
     .continueWith (filename) ->
 
       most.generate restart,info,log,cont
-
+      # .tap (x) -> console.log 'hello world'
       .drain!
 
       most.empty!
@@ -1534,16 +1531,14 @@ ms_create_watch = (lconfig,info,log) ->*
 restart = (info,log)->*
 
   msg = lit do
-    ["#{info.cmd_filename}"," changed, restarting watch"]
+    ["#{info.configfile}"," changed, restarting watch"]
     [c.warn,c.er1]
 
   log.normal \err,msg
 
-  {filename} = info
-
   try
 
-    yaml_text = modyaml filename,info.vars
+    yaml_text = modyaml info
 
   catch E
 
@@ -1551,11 +1546,9 @@ restart = (info,log)->*
 
     return
 
-  fup = yield tampax_parse yaml_text,info.cmdargs,filename
+  gconfig = yield tampax_parse yaml_text,info.cmdargs,info.configfile
 
-  if (fup is \error.validator.tampaxparsing) then return
-
-  [filename,gconfig] = fup
+  if (gconfig is \error.validator.tampaxparsing) then return
 
   if info.cmdname
 
@@ -1576,6 +1569,7 @@ restart = (info,log)->*
   [lconfig,log] = vari
 
   most.generate ms_create_watch,lconfig,info,log
+  .drain!
 
 get_all = (info) ->*
 
@@ -1585,17 +1579,17 @@ get_all = (info) ->*
 
     if info.options.edit
 
-      fs.writeFileSync info.filename,yaml_text
+      fs.writeFileSync info.configfile,yaml_text
 
       return
 
   catch E
 
-    print.failed_in_mod_yaml info.filename,E
+    print.failed_in_mod_yaml info.configfile,E
 
     return
 
-  yjson = yield tampax_parse yaml_text,info.cmdargs,info.filename
+  yjson = yield tampax_parse yaml_text,info.cmdargs,info.configfile
 
   if (yjson is \error.validator.tampaxparsing) then return
 

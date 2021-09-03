@@ -5,7 +5,7 @@ homepage: https://github.com/sourcevault/remotemon#readme.md
 license: BSD-3-Clause
 description: remote monitoring, since there is no ansible for raspberry pi.
 repository: https://github.com/sourcevault/remotemon.git
-version: 1.3.1
+version: 1.3.2
 main: dist/main.js
 scripts:
   "test": "make travis"

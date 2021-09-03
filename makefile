@@ -4,9 +4,9 @@ SRC_NAME = $(shell ls src | grep ".\(ls\)")
 
 TEST_NAME = $(shell ls test | grep ".\(ls\|yaml\)")
 
-SRC_FILES = ${SRC_NAME:%=--watch src/%} --watch makefile --watch .remotemon.yaml
+# SRC_FILES = ${SRC_NAME:%=--watch src/%} --watch makefile --watch .remotemon.yaml
 
-# SRC_FILES = ${SRC_NAME:%=--watch src/%} --watch makefile
+SRC_FILES = ${SRC_NAME:%=--watch src/%} --watch makefile
 
 
 TEST_FILES = ${TEST_NAME:%=--watch test/%}
@@ -31,7 +31,7 @@ compile:
 
 # 	remotemon --project test
 
-	remotemon -p autousb
+	remotemon -w -p autousb
 
 # 	remotemon -l
 

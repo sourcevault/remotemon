@@ -258,7 +258,7 @@ print.ob_in_str_list = (type,path,filename) ->
 print.failed_in_mod_yaml = (filename,E) ->
 
   l lit do
-    ["[#{metadata.name}]"," • parseError •"," unable to modify variable value(s) in YAML file."]
+    ["[#{metadata.name}]"," • parseError •"," unable to read YAML file."]
     [c.warn,c.er3,c.er1]
 
   l "\n  " + c.er2 filename + "\n"
