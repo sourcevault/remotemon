@@ -100,7 +100,7 @@ x$ = info = {};
 x$.cmdname = args[0];
 x$.cmdargs = R.drop(1, args);
 x$.vars = vars;
-x$.filename = config_file_name;
+x$.configfile = config_file_name;
 x$.timedata = [0, 0, 0];
 x$.cmdline = R.drop(2, process.argv);
 y$ = x$.options = {};
@@ -117,7 +117,7 @@ modyaml = function(info){
   var data, doc, vars, i$, len$, ref$, key, value;
   data = R.toString(
   fs.readFileSync(
-  info.filename));
+  info.configfile));
   doc = yaml.parseDocument(data);
   vars = info.vars;
   for (i$ = 0, len$ = vars.length; i$ < len$; ++i$) {
@@ -145,7 +145,7 @@ only_str = be.str.cont(function(str){
 })).fix("").wrap();
 function exec_list_option(yjson, info){
   var keys, user_ones, i$, to$, I, name, des, results$ = [];
-  l(lit(['> FILE ', info.filename], [c.warn, c.pink]));
+  l(lit(['> FILE ', info.configfile], [c.warn, c.pink]));
   keys = Object.keys(yjson);
   user_ones = rmdef(keys);
   if (user_ones.length === 0) {
@@ -607,7 +607,7 @@ update = function*(lconfig, yaml_text, info){
     return 'error';
   }
   ref$ = defarg.value, args = ref$[ref$.length - 1];
-  origin = (yield tampax_parse(yaml_text, args, info.filename));
+  origin = (yield tampax_parse(yaml_text, args, info.configfile));
   vout = V.def.auth(origin, {
     def: {},
     user: {},
@@ -620,7 +620,7 @@ update = function*(lconfig, yaml_text, info){
   gconfig = vout.value;
   ref$ = create_logger(info, gconfig), lconfig = ref$[0], log = ref$[1], buildname = ref$[2];
   if (info.options.watch_config_file) {
-    lconfig.watch.unshift(info.filename);
+    lconfig.watch.unshift(info.configfile);
   }
   return [lconfig, log, buildname];
 };
@@ -982,7 +982,7 @@ ms_create_watch = function*(lconfig, info, log){
     (yield* cont(cmd));
   }
   ms = ms_file_watch.timestamp().loop(handle_inf(log, lconfig), info.timedata).switchLatest().takeWhile(function(filename){
-    if (filename === info.cmd_filename) {
+    if (filename === CONFIG_FILE_NAME) {
       return false;
     }
     return true;
@@ -1004,22 +1004,20 @@ ms_create_watch = function*(lconfig, info, log){
   return ms.drain();
 };
 restart = function*(info, log){
-  var msg, filename, yaml_text, E, fup, gconfig, lconfig, defarg, vari;
-  msg = lit([info.cmd_filename + "", " changed, restarting watch"], [c.warn, c.er1]);
+  var msg, yaml_text, E, gconfig, lconfig, defarg, vari;
+  msg = lit([info.configfile + "", " changed, restarting watch"], [c.warn, c.er1]);
   log.normal('err', msg);
-  filename = info.filename;
   try {
-    yaml_text = modyaml(filename, info.vars);
+    yaml_text = modyaml(info);
   } catch (e$) {
     E = e$;
     print.failed_in_mod_yaml(filename, E);
     return;
   }
-  fup = (yield tampax_parse(yaml_text, info.cmdargs, filename));
-  if (fup === 'error.validator.tampaxparsing') {
+  gconfig = (yield tampax_parse(yaml_text, info.cmdargs, info.configfile));
+  if (gconfig === 'error.validator.tampaxparsing') {
     return;
   }
-  filename = fup[0], gconfig = fup[1];
   if (info.cmdname) {
     lconfig = gconfig[info.cmdname];
     defarg = lconfig.defarg;
@@ -1032,22 +1030,22 @@ restart = function*(info, log){
     return;
   }
   lconfig = vari[0], log = vari[1];
-  return most.generate(ms_create_watch, lconfig, info, log);
+  return most.generate(ms_create_watch, lconfig, info, log).drain();
 };
 get_all = function*(info){
   var yaml_text, E, yjson, found, lconfig, vari, log;
   try {
     yaml_text = modyaml(info);
     if (info.options.edit) {
-      fs.writeFileSync(info.filename, yaml_text);
+      fs.writeFileSync(info.configfile, yaml_text);
       return;
     }
   } catch (e$) {
     E = e$;
-    print.failed_in_mod_yaml(info.filename, E);
+    print.failed_in_mod_yaml(info.configfile, E);
     return;
   }
-  yjson = (yield tampax_parse(yaml_text, info.cmdargs, info.filename));
+  yjson = (yield tampax_parse(yaml_text, info.cmdargs, info.configfile));
   if (yjson === 'error.validator.tampaxparsing') {
     return;
   }

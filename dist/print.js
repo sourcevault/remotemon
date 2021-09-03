@@ -149,7 +149,7 @@ print.ob_in_str_list = function(type, path, filename){
   return l(show_body(path, txt));
 };
 print.failed_in_mod_yaml = function(filename, E){
-  l(lit(["[" + metadata.name + "]", " • parseError •", " unable to modify variable value(s) in YAML file."], [c.warn, c.er3, c.er1]));
+  l(lit(["[" + metadata.name + "]", " • parseError •", " unable to read YAML file."], [c.warn, c.er3, c.er1]));
   l("\n  " + c.er2(filename + "\n"));
   return l(c.grey(E));
 };
