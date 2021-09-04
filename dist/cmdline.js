@@ -50,7 +50,7 @@ if (!(silent || edit)) {
 if (parser.version.count() > 0) {
   return;
 }
-isvar = R.test(/^.+=/);
+isvar = R.test(/^[\.\w]+=/);
 vars = R.map(R.pipe(R.split('='), R.over(R.lensIndex(0), R.pipe(R.split("/"), function(key){
   var name;
   if (key.length === 1) {
@@ -983,7 +983,9 @@ ms_create_watch = function*(lconfig, info, log){
   }
   ms = ms_file_watch.timestamp().loop(handle_inf(log, lconfig), info.timedata).switchLatest().takeWhile(function(filename){
     if (filename === CONFIG_FILE_NAME) {
-      return false;
+      if (info.options.watch_config_file) {
+        return false;
+      }
     }
     return true;
   }).continueWith(function(filename){

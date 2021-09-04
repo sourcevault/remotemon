@@ -132,7 +132,7 @@ if not (silent or edit)
 if (parser.version.count! > 0)
   return
 
-isvar = R.test /^.+=/
+isvar = R.test /^[\.\w]+=/
 
 vars = rest
 |> R.filter isvar
@@ -1501,14 +1501,16 @@ ms_create_watch = (lconfig,info,log) ->*
 
     .takeWhile (filename) ->
 
-      if (filename is CONFIG_FILE_NAME) then return false
+      if filename is CONFIG_FILE_NAME
+        if info.options.watch_config_file
+          return false
 
       true
 
     .continueWith (filename) ->
 
       most.generate restart,info,log,cont
-      # .tap (x) -> console.log 'hello world'
+
       .drain!
 
       most.empty!
