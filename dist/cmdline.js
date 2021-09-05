@@ -44,10 +44,8 @@ if (parser.help.count() > 0) {
 }
 silent = parser.silent.count();
 edit = parser.edit.count();
-if (!(silent || edit)) {
-  print.showHeader();
-}
 if (parser.version.count() > 0) {
+  l(c.er1("[" + metadata.name + "] version " + metadata.version));
   return;
 }
 isvar = R.test(/^[\.\w]+=/);
@@ -509,12 +507,12 @@ V.user = be.obj.or(be.undefnull.cont(function(){
   return {
     'local': list
   };
-})).on(['initialize', 'inpwd'], be.bool.or(unu)).on('watch', V.watch.user).on('verbose', be.num.or(unu)).on('ignore', V.ignore.user).on(['pre', 'remote', 'local', 'final'], V.execlist).on('rsync', V.rsync.init).on(['remotehost', 'remotefold'], be.str.or(unu.cont(function(v, key){
+})).err("custom user defined task, has to be object.").on(['initialize', 'inpwd', 'silent'], be.bool.or(unu)).on('watch', V.watch.user).on('verbose', be.num.or(unu)).on('ignore', V.ignore.user).on(['pre', 'remote', 'local', 'final'], V.execlist).on('rsync', V.rsync.init).on(['remotehost', 'remotefold'], be.str.or(unu.cont(function(v, key){
   var origin;
   origin = arguments[arguments.length - 1].origin;
   return origin[key];
 }))).cont(organize_rsync).and(V.rsync.throw_if_error).on('ssh', be.str.or(unu));
-V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on('inpwd', be.bool.or(be.undefnull.cont(false))).on('verbose', be.num.or(unu.cont(false))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', V.watch.def).on('ignore', V.ignore.def).on(['pre', 'local', 'final', 'remote'], V.execlist).on('rsync', V.rsync.init).cont(organize_rsync).and(V.rsync.throw_if_error).on('ssh', be.str.or(be.undefnull.cont(global_data.def.ssh))).map(function(value, key){
+V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on(['inpwd', 'silent'], be.bool.or(be.undefnull.cont(false))).on('verbose', be.num.or(unu.cont(0))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', V.watch.def).on('ignore', V.ignore.def).on(['pre', 'local', 'final', 'remote'], V.execlist).on('rsync', V.rsync.init).cont(organize_rsync).and(V.rsync.throw_if_error).on('ssh', be.str.or(be.undefnull.cont(global_data.def.ssh))).map(function(value, key){
   var state, def, user, put;
   state = arguments[arguments.length - 1];
   def = state.def, user = state.user;
@@ -583,7 +581,7 @@ zero = function(arr){
 };
 check_if_empty = be.known.obj.on(['pre', 'local', 'final', 'remote'], zero).on('rsync', be.arr.and(zero).or(V.isFalse)).cont(true).fix(false).wrap();
 create_logger = function(info, gconfig){
-  var cmdname, lconfig, buildname, verbose, log;
+  var cmdname, lconfig, buildname, verbose, silent, log;
   cmdname = info.cmdname;
   if (cmdname === undefined) {
     lconfig = gconfig.def;
@@ -597,7 +595,8 @@ create_logger = function(info, gconfig){
   } else {
     verbose = info.options.verbose;
   }
-  log = print.create_logger(buildname, verbose, info.options.silent);
+  silent = lconfig.silent || info.options.silent;
+  log = print.create_logger(buildname, verbose, silent);
   return [lconfig, log, buildname];
 };
 update = function*(lconfig, yaml_text, info){
@@ -1074,6 +1073,7 @@ get_all = function*(info){
     return;
   }
   lconfig = vari[0], log = vari[1];
+  log.dry('err', metadata.version);
   return most.generate(ms_create_watch, lconfig, info, log).recoverWith(function(sig){
     resolve_signal(sig, log, info);
     return most.empty();
