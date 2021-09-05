@@ -100,7 +100,7 @@ Running `remotemon` without any arguments makes `remotemon` execute default rout
 
 - **Creating custom named builds**
 
-  Named builds can be created at top-level as long as the name does not clash with selected keywords ( ,`remotehost`,`remotefold`,`local`,`remote`,`initialize`,`ssh`,`inpwd`,`watch` and `rsync` ), they **cannot** also contain `/` character in their name ( e.g `mybui/ld1` would be considered incorrect ):
+  Named builds can be created at top-level as long as the name does not clash with **reserved keyword**, they **cannot** also contain `/` character in their name ( e.g `mybui/ld1` would be considered incorrect ):
 
 ```yaml
 mybuild1:
@@ -151,6 +151,7 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 - `final`       - command to execute after `remote` returns `exit 0`.
 - `ssh`         - custom `ssh` config options, default is `-tt -o LogLevel=QUIET`.
 - `verbose`     - hardcode verbose level of printing for command.
+- `silent`      - hardcode commandline `--silent` option ( use sparsely ).
 - `inpwd`       - specify if the command is run in the directory of the project, or in the working directory, by default(`false`) it runs in project directory.
 
 - `description` - provide a brief description of what the command does.

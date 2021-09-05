@@ -21,7 +21,7 @@ pkg:
 compile:
 	lsc --no-header -cbo dist src
 	lsc -cb test
-	make pkg
+	yaml2json src/package.yaml > package.json
 
 # 	remotemon --config test/opt.yaml -w foo
 
@@ -31,7 +31,9 @@ compile:
 
 # 	remotemon --project test
 
-	remotemon -w -p autousb
+# 	remotemon -p yt video https://www.youtube.com/watch\?v\=eXNEpQCXHaE
+
+	remotemon -p router hostapd.status
 
 # 	remotemon -l
 

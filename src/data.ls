@@ -49,6 +49,7 @@ data.selected_keys = {}
      \ignore
      \defarg
      \remote
+     \silent
      \verbose
      \initialize
      \remotefold
@@ -67,6 +68,7 @@ data.selected_keys = {}
      # \defarg
      \global
      \ignore
+     \silent
      \verbose
      \initialize
      \remotefold

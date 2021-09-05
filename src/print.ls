@@ -366,21 +366,22 @@ print.no_match_for_arguments = ->
 
 # ----------------------------------------------------------------
 
-normal_internal = hoplon.guard.unary
+internal = {}
+
+internal.normal = hoplon.guard.unary
 
 .wh do
 
   ([type]) -> (typeof type) isnt \string
 
-  (args,state) ->
+  (args,state) !->
 
-    if args[0] and not state.silent
+    if args[0]
 
-      normal_internal (R.drop 1,args),state
+      internal.normal (R.drop 1,args),state
 
-    else then return void
 
-.ar 1,([txt]) !->
+.ar 1,([txt],state) !->
 
   l lit ["[#{metadata.name}] ",txt],[c.ok,null]
 
@@ -407,7 +408,7 @@ normal_internal = hoplon.guard.unary
 
   txt_1 = lit [txt_1],[brac_color,txt_color,brac_color]
 
-  normal_internal [type,false,txt_1],state
+  internal.normal [type,false,txt_1],state
 
 .ar 3,([type,txt_1,disp],state) ->
 
@@ -462,7 +463,6 @@ normal_internal = hoplon.guard.unary
 
     procname = ""
 
-
   if buildname
 
     buildname = (color_buildname_dot " • ") + (color_buildname buildname)
@@ -476,7 +476,6 @@ normal_internal = hoplon.guard.unary
     [  color_process_name,           null,           null,color_buildname_dot, color_finaltxt]
 
 
-
 .ar 4,([type,txt_1,txt_2,txt_3],state) !->
 
   normal_internal [type,txt_1,txt_2],state
@@ -487,7 +486,7 @@ normal_internal = hoplon.guard.unary
 
 # ----------------------------------------------------------------
 
-verbose_internal = hoplon.guard.unary
+internal.verbose = hoplon.guard.unary
 
 .ar 2,([txt_1,txt_2],state) ->
 
@@ -517,12 +516,37 @@ verbose_internal = hoplon.guard.unary
 
 .def!
 
+
+internal.dry = hoplon.guard.unary
+
+.ar 1,([txt],state) !->
+
+  l txt
+
+.ar 2,([type,txt],state) !->
+
+  color = switch type
+  | \ok  => c.ok
+  | \err => c.er1
+
+  l color "[#{metadata.name}] #{txt}"
+
+.def!
+
+
 show = {}
 
-show.normal  = !-> normal_internal arguments,@
+show_main = (type) -> ->
 
-show.verbose = !-> verbose_internal arguments,@
+    if not @silent
 
+      internal[type] arguments,@
+
+show.normal  = show_main \normal
+
+show.dry     = show_main \dry
+
+show.verbose = show_main \verbose
 
 # ----------------------------------------------------------------
 

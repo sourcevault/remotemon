@@ -123,13 +123,12 @@ if (parser.help.count!) > 0
 
 silent = parser.silent.count!
 
-edit   = parser.edit.count!
-
-if not (silent or edit)
-
-  print.show-header!
+edit = parser.edit.count!
 
 if (parser.version.count! > 0)
+
+  l c.er1 "[#{metadata.name}] version #{metadata.version}"
+
   return
 
 isvar = R.test /^[\.\w]+=/
@@ -800,7 +799,9 @@ V.user = be.obj
   V.strlist.empty
   .cont (list) -> {'local':list}
 
-.on [\initialize,\inpwd]         , be.bool.or unu
+.err "custom user defined task, has to be object."
+
+.on [\initialize,\inpwd,\silent] , be.bool.or unu
 
 .on \watch                       , V.watch.user
 
@@ -820,15 +821,18 @@ V.user = be.obj
 
 .on \ssh                      , be.str.or unu
 
+
 #----------------------------------------------------
 
 V.def = be.obj
 
 .on [\remotehost,\remotefold]    , be.str.or unu
 
-.on \inpwd                       , be.bool.or be.undefnull.cont false
 
-.on \verbose                     , be.num.or unu.cont false
+.on [\inpwd,\silent]             , be.bool.or be.undefnull.cont false
+
+
+.on \verbose                     , be.num.or unu.cont 0
 
 .on \initialize                  , be.bool.or be.undefnull.cont true
 
@@ -870,9 +874,11 @@ V.def = be.obj
 
     else
 
+
       return [false,[put.message],put.path]
 
   true
+
 
 .cont (...,{user,def}) ->
 
@@ -962,7 +968,9 @@ create_logger = (info,gconfig) ->
 
     verbose = info.options.verbose
 
-  log = print.create_logger buildname,verbose,info.options.silent
+  silent = lconfig.silent or info.options.silent
+
+  log = print.create_logger buildname,verbose,silent
 
   [lconfig,log,buildname]
 
@@ -1123,6 +1131,7 @@ check_if_remote_needed = bko
 .wrap!
 
 check_if_remotehost_present = (data) ->*
+
 
   {lconfig,log,cont} = data
 
@@ -1433,9 +1442,7 @@ ms_create_watch = (lconfig,info,log) ->*
 
     # rl = readline.createInterface {terminal:false}
 
-
     rl = readline.createInterface {input:process.stdin,output:process.stdout,terminal:false}
-
 
     rl.on \line,(input) !->
 
@@ -1631,6 +1638,9 @@ get_all = (info) ->*
   [lconfig,log] = vari
 
   # ---------------------------------------------------------
+
+  log.dry \err,metadata.version
+
 
   most.generate ms_create_watch,lconfig,info,log
   .recoverWith (sig)->

@@ -1,4 +1,4 @@
-var x$, com, y$, most, hoplon, ref$, z, wait, most_create, child_process, readline, cp, be, R, dotpat, print, c, l, lit, j, readJson, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, normal_internal, verbose_internal, show, create_logger, print_wrap, I, key, out$ = typeof exports != 'undefined' && exports || this;
+var x$, com, y$, most, hoplon, ref$, z, wait, most_create, child_process, readline, cp, be, R, dotpat, print, c, l, lit, j, readJson, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, internal, show, show_main, create_logger, print_wrap, I, key, out$ = typeof exports != 'undefined' && exports || this;
 x$ = com = {};
 y$ = x$.metadata = {};
 y$.name = null;
@@ -187,15 +187,16 @@ print.basicError = function(msg, path, filename){
 print.no_match_for_arguments = function(){
   return l(lit(["[" + metadata.name + "]", " • argumentError \n\n", "   match for arguments failed.\n\n", "   " + j(arguments)], [c.er2, c.er3, c.warn, c.pink]));
 };
-normal_internal = hoplon.guard.unary.wh(function(arg$){
+internal = {};
+internal.normal = hoplon.guard.unary.wh(function(arg$){
   var type;
   type = arg$[0];
   return typeof type !== 'string';
 }, function(args, state){
-  if (args[0] && !state.silent) {
-    return normal_internal(R.drop(1, args), state);
-  } else {}
-}).ar(1, function(arg$){
+  if (args[0]) {
+    internal.normal(R.drop(1, args), state);
+  }
+}).ar(1, function(arg$, state){
   var txt;
   txt = arg$[0];
   l(lit(["[" + metadata.name + "] ", txt], [c.ok, null]));
@@ -216,7 +217,7 @@ normal_internal = hoplon.guard.unary.wh(function(arg$){
     txt_color = c.er2;
   }
   txt_1 = lit([txt_1], [brac_color, txt_color, brac_color]);
-  normal_internal([type, false, txt_1], state);
+  internal.normal([type, false, txt_1], state);
 }).ar(3, function(arg$, state){
   var type, txt_1, disp, buildname, color_process_name, color_buildname_dot, color_buildname, color_finaltxt, procname, procdot;
   type = arg$[0], txt_1 = arg$[1], disp = arg$[2];
@@ -263,7 +264,7 @@ normal_internal = hoplon.guard.unary.wh(function(arg$){
   normal_internal([type, txt_1, txt_2], state);
   l(" " + txt_3);
 }).def();
-verbose_internal = hoplon.guard.unary.ar(2, function(arg$, state){
+internal.verbose = hoplon.guard.unary.ar(2, function(arg$, state){
   var txt_1, txt_2, vl, disp;
   txt_1 = arg$[0], txt_2 = arg$[1];
   vl = state.verbose_level;
@@ -283,13 +284,34 @@ verbose_internal = hoplon.guard.unary.ar(2, function(arg$, state){
     return l("> " + disp);
   }
 }).def();
+internal.dry = hoplon.guard.unary.ar(1, function(arg$, state){
+  var txt;
+  txt = arg$[0];
+  l(txt);
+}).ar(2, function(arg$, state){
+  var type, txt, color;
+  type = arg$[0], txt = arg$[1];
+  color = (function(){
+    switch (type) {
+    case 'ok':
+      return c.ok;
+    case 'err':
+      return c.er1;
+    }
+  }());
+  l(color("[" + metadata.name + "] " + txt));
+}).def();
 show = {};
-show.normal = function(){
-  normal_internal(arguments, this);
+show_main = function(type){
+  return function(){
+    if (!this.silent) {
+      return internal[type](arguments, this);
+    }
+  };
 };
-show.verbose = function(){
-  verbose_internal(arguments, this);
-};
+show.normal = show_main('normal');
+show.dry = show_main('dry');
+show.verbose = show_main('verbose');
 create_logger = function(buildname, verbose, silent){
   var instance;
   instance = Object.create(show);
