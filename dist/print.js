@@ -311,7 +311,9 @@ show_main = function(type){
 };
 show.normal = show_main('normal');
 show.dry = show_main('dry');
-show.verbose = show_main('verbose');
+show.verbose = function(){
+  return internal.verbose(arguments, this);
+};
 create_logger = function(buildname, verbose, silent){
   var instance;
   instance = Object.create(show);
