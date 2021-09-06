@@ -546,7 +546,7 @@ show.normal  = show_main \normal
 
 show.dry     = show_main \dry
 
-show.verbose = show_main \verbose
+show.verbose = -> internal.verbose arguments,@
 
 # ----------------------------------------------------------------
 

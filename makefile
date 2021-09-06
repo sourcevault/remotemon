@@ -33,7 +33,7 @@ compile:
 
 # 	remotemon -p yt video https://www.youtube.com/watch\?v\=eXNEpQCXHaE
 
-	remotemon -p router hostapd.status
+# 	remotemon -p router hostapd.status
 
 # 	remotemon -l
 
