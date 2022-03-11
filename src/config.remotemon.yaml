@@ -1,0 +1,8 @@
+rsync:
+  - src: "."
+  - \recursive
+  - \quiet
+  - \archive
+ssh: -t -o LogLevel=QUIET
+service_directory: null
+last_check_time: 0

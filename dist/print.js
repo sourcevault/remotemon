@@ -14,7 +14,6 @@ ref$ = hoplon.utils, z = ref$.z, wait = ref$.wait;
 com.hoplon = hoplon;
 most_create = require("@most/create").create;
 com.most_create = most_create;
-com.updateNotifier = require('update-notifier');
 child_process = require('child_process');
 readline = require('readline');
 com.optionParser = require('option-parser');
@@ -24,6 +23,8 @@ com.child_process = child_process;
 cp = child_process;
 be = hoplon.types;
 com.readline = readline;
+com.compare_version = require('../src/compare.version.js');
+com.boxen = require("boxen");
 R = hoplon.utils.R;
 dotpat = be.str.edit(R.split(".")).or(be.undef.cont([])).wrap();
 dotpat.take = function(amount, signal){

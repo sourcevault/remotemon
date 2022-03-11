@@ -18,6 +18,7 @@ file = test/test.js
 pkg:
 	yaml2json src/package.yaml > package.json
 
+
 compile:
 	lsc --no-header -cbo dist src
 	lsc -cb test
@@ -27,7 +28,7 @@ compile:
 
 # 	remotemon longname -w foo bar
 
-# 	remotemon -l
+	remotemon -p yt
 
 # 	remotemon --project test
 
@@ -49,8 +50,8 @@ compile:
 # 	file=hello foo bar
 
 w.compile:
-	nodemon  --exec "make compile || exit 1" ${SRC_FILES} ${TEST_FILES}
-# 	nodemon  --exec "make compile || exit 1" ${SRC_FILES}
+# 	nodemon  --exec "make compile || exit 1" ${SRC_FILES} ${TEST_FILES}
+	nodemon  --delay 1 --exec "make compile || exit 1" ${SRC_FILES}
 
 .ONESHELL:
 SHELL = /bin/bash
@@ -71,7 +72,10 @@ testy:
 w.testy:
 	nodemon --exec "make testy" ${TEST_FILES} ${SRC_FILES}
 
-nothing:
-
 w.sudo:
 	nodemon  --exec "sudo apt-get update"
+
+
+update-version:
+	@update-version src/config.remotemon.yaml remotemon current_version_number
+	@update-version src/package.yaml remotemon version

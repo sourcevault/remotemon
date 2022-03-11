@@ -1,77 +1,190 @@
 ``#!/usr/bin/env node
 ``
 
-{data,com,print} = require "./data"
-
-global_data = data
+{global_data,com,print} = require "./data"
 
 #--------------------------------------------
 
-{read-json,most,j,exec,chokidar,most_create,updateNotifier,fs,metadata,optionParser,tampax,readline} = com
+{read-json,most,j,exec,chokidar,most_create,fs,metadata,optionParser,tampax,readline} = com
 
-{dotpat,spawn,yaml} = com
+{dotpat,spawn,yaml,compare_version,boxen} = com
 
 {l,z,zj,j,R,lit,c,wait,noop} = com.hoplon.utils
 
 be = com.hoplon.types
 
-#--------------------------------------------
-
-CONFIG_FILE_NAME = ".remotemon.yaml"
+homedir = (require \os).homedir!
 
 #--------------------------------------------
 
-parser = new optionParser!
-
-parser.addOption \h,'help',null,\help
-
-parser.addOption \v,'verbose',null,\verbose
-
-parser.addOption \V,'version',null,\version
-
-parser.addOption \d,'dry-run',null,\dryRun
-
-parser.addOption \w,'watch-config-file',null,\watch_config_file
-
-parser.addOption \l,'list',null,\list
-
-parser.addOption \m,'auto-make-directory',null,\auto_make_directory
-
-parser.addOption \n,'no-watch',null,\no_watch
-
-parser.addOption \s,'silent',null,\silent
+CONFIG_FILE_NAME = \.remotemon.yaml
 
 #--------------------------------------------
 
-parser.addOption \e,'edit',null,\edit
+cmd_data = new optionParser!
 
-parser.addOption \p,'project',null,\project
+cmd_data.addOption \h,'help',null,\help
+
+cmd_data.addOption \v,'verbose',null,\verbose
+
+cmd_data.addOption \V,'version',null,\version
+
+cmd_data.addOption \d,'dry-run',null,\dryRun
+
+cmd_data.addOption \w,'watch-config-file',null,\watch_config_file
+
+cmd_data.addOption \l,'list',null,\list
+
+cmd_data.addOption \m,'auto-make-directory',null,\auto_make_directory
+
+cmd_data.addOption \n,'no-watch',null,\no_watch
+
+cmd_data.addOption \s,'silent',null,\silent
+
+#--------------------------------------------
+
+cmd_data.addOption \e,'edit',null,\edit
+
+cmd_data.addOption \p,'project',null,\project
 
 .argument \PROJECT
 
 #--------------------------------------------
 
+question_init =  ->
+
+  rl = readline.createInterface {input:process.stdin,output:process.stdout,terminal:false}
+
+  out = {}
+
+  out.ask = (str) ->*
+
+    yield new Promise ( resolve, reject ) ->
+
+      rl.question str,(user) -> resolve user
+
+  out.close = -> rl.close!
+
+  out
+
 if not (metadata.name) then return false
 
-try
+init = ->*
 
-  rest = parser.parse!
+  config-dir-exists = fs.existsSync "#{homedir}/.config"
 
-catch E
+  cfolder = "#{homedir}/.config/config.remotemon.yaml"
 
-  l E.toString!
+  rm-config-file-exists = fs.existsSync cfolder
 
-  return
+  if not config-dir-exists
 
-try
+    exec "mkdir #{homedir}/.config"
 
-  pkg = require "../package.json"
+  if not rm-config-file-exists
 
-  notifier = updateNotifier {pkg}
+    exec "cp ./src/config.remotemon.yaml #{homedir}/.config/"
 
-  notifier.notify!
+  config_yaml_text = (fs.readFileSync "#{homedir}/.config/config.remotemon.yaml").toString!
 
-if (parser.help.count!) > 0
+  doc = yaml.parseDocument config_yaml_text
+
+  service_dir = doc.getIn [\service_directory]
+
+  # -------------------------------------------
+
+  edit_config_file = false
+
+  if not service_dir
+
+    q = question_init!
+
+    str = c.er1 "[#{metadata.name}] service directory path : "
+
+    service_dir = yield from q.ask str
+
+    if not ((R.last service_dir) in ["/","\\"])
+
+      service_dir = service_dir + "/"
+
+    doc.setIn [\service_directory],service_dir
+
+    edit_config_file = true
+
+    str1 = c.grey "service directory is set to " + c.warn service_dir
+
+    str2 = (c.grey "can be changed anytime by editing ") + (c.warn "#{homedir}/.config/config.remotemon.yaml")
+
+    l str1
+
+    l str2
+
+    q.close!
+
+  else
+
+    if not ((R.last service_dir) in ["/","\\"])
+
+      service_dir = service_dir + "/"
+
+      doc.setIn [\service_directory],service_dir
+
+      edit_config_file = true
+
+
+  lastchecktime = doc.getIn [\last_check_time]
+
+  current_version_number = doc.getIn [\current_version_number]
+
+  epoc  = (Date.now!)/1000
+
+  time_in_seconds = 1*24*60*60 # check once a day
+
+  re = /.*latest.*: (.*)/gm
+
+  if lastchecktime is 0
+
+    doc.setIn [\last_check_time],epoc
+
+    edit_config_file = true
+
+  if (((epoc - lastchecktime)) > time_in_seconds)
+
+    raw = exec "npm view #{metadata.name}"
+
+    ret = re.exec raw
+
+    vn = ret[1]
+
+    if (compare_version metadata.version,vn) is 1
+
+      doc.setIn [\last_check_time],epoc
+
+      edit_config_file = true
+
+      do
+
+        <- process.on \exit
+
+        msg = do
+          "update available " + (c.er2 vn) + c.ok (" ➝ " +  metadata.version) + "\n" +
+           c.warn "npm i -g remotemon"
+
+        console.log boxen do
+          msg
+          {padding: 1,borderColor:"green",textAlignment:"center"}
+
+  corde = yaml.stringify doc
+
+  if edit_config_file
+
+    fs.writeFileSync cfolder,corde
+
+  doc_as_json = doc.toJSON!
+
+  yield doc_as_json
+
+if (cmd_data.help.count!) > 0
 
   str =
     """
@@ -95,7 +208,7 @@ if (parser.help.count!) > 0
 
       -m --auto-make-directory   make remote directory if it doesn't exist ( with user permission )
 
-        -mm                      ( with root permission )
+         -mm                     ( with root permission )
 
       -n --no-watch              force disable any and all watches
 
@@ -121,17 +234,19 @@ if (parser.help.count!) > 0
 
   return
 
-silent = parser.silent.count!
+silent = cmd_data.silent.count!
 
-edit = parser.edit.count!
+edit = cmd_data.edit.count!
 
-if (parser.version.count! > 0)
+if (cmd_data.version.count! > 0)
 
   l c.er1 "[#{metadata.name}] version #{metadata.version}"
 
   return
 
 isvar = R.test /^[\.\w]+=/
+
+rest = cmd_data.parse!
 
 vars = rest
 |> R.filter isvar
@@ -173,78 +288,11 @@ args = R.reject isvar,rest
 
 #----------------------------
 
-# initial_edit_path_top_key = new Set!
-
-# for [[g]] in vars
-
-#   initial_edit_path_top_key.add g
-
-# global_edited = initial_edit_path_top_key.has \global
-
-#----------------------------
-
 # args = ['hostapd.restart']
 
 # vars = [ [ 'file', 'changelog.md' ] ]
 
-# global_edited = false
-
 #-------------[looking for '.remotemon.yaml']---------------
-
-project_name = parser.project.value!
-
-if not project_name
-
-  project_name = process.cwd!
-  |> R.split '/'
-  |> R.last
-
-config_file_name = "../" + project_name + "/" + CONFIG_FILE_NAME
-
-if not (fs.existsSync config_file_name)
-
-  l do
-    c.er3 "[#{metadata.name}]"
-    c.er3 "• Error •"
-    c.er1 "project"
-    c.warn project_name
-    c.er1 "does not have a"
-    c.warn CONFIG_FILE_NAME
-    c.er1 "file."
-
-  return
-
-
-if (parser.list.count! > 0)
-
-  wcf = 0
-
-else
-
-  wcf = parser.watch_config_file.count!
-
-
-info = {}
-
-  ..cmdname               = args[0]
-  ..cmdargs               = R.drop 1,args
-  ..vars                  = vars
-  ..configfile            = config_file_name
-
-  ..timedata              = [0,0,0]
-
-  ..cmdline               = R.drop 2,process.argv
-
-  ..options     = {}
-    ..verbose             = parser.verbose.count!
-    ..dryRun              = parser.dryRun.count!
-    ..watch_config_file   = wcf
-    ..list                = parser.list.count!
-    ..auto_make_directory = parser.auto_make_directory.count!
-    ..no_watch            = parser.no_watch.count!
-    ..silent              = silent
-    ..edit                = edit
-    ..project             = project_name
 
 modyaml = (info) ->
 
@@ -259,7 +307,6 @@ modyaml = (info) ->
     doc.setIn key,value
 
   String doc
-
 
 nPromise = (f) -> new Promise f
 
@@ -358,7 +405,6 @@ mergeArray = (deflength,def,arr) ->
     else
 
       fin[I] = arr[I]
-
 
   fin
 
@@ -474,7 +520,7 @@ V.rsl  = be.arr.cont R.flatten
 
 #--------------------------------------------------------------
 
-V.strlist = (F) -> V.rsl.or be.undefnull.cont F
+V.strlist             = (F) -> V.rsl.or be.undefnull.cont F
 
 V.strlist.empty       = V.strlist -> []
 
@@ -731,7 +777,7 @@ organize_rsync = (data,cmdname,...,state) ->
 
     add = [(des:remotefold)]
 
-    rsync = [(global_data.def.rsync.concat add)]
+    rsync = [(state.info.options.rsync.concat add)]
 
   fin = []
 
@@ -824,13 +870,20 @@ V.user = be.obj
 
 #----------------------------------------------------
 
+def_ssh = be.str.or do
+
+  be.undefnull.cont do
+
+    (...,{info}) ->
+
+      info.options.ssh
+
+
 V.def = be.obj
 
 .on [\remotehost,\remotefold]    , be.str.or unu
 
-
 .on [\inpwd,\silent]             , be.bool.or be.undefnull.cont false
-
 
 .on \verbose                     , be.num.or unu.cont 0
 
@@ -848,7 +901,7 @@ V.def = be.obj
 
 .and V.rsync.throw_if_error
 
-.on \ssh         , be.str.or be.undefnull.cont global_data.def.ssh
+.on \ssh         , def_ssh
 
 .map (value,key,...,state) ->
 
@@ -884,7 +937,7 @@ V.def = be.obj
 
   for cmdname,value of user
 
-    for I in data.selected_keys.undef
+    for I in global_data.selected_keys.undef
 
       if (value[I] is undefined)
 
@@ -1070,7 +1123,6 @@ exec-finale = (data) ->*
 
     yield from cont cmd
 
-
 exec_rsync = (data,each) ->*
 
   {info,lconfig,log,cont} = data
@@ -1131,7 +1183,6 @@ check_if_remote_needed = bko
 .wrap!
 
 check_if_remotehost_present = (data) ->*
-
 
   {lconfig,log,cont} = data
 
@@ -1522,7 +1573,6 @@ ms_create_watch = (lconfig,info,log) ->*
 
       most.empty!
 
-
     .tap (filename) ->
 
       data = {info,lconfig,log,cont}
@@ -1579,6 +1629,7 @@ restart = (info,log)->*
 
   most.generate ms_create_watch,lconfig,info,log
   .drain!
+
 
 get_all = (info) ->*
 
@@ -1641,14 +1692,75 @@ get_all = (info) ->*
 
   log.dry \err,metadata.version
 
-
   most.generate ms_create_watch,lconfig,info,log
   .recoverWith (sig)->
     resolve_signal sig,log,info
     most.empty!
   .drain!
 
+main = (cmd_data) -> (CONF) ->
 
-most.generate get_all,info
+  project_name = cmd_data.project.value!
 
+  if not project_name
+
+    config_file_name = "./" + CONFIG_FILE_NAME
+
+  else
+
+    service_directory = CONF.service_directory
+
+    config_file_name = service_directory + project_name + "/" + CONFIG_FILE_NAME
+
+  if not (fs.existsSync config_file_name)
+
+    l do
+      c.er3 "[#{metadata.name}]"
+      c.er3 "• Error •"
+      c.er1 "project"
+      c.warn project_name
+      c.er1 "does not have a"
+      c.warn CONFIG_FILE_NAME
+      c.er1 "file."
+
+    return
+
+  if (cmd_data.list.count! > 0)
+
+    wcf = 0
+
+  else
+
+    wcf = cmd_data.watch_config_file.count!
+
+  info = {}
+
+    ..cmdname               = args[0]
+    ..cmdargs               = R.drop 1,args
+    ..vars                  = vars
+    ..configfile            = config_file_name
+    ..timedata              = [0,0,0]
+    ..cmdline               = R.drop 2,process.argv
+    ..options     = {}
+      ..verbose             = cmd_data.verbose.count!
+      ..dryRun              = cmd_data.dryRun.count!
+      ..watch_config_file   = wcf
+      ..list                = cmd_data.list.count!
+      ..auto_make_directory = cmd_data.auto_make_directory.count!
+      ..no_watch            = cmd_data.no_watch.count!
+      ..silent              = silent
+      ..edit                = edit
+      ..project             = project_name
+      ..ssh                 = CONF.ssh
+      ..rsync               = CONF.rsync
+
+
+  most.generate get_all,info
+  .drain!
+
+
+most.generate init
+.tap main cmd_data
+.recoverWith (E) -> l E.toString!;most.empty!
 .drain!
+

@@ -23,8 +23,6 @@ most_create          = (require "@most/create").create
 
 com.most_create      = most_create
 
-com.updateNotifier   = require \update-notifier
-
 child_process        = require \child_process
 
 readline             = require \readline
@@ -42,6 +40,10 @@ cp                   = child_process
 be                   = hoplon.types
 
 com.readline         = readline
+
+com.compare_version  = require \../src/compare.version.js
+
+com.boxen            = require "boxen"
 
 
 R = hoplon.utils.R

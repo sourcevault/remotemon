@@ -1,54 +1,131 @@
 #!/usr/bin/env node
 
-var ref$, data, com, print, global_data, readJson, most, j, exec, chokidar, most_create, updateNotifier, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, l, z, zj, R, lit, c, wait, noop, be, CONFIG_FILE_NAME, parser, rest, E, pkg, notifier, str, silent, edit, isvar, vars, args, project_name, config_file_name, wcf, x$, info, y$, modyaml, nPromise, rmdef, only_str, tampax_parse, V, mergeArray, defarg_main, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, get_all, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
-ref$ = require("./data"), data = ref$.data, com = ref$.com, print = ref$.print;
-global_data = data;
-readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, updateNotifier = com.updateNotifier, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
-dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml;
+var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, l, z, zj, R, lit, c, wait, noop, be, homedir, CONFIG_FILE_NAME, cmd_data, question_init, init, str, silent, edit, isvar, rest, vars, args, modyaml, nPromise, rmdef, only_str, tampax_parse, V, mergeArray, defarg_main, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, def_ssh, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
+readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
+dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, compare_version = com.compare_version, boxen = com.boxen;
 ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, zj = ref$.zj, j = ref$.j, R = ref$.R, lit = ref$.lit, c = ref$.c, wait = ref$.wait, noop = ref$.noop;
 be = com.hoplon.types;
-CONFIG_FILE_NAME = ".remotemon.yaml";
-parser = new optionParser();
-parser.addOption('h', 'help', null, 'help');
-parser.addOption('v', 'verbose', null, 'verbose');
-parser.addOption('V', 'version', null, 'version');
-parser.addOption('d', 'dry-run', null, 'dryRun');
-parser.addOption('w', 'watch-config-file', null, 'watch_config_file');
-parser.addOption('l', 'list', null, 'list');
-parser.addOption('m', 'auto-make-directory', null, 'auto_make_directory');
-parser.addOption('n', 'no-watch', null, 'no_watch');
-parser.addOption('s', 'silent', null, 'silent');
-parser.addOption('e', 'edit', null, 'edit');
-parser.addOption('p', 'project', null, 'project').argument('PROJECT');
+homedir = require('os').homedir();
+CONFIG_FILE_NAME = '.remotemon.yaml';
+cmd_data = new optionParser();
+cmd_data.addOption('h', 'help', null, 'help');
+cmd_data.addOption('v', 'verbose', null, 'verbose');
+cmd_data.addOption('V', 'version', null, 'version');
+cmd_data.addOption('d', 'dry-run', null, 'dryRun');
+cmd_data.addOption('w', 'watch-config-file', null, 'watch_config_file');
+cmd_data.addOption('l', 'list', null, 'list');
+cmd_data.addOption('m', 'auto-make-directory', null, 'auto_make_directory');
+cmd_data.addOption('n', 'no-watch', null, 'no_watch');
+cmd_data.addOption('s', 'silent', null, 'silent');
+cmd_data.addOption('e', 'edit', null, 'edit');
+cmd_data.addOption('p', 'project', null, 'project').argument('PROJECT');
+question_init = function(){
+  var rl, out;
+  rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
+  });
+  out = {};
+  out.ask = function*(str){
+    return (yield new Promise(function(resolve, reject){
+      return rl.question(str, function(user){
+        return resolve(user);
+      });
+    }));
+  };
+  out.close = function(){
+    return rl.close();
+  };
+  return out;
+};
 if (!metadata.name) {
   return false;
 }
-try {
-  rest = parser.parse();
-} catch (e$) {
-  E = e$;
-  l(E.toString());
-  return;
-}
-try {
-  pkg = require("../package.json");
-  notifier = updateNotifier({
-    pkg: pkg
-  });
-  notifier.notify();
-} catch (e$) {}
-if (parser.help.count() > 0) {
-  str = "" + metadata.name + " version " + metadata.version + "\n\noptions:\n\n  -v --verbose               more detail\n\n  -vv                        much more detail\n\n  -h --help                  display help message\n\n  -V --version               displays version number\n\n  -d --dry-run               perform a trial run without making any changes\n\n  -w --watch-config-file     restart on config file change\n\n  -l --list                  list all user commands\n\n  -m --auto-make-directory   make remote directory if it doesn't exist ( with user permission )\n\n    -mm                      ( with root permission )\n\n  -n --no-watch              force disable any and all watches\n\n  -s --silent                do not show " + metadata.name + " messages\n\n  -e --edit                  make permanent edits to " + CONFIG_FILE_NAME + " values\n\n  -p --project               folder name to look for " + CONFIG_FILE_NAME + "\n\n  ---- shorthands ----\n\n  CF <-- for configuration file\n\nvalues for internal variables (using .global object) can be changed using '=' (similar to makefiles) :\n\n> " + metadata.name + " --verbose file=dist/main.js\n\n[ documentation ] @ [ " + metadata.homepage + " ]\n";
+init = function*(){
+  var configDirExists, cfolder, rmConfigFileExists, config_yaml_text, doc, service_dir, edit_config_file, q, str, ref$, str1, str2, lastchecktime, current_version_number, epoc, time_in_seconds, re, raw, ret, vn, corde, doc_as_json;
+  configDirExists = fs.existsSync(homedir + "/.config");
+  cfolder = homedir + "/.config/config.remotemon.yaml";
+  rmConfigFileExists = fs.existsSync(cfolder);
+  if (!configDirExists) {
+    exec("mkdir " + homedir + "/.config");
+  }
+  if (!rmConfigFileExists) {
+    exec("cp ./src/config.remotemon.yaml " + homedir + "/.config/");
+  }
+  config_yaml_text = fs.readFileSync(homedir + "/.config/config.remotemon.yaml").toString();
+  doc = yaml.parseDocument(config_yaml_text);
+  service_dir = doc.getIn(['service_directory']);
+  edit_config_file = false;
+  if (!service_dir) {
+    q = question_init();
+    str = c.er1("[" + metadata.name + "] service directory path : ");
+    service_dir = (yield* q.ask(str));
+    if (!((ref$ = R.last(service_dir)) === "/" || ref$ === "\\")) {
+      service_dir = service_dir + "/";
+    }
+    doc.setIn(['service_directory'], service_dir);
+    edit_config_file = true;
+    str1 = c.grey("service directory is set to " + c.warn(service_dir));
+    str2 = c.grey("can be changed anytime by editing ") + c.warn(homedir + "/.config/config.remotemon.yaml");
+    l(str1);
+    l(str2);
+    q.close();
+  } else {
+    if (!((ref$ = R.last(service_dir)) === "/" || ref$ === "\\")) {
+      service_dir = service_dir + "/";
+      doc.setIn(['service_directory'], service_dir);
+      edit_config_file = true;
+    }
+  }
+  lastchecktime = doc.getIn(['last_check_time']);
+  current_version_number = doc.getIn(['current_version_number']);
+  epoc = Date.now() / 1000;
+  time_in_seconds = 1 * 24 * 60 * 60;
+  re = /.*latest.*: (.*)/gm;
+  if (lastchecktime === 0) {
+    doc.setIn(['last_check_time'], epoc);
+    edit_config_file = true;
+  }
+  if (epoc - lastchecktime > time_in_seconds) {
+    raw = exec("npm view " + metadata.name);
+    ret = re.exec(raw);
+    vn = ret[1];
+    if (compare_version(metadata.version, vn) === 1) {
+      doc.setIn(['last_check_time'], epoc);
+      edit_config_file = true;
+      process.on('exit', function(){
+        var msg;
+        msg = "update available " + c.er2(vn) + c.ok((" ➝ " + metadata.version) + "\n" + c.warn("npm i -g remotemon"));
+        return console.log(boxen(msg, {
+          padding: 1,
+          borderColor: "green",
+          textAlignment: "center"
+        }));
+      });
+    }
+  }
+  corde = yaml.stringify(doc);
+  if (edit_config_file) {
+    fs.writeFileSync(cfolder, corde);
+  }
+  doc_as_json = doc.toJSON();
+  return (yield doc_as_json);
+};
+if (cmd_data.help.count() > 0) {
+  str = "" + metadata.name + " version " + metadata.version + "\n\noptions:\n\n  -v --verbose               more detail\n\n  -vv                        much more detail\n\n  -h --help                  display help message\n\n  -V --version               displays version number\n\n  -d --dry-run               perform a trial run without making any changes\n\n  -w --watch-config-file     restart on config file change\n\n  -l --list                  list all user commands\n\n  -m --auto-make-directory   make remote directory if it doesn't exist ( with user permission )\n\n     -mm                     ( with root permission )\n\n  -n --no-watch              force disable any and all watches\n\n  -s --silent                do not show " + metadata.name + " messages\n\n  -e --edit                  make permanent edits to " + CONFIG_FILE_NAME + " values\n\n  -p --project               folder name to look for " + CONFIG_FILE_NAME + "\n\n  ---- shorthands ----\n\n  CF <-- for configuration file\n\nvalues for internal variables (using .global object) can be changed using '=' (similar to makefiles) :\n\n> " + metadata.name + " --verbose file=dist/main.js\n\n[ documentation ] @ [ " + metadata.homepage + " ]\n";
   l(str);
   return;
 }
-silent = parser.silent.count();
-edit = parser.edit.count();
-if (parser.version.count() > 0) {
+silent = cmd_data.silent.count();
+edit = cmd_data.edit.count();
+if (cmd_data.version.count() > 0) {
   l(c.er1("[" + metadata.name + "] version " + metadata.version));
   return;
 }
 isvar = R.test(/^[\.\w]+=/);
+rest = cmd_data.parse();
 vars = R.map(R.pipe(R.split('='), R.over(R.lensIndex(0), R.pipe(R.split("/"), function(key){
   var name;
   if (key.length === 1) {
@@ -78,39 +155,6 @@ vars = R.map(R.pipe(R.split('='), R.over(R.lensIndex(0), R.pipe(R.split("/"), fu
 R.filter(isvar)(
 rest));
 args = R.reject(isvar, rest);
-project_name = parser.project.value();
-if (!project_name) {
-  project_name = R.last(
-  R.split('/')(
-  process.cwd()));
-}
-config_file_name = "../" + project_name + "/" + CONFIG_FILE_NAME;
-if (!fs.existsSync(config_file_name)) {
-  l(c.er3("[" + metadata.name + "]"), c.er3("• Error •"), c.er1("project"), c.warn(project_name), c.er1("does not have a"), c.warn(CONFIG_FILE_NAME), c.er1("file."));
-  return;
-}
-if (parser.list.count() > 0) {
-  wcf = 0;
-} else {
-  wcf = parser.watch_config_file.count();
-}
-x$ = info = {};
-x$.cmdname = args[0];
-x$.cmdargs = R.drop(1, args);
-x$.vars = vars;
-x$.configfile = config_file_name;
-x$.timedata = [0, 0, 0];
-x$.cmdline = R.drop(2, process.argv);
-y$ = x$.options = {};
-y$.verbose = parser.verbose.count();
-y$.dryRun = parser.dryRun.count();
-y$.watch_config_file = wcf;
-y$.list = parser.list.count();
-y$.auto_make_directory = parser.auto_make_directory.count();
-y$.no_watch = parser.no_watch.count();
-y$.silent = silent;
-y$.edit = edit;
-y$.project = project_name;
 modyaml = function(info){
   var data, doc, vars, i$, len$, ref$, key, value;
   data = R.toString(
@@ -461,7 +505,7 @@ organize_rsync = function(data, cmdname){
     add = [{
       des: remotefold
     }];
-    rsync = [global_data.def.rsync.concat(add)];
+    rsync = [state.info.options.rsync.concat(add)];
   }
   fin = [];
   for (i$ = 0, to$ = rsync.length; i$ < to$; ++i$) {
@@ -512,7 +556,12 @@ V.user = be.obj.or(be.undefnull.cont(function(){
   origin = arguments[arguments.length - 1].origin;
   return origin[key];
 }))).cont(organize_rsync).and(V.rsync.throw_if_error).on('ssh', be.str.or(unu));
-V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on(['inpwd', 'silent'], be.bool.or(be.undefnull.cont(false))).on('verbose', be.num.or(unu.cont(0))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', V.watch.def).on('ignore', V.ignore.def).on(['pre', 'local', 'final', 'remote'], V.execlist).on('rsync', V.rsync.init).cont(organize_rsync).and(V.rsync.throw_if_error).on('ssh', be.str.or(be.undefnull.cont(global_data.def.ssh))).map(function(value, key){
+def_ssh = be.str.or(be.undefnull.cont(function(){
+  var info;
+  info = arguments[arguments.length - 1].info;
+  return info.options.ssh;
+}));
+V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on(['inpwd', 'silent'], be.bool.or(be.undefnull.cont(false))).on('verbose', be.num.or(unu.cont(0))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', V.watch.def).on('ignore', V.ignore.def).on(['pre', 'local', 'final', 'remote'], V.execlist).on('rsync', V.rsync.init).cont(organize_rsync).and(V.rsync.throw_if_error).on('ssh', def_ssh).map(function(value, key){
   var state, def, user, put;
   state = arguments[arguments.length - 1];
   def = state.def, user = state.user;
@@ -537,7 +586,7 @@ V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on(['inpwd', 'si
   ref$ = arguments[arguments.length - 1], user = ref$.user, def = ref$.def;
   for (cmdname in user) {
     value = user[cmdname];
-    for (i$ = 0, len$ = (ref$ = data.selected_keys.undef).length; i$ < len$; ++i$) {
+    for (i$ = 0, len$ = (ref$ = global_data.selected_keys.undef).length; i$ < len$; ++i$) {
       I = ref$[i$];
       if (value[I] === undefined) {
         user[cmdname][I] = def[I];
@@ -1079,7 +1128,51 @@ get_all = function*(info){
     return most.empty();
   }).drain();
 };
-most.generate(get_all, info).drain();
+main = function(cmd_data){
+  return function(CONF){
+    var project_name, config_file_name, service_directory, wcf, x$, info, y$;
+    project_name = cmd_data.project.value();
+    if (!project_name) {
+      config_file_name = "./" + CONFIG_FILE_NAME;
+    } else {
+      service_directory = CONF.service_directory;
+      config_file_name = service_directory + project_name + "/" + CONFIG_FILE_NAME;
+    }
+    if (!fs.existsSync(config_file_name)) {
+      l(c.er3("[" + metadata.name + "]"), c.er3("• Error •"), c.er1("project"), c.warn(project_name), c.er1("does not have a"), c.warn(CONFIG_FILE_NAME), c.er1("file."));
+      return;
+    }
+    if (cmd_data.list.count() > 0) {
+      wcf = 0;
+    } else {
+      wcf = cmd_data.watch_config_file.count();
+    }
+    x$ = info = {};
+    x$.cmdname = args[0];
+    x$.cmdargs = R.drop(1, args);
+    x$.vars = vars;
+    x$.configfile = config_file_name;
+    x$.timedata = [0, 0, 0];
+    x$.cmdline = R.drop(2, process.argv);
+    y$ = x$.options = {};
+    y$.verbose = cmd_data.verbose.count();
+    y$.dryRun = cmd_data.dryRun.count();
+    y$.watch_config_file = wcf;
+    y$.list = cmd_data.list.count();
+    y$.auto_make_directory = cmd_data.auto_make_directory.count();
+    y$.no_watch = cmd_data.no_watch.count();
+    y$.silent = silent;
+    y$.edit = edit;
+    y$.project = project_name;
+    y$.ssh = CONF.ssh;
+    y$.rsync = CONF.rsync;
+    return most.generate(get_all, info).drain();
+  };
+};
+most.generate(init).tap(main(cmd_data)).recoverWith(function(E){
+  l(E.toString());
+  return most.empty();
+}).drain();
 function deepEq$(x, y, type){
   var toString = {}.toString, hasOwnProperty = {}.hasOwnProperty,
       has = function (obj, key) { return hasOwnProperty.call(obj, key); };
