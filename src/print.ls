@@ -41,9 +41,9 @@ be                   = hoplon.types
 
 com.readline         = readline
 
-com.compare_version  = require \../src/compare.version.js
+com.compare_version  = require \../dist/compare.version.js
 
-com.boxen            = require "boxen"
+com.boxen            = require \boxen
 
 
 R = hoplon.utils.R
