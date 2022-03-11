@@ -43,8 +43,9 @@ com.readline         = readline
 
 com.compare_version  = require \../dist/compare.version.js
 
-com.boxen            = require \boxen
+``var boxen = import('boxen')``
 
+com.boxen            = boxen
 
 R = hoplon.utils.R
 
