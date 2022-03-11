@@ -38,7 +38,7 @@ ssh45:
 
 A local configuration files (`.remotemon.yaml`) is used to organize different sub-commands to run in a project.
 
-`⛔️ In remotemon lingo a project is just a directory. ⛔️`
+`⛔️ In remotemon lingo a project is top level folder name in your service directory. ⛔️`
 
 First argument to `remotemon` is the name of the build routine to use, subsequent arguments can be used internally as variables using handlebar syntax (eg. `{{0}}`), or `.global` variables using `=` ( eg. `file=main.js` ).
 
@@ -51,6 +51,10 @@ Running `remotemon` without any arguments makes `remotemon` execute default rout
 ```zsh
 ~/app:(dev*) remotemon
 ```
+
+`remotemon` has taken inspiration from [runit](http://smarden.org/runit/) in how to structure projects, just like in `runit`, you have to provide a **service directory** name ( can be any folder in your disk ), each folder within that directory is considered a project.
+
+`remotemon` also stores it's configuration data in your home folder's `.config` folder ( `~/.config/config.remotemon.yaml` ).
 
 #### 🟡 Creating Configuration `YAML` File
 
@@ -254,7 +258,7 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 
 - `-e --edit` make permanent edits to `.remotemon.yaml` values.
 
-- `-p --project` folder name to look for `.remotemon.yaml`
+- `-p --project` folder name ( in service directory ) to look for `.remotemon.yaml`
 
 ##### 🔴 Bugs
 

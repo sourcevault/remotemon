@@ -6,8 +6,7 @@ data = {};
 ref$ = out$;
 ref$.com = ext.com;
 ref$.print = ext.print;
-ref$.data = data;
-data.def = {};
+ref$.global_data = data;
 data.rsync = {};
 data.rsync.compound = new Set(['backup-dir', 'suffix', 'chmod', 'block-size', 'rsh', 'rsync-path', 'max-delete', 'max-size', 'max-size', 'partial-dir', 'timeout', 'contimeout', 'modify-window', 'temp-dir', 'fuzzy', 'compare-dest', 'copy-dest', 'link-dest', 'compress-level', 'skip-compress', 'filter', 'files-from', 'address', 'port', 'sockopts', 'out-format', 'log-file', 'log-file-format', 'password-file', 'bwlimit', 'write-batch', 'only-write-batch', 'read-batch', 'protocol', 'iconv', 'checksum-seed', 'exclude', 'exclude-from', 'include', 'include-from']);
 data.rsync.filter = new Set(['exclude', 'exclude-from', 'include', 'include-from']);
@@ -16,9 +15,3 @@ x$ = data.selected_keys = {};
 x$.arr = ['ssh', 'pre', 'inpwd', 'watch', 'rsync', 'local', 'final', 'global', 'ignore', 'defarg', 'remote', 'silent', 'verbose', 'initialize', 'remotefold', 'remotehost', 'description'];
 x$.undef = ['ssh', 'watch', 'inpwd', 'global', 'ignore', 'silent', 'verbose', 'initialize', 'remotefold', 'remotehost'];
 data.selected_keys.set = new Set(data.selected_keys.arr);
-data.def.rsync = [
-  {
-    src: '.'
-  }, 'recursive', 'quiet', 'archive'
-];
-data.def.ssh = "-t -o LogLevel=QUIET";
