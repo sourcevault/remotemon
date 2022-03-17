@@ -131,7 +131,6 @@ init = ->*
 
       edit_config_file = true
 
-
   lastchecktime = doc.getIn [\last_check_time]
 
   current_version_number = doc.getIn [\current_version_number]
@@ -183,6 +182,8 @@ init = ->*
   doc_as_json = doc.toJSON!
 
   yield doc_as_json
+
+rest = cmd_data.parse!
 
 if (cmd_data.help.count!) > 0
 
@@ -246,7 +247,6 @@ if (cmd_data.version.count! > 0)
 
 isvar = R.test /^[\.\w]+=/
 
-rest = cmd_data.parse!
 
 vars = rest
 |> R.filter isvar
@@ -624,7 +624,6 @@ V.rsync.throw_if_error = (data) ->
 
   return true
 
-
 # ----------------------------------------
 
 rsync_arr2obj = (data,cmdname,remotefold) ->
@@ -812,6 +811,7 @@ organize_rsync = (data,cmdname,...,state) ->
 
       obnormal.push ...ssh
 
+
   data
 
 # ------------------------------------------------------------------------
@@ -865,7 +865,7 @@ V.user = be.obj
 
 .and V.rsync.throw_if_error
 
-.on \ssh                      , be.str.or unu
+.on \ssh                         , be.str.or unu
 
 
 #----------------------------------------------------
@@ -1203,7 +1203,6 @@ check_if_remotehost_present = (data) ->*
     yield nPromise (resolve,reject) -> reject \error
 
   return
-
 
 check_if_remotedir_present = (data) ->*
 
@@ -1631,6 +1630,40 @@ restart = (info,log)->*
   .drain!
 
 
+V.CONF = be.known.obj
+.on \rsync,V.rsync.init
+.cont organize_rsync
+.and V.rsync.throw_if_error
+.err (message,path,...,info) ->
+
+  [topmsg] = be.flatro message
+
+  [loc,Error] = topmsg
+
+  F = switch loc
+  | \:rsync => print.rsyncError
+
+  F Error,path,"~/.config/config.remotemon.yaml"
+
+
+check_conf_file = (conf,info) ->
+
+  D = {}
+
+  D.rsync = conf.rsync
+
+  D.ssh = conf.ssh
+
+  D.remotefold = ''
+
+  origin = {}
+    ..ssh = conf.ssh
+
+  Sortir = V.CONF.auth D,info.cmdname,{origin,info}
+
+  Sortir.error
+
+
 get_all = (info) ->*
 
   try
@@ -1754,6 +1787,9 @@ main = (cmd_data) -> (CONF) ->
       ..ssh                 = CONF.ssh
       ..rsync               = CONF.rsync
 
+
+  if (check_conf_file CONF,info)
+    return
 
   most.generate get_all,info
   .drain!

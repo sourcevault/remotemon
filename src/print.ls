@@ -140,7 +140,7 @@ show_name = (filename) ->
     [c.er3,c.er2]
 
   if filename
-    l "  " + (c.er3 filename) + "\n"
+    l "  " + (c.warn filename) + "\n"
 
 rdot = /\./
 
@@ -190,6 +190,7 @@ print.rsyncError = (msg,path,filename) ->
 
 
   l c.grey "\n  please refer to docs to provide valid values."
+
 
 # ----------------------------------------------------------------
 

@@ -28,7 +28,7 @@ compile:
 
 # 	remotemon longname -w foo bar
 
-	remotemon -p yt
+	remotemon
 
 # 	remotemon --project test
 
