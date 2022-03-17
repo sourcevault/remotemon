@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, l, z, zj, R, lit, c, wait, noop, be, homedir, CONFIG_FILE_NAME, cmd_data, question_init, init, str, silent, edit, isvar, rest, vars, args, modyaml, nPromise, rmdef, only_str, tampax_parse, V, mergeArray, defarg_main, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, def_ssh, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, l, z, zj, R, lit, c, wait, noop, be, homedir, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, isvar, vars, args, modyaml, nPromise, rmdef, only_str, tampax_parse, V, mergeArray, defarg_main, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, def_ssh, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
 dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, compare_version = com.compare_version, boxen = com.boxen;
@@ -113,6 +113,7 @@ init = function*(){
   doc_as_json = doc.toJSON();
   return (yield doc_as_json);
 };
+rest = cmd_data.parse();
 if (cmd_data.help.count() > 0) {
   str = "" + metadata.name + " version " + metadata.version + "\n\noptions:\n\n  -v --verbose               more detail\n\n  -vv                        much more detail\n\n  -h --help                  display help message\n\n  -V --version               displays version number\n\n  -d --dry-run               perform a trial run without making any changes\n\n  -w --watch-config-file     restart on config file change\n\n  -l --list                  list all user commands\n\n  -m --auto-make-directory   make remote directory if it doesn't exist ( with user permission )\n\n     -mm                     ( with root permission )\n\n  -n --no-watch              force disable any and all watches\n\n  -s --silent                do not show " + metadata.name + " messages\n\n  -e --edit                  make permanent edits to " + CONFIG_FILE_NAME + " values\n\n  -p --project               folder name to look for " + CONFIG_FILE_NAME + "\n\n  ---- shorthands ----\n\n  CF <-- for configuration file\n\nvalues for internal variables (using .global object) can be changed using '=' (similar to makefiles) :\n\n> " + metadata.name + " --verbose file=dist/main.js\n\n[ documentation ] @ [ " + metadata.homepage + " ]\n";
   l(str);
@@ -125,7 +126,6 @@ if (cmd_data.version.count() > 0) {
   return;
 }
 isvar = R.test(/^[\.\w]+=/);
-rest = cmd_data.parse();
 vars = R.map(R.pipe(R.split('='), R.over(R.lensIndex(0), R.pipe(R.split("/"), function(key){
   var name;
   if (key.length === 1) {
@@ -1082,6 +1082,33 @@ restart = function*(info, log){
   lconfig = vari[0], log = vari[1];
   return most.generate(ms_create_watch, lconfig, info, log).drain();
 };
+V.CONF = be.known.obj.on('rsync', V.rsync.init).cont(organize_rsync).and(V.rsync.throw_if_error).err(function(message, path){
+  var info, topmsg, loc, Error, F;
+  info = arguments[arguments.length - 1];
+  topmsg = be.flatro(message)[0];
+  loc = topmsg[0], Error = topmsg[1];
+  F = (function(){
+    switch (loc) {
+    case ':rsync':
+      return print.rsyncError;
+    }
+  }());
+  return F(Error, path, "~/.config/config.remotemon.yaml");
+});
+check_conf_file = function(conf, info){
+  var D, x$, origin, Sortir;
+  D = {};
+  D.rsync = conf.rsync;
+  D.ssh = conf.ssh;
+  D.remotefold = '';
+  x$ = origin = {};
+  x$.ssh = conf.ssh;
+  Sortir = V.CONF.auth(D, info.cmdname, {
+    origin: origin,
+    info: info
+  });
+  return Sortir.error;
+};
 get_all = function*(info){
   var yaml_text, E, yjson, found, lconfig, vari, log;
   try {
@@ -1166,6 +1193,9 @@ main = function(cmd_data){
     y$.project = project_name;
     y$.ssh = CONF.ssh;
     y$.rsync = CONF.rsync;
+    if (check_conf_file(CONF, info)) {
+      return;
+    }
     return most.generate(get_all, info).drain();
   };
 };

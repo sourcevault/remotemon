@@ -82,7 +82,7 @@ metadata = com.metadata;
 show_name = function(filename){
   l(lit(["[" + metadata.name + "]", " • dataError •\n"], [c.er3, c.er2]));
   if (filename) {
-    return l("  " + c.er3(filename) + "\n");
+    return l("  " + c.warn(filename) + "\n");
   }
 };
 rdot = /\./;
