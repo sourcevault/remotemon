@@ -98,11 +98,15 @@ init = function*(){
       process.on('exit', function(){
         var msg;
         msg = "update available " + c.er2(vn) + c.ok((" ➝ " + metadata.version) + "\n" + c.warn("npm i -g remotemon"));
-        return console.log(boxen(msg, {
-          padding: 1,
-          borderColor: "green",
-          textAlignment: "center"
-        }));
+        return boxen.then(function(mo){
+          var boite;
+          boite = mo['default'];
+          return console.log(boite(msg, {
+            padding: 1,
+            borderColor: "green",
+            textAlignment: "center"
+          }));
+        });
       });
     }
   }
@@ -674,12 +678,13 @@ update = function*(lconfig, yaml_text, info){
 };
 init_continuation = function(dryRun, dir, inpwd){
   return function*(cmd, type){
-    var status;
+    var status, sortis;
     type == null && (type = 'async');
     if (dryRun) {
       status = 0;
     } else {
-      status = spawn(cmd, dir, inpwd).status;
+      sortis = spawn(cmd, dir, inpwd);
+      status = sortis.status;
     }
     if (status !== 0) {
       switch (type) {
@@ -1003,7 +1008,7 @@ ms_create_watch = function*(lconfig, info, log){
     if (lconfig.inpwd) {
       cwd = undefined;
     } else {
-      cwd = "../" + info.options.project;
+      cwd = info.options.project;
     }
     if (should_I_watch) {
       watcher = chokidar.watch(lconfig.watch, {
@@ -1096,18 +1101,18 @@ V.CONF = be.known.obj.on('rsync', V.rsync.init).cont(organize_rsync).and(V.rsync
   return F(Error, path, "~/.config/config.remotemon.yaml");
 });
 check_conf_file = function(conf, info){
-  var D, x$, origin, Sortir;
+  var D, x$, origin, sortir;
   D = {};
   D.rsync = conf.rsync;
   D.ssh = conf.ssh;
   D.remotefold = '';
   x$ = origin = {};
   x$.ssh = conf.ssh;
-  Sortir = V.CONF.auth(D, info.cmdname, {
+  sortir = V.CONF.auth(D, info.cmdname, {
     origin: origin,
     info: info
   });
-  return Sortir.error;
+  return sortir.error;
 };
 get_all = function*(info){
   var yaml_text, E, yjson, found, lconfig, vari, log;
@@ -1162,14 +1167,14 @@ main = function(cmd_data){
     if (project_name) {
       service_directory = CONF.service_directory;
       config_file_name = service_directory + project_name + "/" + CONFIG_FILE_NAME;
+      project_name = service_directory + project_name;
     } else {
       config_file_name = "./" + CONFIG_FILE_NAME;
-      project_name = R.last(
-      R.split('/')(
-      process.cwd()));
+      project_name = process.cwd();
     }
     if (!fs.existsSync(config_file_name)) {
-      l(c.er3("[" + metadata.name + "]"), c.er3("• Error •"), c.er1("project"), c.warn(project_name), c.er1("does not have a"), c.warn(CONFIG_FILE_NAME), c.er1("file."));
+      l(c.er3("[" + metadata.name + "]"), c.er3("• Error •"), c.er1("project/folder"), c.warn(project_name), c.er1("does not have a"), c.warn(CONFIG_FILE_NAME), c.er1("file."));
+      l("\n   ", c.er3(config_file_name), 'missing.', "\n");
       return;
     }
     if (cmd_data.list.count() > 0) {

@@ -169,9 +169,13 @@ init = ->*
           "update available " + (c.er2 vn) + c.ok (" ➝ " +  metadata.version) + "\n" +
            c.warn "npm i -g remotemon"
 
-        console.log boxen do
-          msg
-          {padding: 1,borderColor:"green",textAlignment:"center"}
+        boxen.then (mo) ->
+
+          boite = mo.default
+
+          console.log boite do
+            msg
+            {padding: 1,borderColor:"green",textAlignment:"center"}
 
   corde = yaml.stringify doc
 
@@ -1062,7 +1066,10 @@ init_continuation = (dryRun,dir,inpwd) -> (cmd,type = \async) ->*
 
   else
 
-    {status} = spawn cmd,dir,inpwd
+    sortis = spawn cmd,dir,inpwd
+
+    {status} = sortis
+
 
   if (status isnt 0)
 
@@ -1508,7 +1515,7 @@ ms_create_watch = (lconfig,info,log) ->*
 
     else
 
-      cwd =  "../" + info.options.project
+      cwd =  info.options.project
 
     if should_I_watch
 
@@ -1659,9 +1666,9 @@ check_conf_file = (conf,info) ->
   origin = {}
     ..ssh = conf.ssh
 
-  Sortir = V.CONF.auth D,info.cmdname,{origin,info}
+  sortir = V.CONF.auth D,info.cmdname,{origin,info}
 
-  Sortir.error
+  sortir.error
 
 
 get_all = (info) ->*
@@ -1741,25 +1748,31 @@ main = (cmd_data) -> (CONF) ->
 
     config_file_name = service_directory + project_name + "/" + CONFIG_FILE_NAME
 
+    project_name = service_directory + project_name
+
   else
 
     config_file_name = "./" + CONFIG_FILE_NAME
 
     project_name = process.cwd!
-    |> R.split '/'
-    |> R.last
-
 
   if not (fs.existsSync config_file_name)
 
     l do
       c.er3 "[#{metadata.name}]"
       c.er3 "• Error •"
-      c.er1 "project"
+      c.er1 "project/folder"
       c.warn project_name
       c.er1 "does not have a"
       c.warn CONFIG_FILE_NAME
       c.er1 "file."
+
+    l do
+      "\n   "
+      c.er3 config_file_name
+      'missing.'
+      "\n"
+
 
     return
 
@@ -1791,7 +1804,6 @@ main = (cmd_data) -> (CONF) ->
       ..project             = project_name
       ..ssh                 = CONF.ssh
       ..rsync               = CONF.rsync
-
 
   if (check_conf_file CONF,info)
     return

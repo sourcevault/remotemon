@@ -71,7 +71,7 @@ com.spawn = (cmd,dir,inpwd) ->
 
   else
 
-    cwd =  "../" + dir
+    cwd = dir
 
   cp.spawnSync do
     cmd

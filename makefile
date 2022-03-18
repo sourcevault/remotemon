@@ -27,8 +27,8 @@ compile:
 # 	remotemon --config test/opt.yaml -w foo
 
 # 	remotemon longname -w foo bar
-
-	remotemon
+# 	cd ..
+# 	remotemon -vv -p yt audio "https://www.youtube.com/watch\?v\=cckKH0yLO2I"
 
 # 	remotemon --project test
 
@@ -36,7 +36,7 @@ compile:
 
 # 	remotemon -p router hostapd.status
 
-# 	remotemon -l
+	remotemon
 
 
 # 	remotemon -c ./test/opt.yaml version.update
