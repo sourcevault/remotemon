@@ -39,7 +39,7 @@ com.spawn = function(cmd, dir, inpwd){
   if (inpwd) {
     cwd = undefined;
   } else {
-    cwd = "../" + dir;
+    cwd = dir;
   }
   return cp.spawnSync(cmd, [], {
     shell: 'bash',
