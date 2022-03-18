@@ -133,14 +133,12 @@ __dirname + \/../package.json
 
 metadata = com.metadata
 
-show_name = (filename) ->
+show_name = (filename = '') ->
 
   l lit do
-    ["[#{metadata.name}]"," • dataError •\n"]
-    [c.er3,c.er2]
+    ["[#{metadata.name}]"," • dataError • ",filename,"\n"]
+    [c.er3,c.er2,c.warn,null]
 
-  if filename
-    l "  " + (c.warn filename) + "\n"
 
 rdot = /\./
 

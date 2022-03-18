@@ -841,15 +841,17 @@ V.rsync.init = be.bool
 
 V.user = be.obj
 
+.err "custom user defined task, has to be object."
+
 .or be.undefnull.cont -> {}
 
 .and be.restricted global_data.selected_keys.arr
 
+.err "key not recognized."
+
 .alt do
   V.strlist.empty
   .cont (list) -> {'local':list}
-
-.err "custom user defined task, has to be object."
 
 .on [\initialize,\inpwd,\silent] , be.bool.or unu
 
@@ -955,7 +957,9 @@ V.def = be.obj
 
 .err (message,path,...,{info}) !->
 
-  [topmsg] = be.flatro message
+  sortis = be.flatro message
+
+  [topmsg] = sortis
 
   [loc,Error] = topmsg
 
@@ -975,11 +979,11 @@ V.def = be.obj
 
   | otherwise                =>
 
-    [Error] = message
+    Error = topmsg
 
     print.basicError
 
-  F Error,path,info.cmd_filename
+  F Error,path,info.configfile
 
   void
 

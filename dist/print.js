@@ -80,10 +80,8 @@ R.tryCatch(function(filename){
 __dirname + '/../package.json');
 metadata = com.metadata;
 show_name = function(filename){
-  l(lit(["[" + metadata.name + "]", " • dataError •\n"], [c.er3, c.er2]));
-  if (filename) {
-    return l("  " + c.warn(filename) + "\n");
-  }
+  filename == null && (filename = '');
+  return l(lit(["[" + metadata.name + "]", " • dataError • ", filename, "\n"], [c.er3, c.er2, c.warn, null]));
 };
 rdot = /\./;
 clean_path = R.pipe(R.map(function(txt){

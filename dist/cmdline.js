@@ -549,13 +549,13 @@ V.rsync.init = be.bool.or(be.undefnull.cont(false)).or(be.arr.map(be.arr).err(fu
 })).or(be.arr.cont(function(a){
   return [a];
 }));
-V.user = be.obj.or(be.undefnull.cont(function(){
+V.user = be.obj.err("custom user defined task, has to be object.").or(be.undefnull.cont(function(){
   return {};
-})).and(be.restricted(global_data.selected_keys.arr)).alt(V.strlist.empty.cont(function(list){
+})).and(be.restricted(global_data.selected_keys.arr)).err("key not recognized.").alt(V.strlist.empty.cont(function(list){
   return {
     'local': list
   };
-})).err("custom user defined task, has to be object.").on(['initialize', 'inpwd', 'silent'], be.bool.or(unu)).on('watch', V.watch.user).on('verbose', be.num.or(unu)).on('ignore', V.ignore.user).on(['pre', 'remote', 'local', 'final'], V.execlist).on('rsync', V.rsync.init).on(['remotehost', 'remotefold'], be.str.or(unu.cont(function(v, key){
+})).on(['initialize', 'inpwd', 'silent'], be.bool.or(unu)).on('watch', V.watch.user).on('verbose', be.num.or(unu)).on('ignore', V.ignore.user).on(['pre', 'remote', 'local', 'final'], V.execlist).on('rsync', V.rsync.init).on(['remotehost', 'remotefold'], be.str.or(unu.cont(function(v, key){
   var origin;
   origin = arguments[arguments.length - 1].origin;
   return origin[key];
@@ -604,9 +604,10 @@ V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on(['inpwd', 'si
     def: def
   };
 }).err(function(message, path){
-  var info, topmsg, loc, Error, F;
+  var info, sortis, topmsg, loc, Error, F;
   info = arguments[arguments.length - 1].info;
-  topmsg = be.flatro(message)[0];
+  sortis = be.flatro(message);
+  topmsg = sortis[0];
   loc = topmsg[0], Error = topmsg[1];
   F = (function(){
     switch (loc) {
@@ -623,11 +624,11 @@ V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on(['inpwd', 'si
     case ':incorrect-custom-name':
       return print.incorrect_custom;
     default:
-      Error = message[0];
+      Error = topmsg;
       return print.basicError;
     }
   }());
-  F(Error, path, info.cmd_filename);
+  F(Error, path, info.configfile);
 });
 zero = function(arr){
   return arr.length === 0;
