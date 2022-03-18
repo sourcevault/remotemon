@@ -17,7 +17,7 @@ homedir = (require \os).homedir!
 
 #--------------------------------------------
 
-CONFIG_FILE_NAME = \.remotemon.yaml
+CONFIG_FILE_NAME = ".remotemon.yaml"
 
 #--------------------------------------------
 
@@ -1735,15 +1735,20 @@ main = (cmd_data) -> (CONF) ->
 
   project_name = cmd_data.project.value!
 
-  if not project_name
-
-    config_file_name = "./" + CONFIG_FILE_NAME
-
-  else
+  if project_name
 
     service_directory = CONF.service_directory
 
     config_file_name = service_directory + project_name + "/" + CONFIG_FILE_NAME
+
+  else
+
+    config_file_name = "./" + CONFIG_FILE_NAME
+
+    project_name = process.cwd!
+    |> R.split '/'
+    |> R.last
+
 
   if not (fs.existsSync config_file_name)
 

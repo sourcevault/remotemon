@@ -7,7 +7,7 @@ dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, compare_version = com.c
 ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, zj = ref$.zj, j = ref$.j, R = ref$.R, lit = ref$.lit, c = ref$.c, wait = ref$.wait, noop = ref$.noop;
 be = com.hoplon.types;
 homedir = require('os').homedir();
-CONFIG_FILE_NAME = '.remotemon.yaml';
+CONFIG_FILE_NAME = ".remotemon.yaml";
 cmd_data = new optionParser();
 cmd_data.addOption('h', 'help', null, 'help');
 cmd_data.addOption('v', 'verbose', null, 'verbose');
@@ -1157,13 +1157,16 @@ get_all = function*(info){
 };
 main = function(cmd_data){
   return function(CONF){
-    var project_name, config_file_name, service_directory, wcf, x$, info, y$;
+    var project_name, service_directory, config_file_name, wcf, x$, info, y$;
     project_name = cmd_data.project.value();
-    if (!project_name) {
-      config_file_name = "./" + CONFIG_FILE_NAME;
-    } else {
+    if (project_name) {
       service_directory = CONF.service_directory;
       config_file_name = service_directory + project_name + "/" + CONFIG_FILE_NAME;
+    } else {
+      config_file_name = "./" + CONFIG_FILE_NAME;
+      project_name = R.last(
+      R.split('/')(
+      process.cwd()));
     }
     if (!fs.existsSync(config_file_name)) {
       l(c.er3("[" + metadata.name + "]"), c.er3("• Error •"), c.er1("project"), c.warn(project_name), c.er1("does not have a"), c.warn(CONFIG_FILE_NAME), c.er1("file."));
