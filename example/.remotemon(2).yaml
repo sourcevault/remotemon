@@ -1,0 +1,15 @@
+trans:
+  watch:
+    - translate.txt
+  defarg: [:en,translate.txt,translated.txt]
+  local:
+    - trans {{0}} -b -i {{1}} -o {{2}}
+    - trans :en  -i translate.txt -o translated.txt
+check.blocked.port:
+  - |-
+    COUNTER=1
+    while [  $COUNTER -lt 65535 ]; do
+      echo $COUNTER
+        curl portquiz.net:$COUNTER --connect-timeout 1
+        let COUNTER=COUNTER+1
+    done

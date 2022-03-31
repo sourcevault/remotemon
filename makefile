@@ -22,7 +22,7 @@ pkg:
 compile:
 	lsc --no-header -cbo dist src
 	lsc -cb test
-	yaml2json src/package.yaml > package.json
+	yaml2json -p src/package.yaml > package.json
 
 # 	remotemon --config test/opt.yaml -w foo
 
@@ -36,8 +36,8 @@ compile:
 
 # 	remotemon -p router hostapd.status
 
-	remotemon -p convert compress broken
-
+# 	remotemon -vv longname
+	remotemon -p yt audio https://www.youtube.com/watch\?v\=EZgcSJ6D8cQ
 
 # 	remotemon -c ./test/opt.yaml version.update
 

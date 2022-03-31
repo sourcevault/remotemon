@@ -8,61 +8,72 @@ global:
   sshport: 45
   first:
     - verbose
-  second: recursive
   files:
     - test/opt.yaml
     - null
     - hungryhippo
-remotehost: pi@192.168.43.142
-ssh: -t -o LogLevel=QUIET -p {{global.sshport}}
+remotehost: pi@192.168.0.188
 remotefold: ~/test3
-defarg:
-  - pi@192.168.43.50
-  - package.json
-  - -tt
-ignore:
-  - /mnt/c/code/remotemon/.remotemon.yaml
-longname:
-  verbose: 0
-  defarg:
-    - foo
-    - bar
-    - paper
-  ssh: -tt -o LogLevel=QUIET -p 45
-  local:
-    - echo 'hello world 11'
-ytv:
-  defarg: 1
-  watch: false
-  local:
-    - youtube-dl -f 18 {{0}}
-echo:
-  verbose: 1
-  local:
-    - echo 'from locale'
-  remote:
-    - echo 'from remote'
-dry:
-  verbose: 1
-  defarg:
-    - 1
-    - 2
-  local:
-    - node {{0}}
-bar:
-  defarg:
-    - --version
-    - .inf
-  local:
-    - node {{0}} {{1}}
-  rsync: true
-  remote:
-    - echo 'hello world'
-  final:
-    - echo 'hello world'
-
 watch: false
 
-local:
-  - echo "hello world 1 "
+# ssh: -t -o LogLevel=QUIET -p {{global.sshport}}
 
+ssh:
+  option: -t -o LogLevel=QUIET -p {{global.sshport}}
+  startwith:
+    - export NVM_DIR=~/.nvm
+    - source ~/.nvm/nvm.sh
+
+local:
+  - echo "hello world 1"
+
+# remote:
+#   - nvm
+
+# defarg:
+#   - pi@192.168.43.50
+#   - package.json
+#   - -tt
+# ignore:
+#   - /mnt/c/code/remotemon/.remotemon.yaml
+longname:
+  verbose: 2
+  # defarg:
+  #   - foo
+  #   - bar
+  #   - paper
+
+  local:
+    - echo 'hello world 11'
+  remote:
+    - echo 'from remote'
+
+# ytv:
+#   defarg: 1
+#   watch: false
+#   local:
+#     - youtube-dl -f 18 {{0}}
+# echo:
+#   verbose: 1
+#   local:
+#     - echo 'from locale'
+#   remote:
+#     - echo 'from remote'
+# dry:
+#   verbose: 1
+#   defarg:
+#     - 1
+#     - 2
+#   local:
+#     - node {{0}}
+# bar:
+#   defarg:
+#     - --version
+#     - .inf
+#   local:
+#     - node {{0}} {{1}}
+#   rsync: true
+#   remote:
+#     - echo 'hello world'
+#   final:
+#     - echo 'hello world'

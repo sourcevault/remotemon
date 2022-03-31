@@ -147,6 +147,7 @@ init = ->*
 
     edit_config_file = true
 
+
   if (((epoc - lastchecktime)) > time_in_seconds)
 
     raw = exec "npm view #{metadata.name}"
@@ -166,8 +167,11 @@ init = ->*
         <- process.on \exit
 
         msg = do
-          "update available " + (c.er2 vn) + c.ok (" ➝ " +  metadata.version) + "\n" +
-           c.warn "npm i -g remotemon"
+          "update available " + (c.er2 vn) + c.ok (" ➝ " +  metadata.version) + "\n\n" +
+           c.grey "> npm i -g remotemon \n" +
+           c.grey "> yarn global add remotemon \n" +
+           c.grey "> pnpm add -g remotemon"
+
 
         boxen.then (mo) ->
 
@@ -175,7 +179,7 @@ init = ->*
 
           console.log boite do
             msg
-            {padding: 1,borderColor:"green",textAlignment:"center"}
+            {padding: 1,borderColor:"green",textAlignment:"left"}
 
   corde = yaml.stringify doc
 
@@ -239,6 +243,7 @@ if (cmd_data.help.count!) > 0
 
   return
 
+
 silent = cmd_data.silent.count!
 
 edit = cmd_data.edit.count!
@@ -250,7 +255,6 @@ if (cmd_data.version.count! > 0)
   return
 
 isvar = R.test /^[\.\w]+=/
-
 
 vars = rest
 |> R.filter isvar
@@ -592,15 +596,15 @@ V.ignore.user = V.rsl.or unu
 
 V.execlist = V.strlist.empty.cont (strlist) ->
 
-  fin = []
+  sortir = []
 
   for str in strlist
 
     nstr = str.replace /'/g,"'\''"
 
-    fin.push nstr
+    sortir.push nstr
 
-  fin
+  sortir
 
 # ----------------------------------------
 
@@ -809,7 +813,7 @@ organize_rsync = (data,cmdname,...,state) ->
       if data.ssh
         ssh = [[\rsh,"ssh #{data.ssh}"]]
       else if state.origin.ssh
-        ssh = [[\rsh,"ssh #{state.origin.ssh}"]]
+        ssh = [[\rsh,"ssh #{state.origin.ssh.option}"]]
       else
         ssh = []
 
@@ -818,7 +822,7 @@ organize_rsync = (data,cmdname,...,state) ->
 
   data
 
-# ------------------------------------------------------------------------
+# ---------------------------------------------------
 
 V.rsync.init = be.bool
 
@@ -836,6 +840,76 @@ V.rsync.init = be.bool
 
 .or do
   be.arr.cont (a) -> [a]
+
+#---------------------------------------------------
+
+dangling_colon = (arr) ->
+
+  sortir = ""
+
+  re = /;\s*/
+
+  for str in arr
+
+    str = str.replace re,";"
+
+    if not (str[(str.length - 1)] is ";")
+
+      str = str + ";"
+
+    sortir += str
+
+  sortir
+
+#---------------------------------------------------
+
+V.ssh = be.obj
+
+.on \option, be.str.or be.undefnull.cont void
+
+.on \startwith, do
+  be.arr.map be.str
+  .or be.undefnull.cont -> []
+
+.alt be.str.cont (str) -> (option:str,startwith:[])
+
+.alt be.undefnull.cont -> (option:void,startwith:[])
+
+#----------------------------------------------------
+
+V.def_ssh = V.ssh
+
+.cont (ob,...,state) ->
+
+  {origin} = state
+
+  if ob.startwith.length is 0
+
+    ob.startwith.push "cd #{origin.remotefold}"
+
+  if ob.option is void
+
+    ob.option = state.info.options.ssh
+
+  ob.startwith = dangling_colon ob.startwith
+
+  ob
+
+#----------------------------------------------------
+
+V.user_ssh = V.ssh
+
+#----------------------------------------------------
+
+handle_ssh = (user,def) !->
+
+  if (user.ssh.startwith.length is 0)
+
+    user.ssh.startwith = def.ssh.startwith
+
+  if not user.ssh.option
+
+    user.ssh.option = def.ssh.option
 
 #----------------------------------------------------
 
@@ -871,19 +945,9 @@ V.user = be.obj
 
 .and V.rsync.throw_if_error
 
-.on \ssh                         , be.str.or unu
-
+.on \ssh                         , V.user_ssh
 
 #----------------------------------------------------
-
-def_ssh = be.str.or do
-
-  be.undefnull.cont do
-
-    (...,{info}) ->
-
-      info.options.ssh
-
 
 V.def = be.obj
 
@@ -907,7 +971,7 @@ V.def = be.obj
 
 .and V.rsync.throw_if_error
 
-.on \ssh         , def_ssh
+.on \ssh, V.def_ssh
 
 .map (value,key,...,state) ->
 
@@ -933,7 +997,6 @@ V.def = be.obj
 
     else
 
-
       return [false,[put.message],put.path]
 
   true
@@ -942,6 +1005,8 @@ V.def = be.obj
 .cont (...,{user,def}) ->
 
   for cmdname,value of user
+
+    handle_ssh value,def
 
     for I in global_data.selected_keys.undef
 
@@ -957,9 +1022,9 @@ V.def = be.obj
 
 .err (message,path,...,{info}) !->
 
-  sortis = be.flatro message
+  sortir = be.flatro message
 
-  [topmsg] = sortis
+  [topmsg] = sortir
 
   [loc,Error] = topmsg
 
@@ -1070,9 +1135,9 @@ init_continuation = (dryRun,dir,inpwd) -> (cmd,type = \async) ->*
 
   else
 
-    sortis = spawn cmd,dir,inpwd
+    sortir = spawn cmd,dir,inpwd
 
-    {status} = sortis
+    {status} = sortir
 
 
   if (status isnt 0)
@@ -1197,7 +1262,7 @@ check_if_remotehost_present = (data) ->*
 
   {lconfig,log,cont} = data
 
-  tryToSSH = "ssh #{lconfig.ssh} #{lconfig.remotehost} 'ls'"
+  tryToSSH = "ssh #{lconfig.ssh.option} #{lconfig.remotehost} 'ls'"
 
   try
 
@@ -1219,7 +1284,7 @@ check_if_remotedir_present = (data) ->*
 
   {info,lconfig,log,cont} = data
 
-  checkDir = "ssh #{lconfig.ssh} #{lconfig.remotehost} 'ls #{lconfig.remotefold}'"
+  checkDir = "ssh #{lconfig.ssh.option} #{lconfig.remotehost} 'ls #{lconfig.remotefold} 2>&1'"
 
   try
 
@@ -1265,7 +1330,7 @@ check_if_remotedir_present = (data) ->*
       | \y => ["mkdir","user"]
       | \r => ["sudo mkdir","root"]
 
-      mkdir = "ssh #{lconfig.ssh} #{lconfig.remotehost} '#{cmd} #{lconfig.remotefold}'"
+      mkdir = "ssh #{lconfig.ssh.option} #{lconfig.remotehost} '#{cmd} #{lconfig.remotefold}'"
 
       yield from cont mkdir
 
@@ -1291,7 +1356,7 @@ remote_main_proc = (data,remotetask) ->*
 
   for I in remotetask
 
-    cmd = "ssh #{lconfig.ssh} " + remotehost + " '" + "cd #{remotefold};" + I + "'"
+    cmd = "ssh #{lconfig.ssh.option} #{remotehost} '#{lconfig.ssh.startwith} #{I}'"
 
     log.verbose I,cmd
 
@@ -1637,12 +1702,16 @@ restart = (info,log)->*
 
   [lconfig,log] = vari
 
-  most.generate ms_create_watch,lconfig,info,log
-  .drain!
+  # most.generate ms_create_watch,lconfig,info,log
+  # .drain!
 
 
 V.CONF = be.known.obj
+
 .on \rsync,V.rsync.init
+
+.on \ssh,V.ssh
+
 .cont organize_rsync
 .and V.rsync.throw_if_error
 .err (message,path,...,info) ->
@@ -1655,7 +1724,6 @@ V.CONF = be.known.obj
   | \:rsync => print.rsyncError
 
   F Error,path,"~/.config/config.remotemon.yaml"
-
 
 check_conf_file = (conf,info) ->
 
@@ -1695,7 +1763,9 @@ get_all = (info) ->*
 
   yjson = yield tampax_parse yaml_text,info.cmdargs,info.configfile
 
+
   if (yjson is \error.validator.tampaxparsing) then return
+
 
   if info.options.list
 

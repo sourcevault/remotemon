@@ -1,0 +1,12 @@
+watch: false
+silent: false
+
+video: youtube-dl -f 18 {{0}}
+
+video.hd: youtube-dl -f 136+bestaudio {{0}}
+
+audio: youtube-dl -f 140 {{0}}
+
+empty:
+  defarg: .inf
+  local: youtube-dl {{0}}

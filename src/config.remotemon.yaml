@@ -3,6 +3,8 @@ rsync:
   - recursive
   - quiet
   - archive
-ssh: -t -o LogLevel=QUIET
+ssh:
+  option: -t -o LogLevel=QUIET
+  startwith: []
 service_directory: null
 last_check_time: 0

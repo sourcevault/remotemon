@@ -16,7 +16,7 @@ data.rsync.compound = new Set do
   \compare-dest \copy-dest \link-dest \compress-level \skip-compress \filter
   \files-from \address \port \sockopts \out-format \log-file \log-file-format
   \password-file \bwlimit \write-batch \only-write-batch \read-batch \protocol
-  \iconv \checksum-seed \exclude \exclude-from \include \include-from
+  \iconv \checksum-seed \exclude \exclude-from \include \include-from \info
 
 data.rsync.filter = new Set do
   *\exclude \exclude-from \include \include-from
