@@ -153,7 +153,9 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 - `local`       - local commands to run after a change in file is detected.
 - `remote`      - command to execute in remote client.
 - `final`       - command to execute after `remote` returns `exit 0`.
-- `ssh`         - custom `ssh` config options, default is `-tt -o LogLevel=QUIET`.
+- `ssh`         - custom `ssh` config options
+    - `startwith` - command(s) to run for each ssh session.
+    - `option`    - ssh options (default is `-tt -o LogLevel=QUIET`).
 - `verbose`     - hardcode verbose level of printing for command.
 - `silent`      - hardcode commandline `--silent` option ( use sparsely ).
 - `inpwd`       - specify if the command is run in the directory of the project, or in the working directory, by default(`false`) it runs in project directory.
