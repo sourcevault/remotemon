@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, l, z, zj, R, lit, c, wait, noop, be, homedir, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, isvar, vars, args, modyaml, nPromise, rmdef, only_str, tampax_parse, V, mergeArray, defarg_main, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, handle_ssh, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, emphasize, child_process, l, z, zj, R, lit, c, wait, noop, be, cp, homedir, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_var, san_inpwd, rm_empty_lines, san_user_script, run_script, T, loop_yaml_map, get_all_script_paths, run_global_var_script, modyaml, nPromise, rmdef, only_str, tampax_parse, mergeArray, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, handle_ssh, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
-dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, compare_version = com.compare_version, boxen = com.boxen;
+dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, compare_version = com.compare_version, boxen = com.boxen, emphasize = com.emphasize, child_process = com.child_process;
 ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, zj = ref$.zj, j = ref$.j, R = ref$.R, lit = ref$.lit, c = ref$.c, wait = ref$.wait, noop = ref$.noop;
 be = com.hoplon.types;
+cp = child_process;
 homedir = require('os').homedir();
 CONFIG_FILE_NAME = ".remotemon.yaml";
 cmd_data = new optionParser();
@@ -18,6 +19,7 @@ cmd_data.addOption('l', 'list', null, 'list');
 cmd_data.addOption('m', 'auto-make-directory', null, 'auto_make_directory');
 cmd_data.addOption('n', 'no-watch', null, 'no_watch');
 cmd_data.addOption('s', 'silent', null, 'silent');
+cmd_data.addOption('c', 'cat', null, 'cat');
 cmd_data.addOption('e', 'edit', null, 'edit');
 cmd_data.addOption('p', 'project', null, 'project').argument('PROJECT');
 question_init = function(){
@@ -97,7 +99,7 @@ init = function*(){
       edit_config_file = true;
       process.on('exit', function(){
         var msg;
-        msg = "update available " + c.er2(vn) + c.ok((" ➝ " + metadata.version) + "\n\n" + c.grey("> npm i -g remotemon \n" + c.grey("> yarn global add remotemon \n" + c.grey("> pnpm install --global remotemon"))));
+        msg = "update available " + c.er2(vn) + c.ok((" ➝ " + metadata.version) + "\n\n" + c.grey("> npm i -g remotemon \n" + c.grey("> yarn global add remotemon \n" + c.grey("> pnpm add -g remotemon"))));
         return boxen.then(function(mo){
           var boite;
           boite = mo['default'];
@@ -119,130 +121,31 @@ init = function*(){
 };
 rest = cmd_data.parse();
 if (cmd_data.help.count() > 0) {
-  str = "" + metadata.name + " version " + metadata.version + "\n\noptions:\n\n  -v --verbose               more detail\n\n  -vv                        much more detail\n\n  -h --help                  display help message\n\n  -V --version               displays version number\n\n  -d --dry-run               perform a trial run without making any changes\n\n  -w --watch-config-file     restart on config file change\n\n  -l --list                  list all user commands\n\n  -m --auto-make-directory   make remote directory if it doesn't exist ( with user permission )\n\n     -mm                     ( with root permission )\n\n  -n --no-watch              force disable any and all watches\n\n  -s --silent                do not show " + metadata.name + " messages\n\n  -e --edit                  make permanent edits to " + CONFIG_FILE_NAME + " values\n\n  -p --project               folder name to look for " + CONFIG_FILE_NAME + "\n\n  ---- shorthands ----\n\n  CF <-- for configuration file\n\nvalues for internal variables (using .global object) can be changed using '=' (similar to makefiles) :\n\n> " + metadata.name + " --verbose file=dist/main.js\n\n[ documentation ] @ [ " + metadata.homepage + " ]\n";
+  str = "" + metadata.name + " version " + metadata.version + "\n\noptions:\n\n  -v --verbose               more detail\n\n  -vv                        much more detail\n\n  -h --help                  display help message\n\n  -V --version               displays version number\n\n  -d --dry-run               perform a trial run without making any changes\n\n  -w --watch-config-file     restart on config file change\n\n  -c --cat                   dump the output of the current " + CONFIG_FILE_NAME + " being used\n\n  -cc                        same as -c but with comments\n\n  -ccc                       show raw json for final process state\n\n  -l --list                  list all user commands\n\n  -m --auto-make-directory   make remote directory if it doesn't exist ( with user permission )\n\n     -mm                     ( with root permission )\n\n  -n --no-watch              force disable any and all watches\n\n  -s --silent                do not show " + metadata.name + " messages\n\n  -e --edit                  make permanent edits to " + CONFIG_FILE_NAME + " values\n\n  -p --project               folder name to look for " + CONFIG_FILE_NAME + "\n\n  ---- shorthands ----\n\n  CF <-- for configuration file\n\nvalues for internal variables (using .global object) can be changed using '=' (similar to makefiles) :\n\n> " + metadata.name + " --verbose file=dist/main.js\n\n[ documentation ] @ [ " + metadata.homepage + " ]\n";
   l(str);
   return;
 }
 silent = cmd_data.silent.count();
 edit = cmd_data.edit.count();
+concatenate = cmd_data.cat.count();
 if (cmd_data.version.count() > 0) {
   l(c.er1("[" + metadata.name + "] version " + metadata.version));
   return;
 }
-isvar = R.test(/^[\.\w]+=/);
-vars = R.map(R.pipe(R.split('='), R.over(R.lensIndex(0), R.pipe(R.split("/"), function(key){
-  var name;
-  if (key.length === 1) {
-    name = key[0];
-    if (!global_data.selected_keys.set.has(name)) {
-      key.unshift("global");
-    }
-    return key;
-  }
-  return key;
-})), R.over(R.lensIndex(1), function(str_data){
+isvar = R.test(/^[\.\w\/]+=/);
+check_if_number = function(str_data){
   var isnum;
-  switch (str_data) {
-  case 'True':
-  case 'true':
-    return true;
-  case 'False':
-  case 'false':
-    return false;
-  }
-  isnum = parseFloat(str_data);
+  isnum = Number(str_data);
   if (!deepEq$(isnum, NaN, '===')) {
     return isnum;
   }
   return str_data;
-})))(
+};
+vars = R.map(R.pipe(R.split('='), R.over(R.lensIndex(0), R.split("/")), R.over(R.lensIndex(1), check_if_number)))(
 R.filter(isvar)(
 rest));
 args = R.reject(isvar, rest);
-modyaml = function(info){
-  var data, doc, vars, i$, len$, ref$, key, value;
-  data = R.toString(
-  fs.readFileSync(
-  info.configfile));
-  doc = yaml.parseDocument(data);
-  vars = info.vars;
-  for (i$ = 0, len$ = vars.length; i$ < len$; ++i$) {
-    ref$ = vars[i$], key = ref$[0], value = ref$[1];
-    doc.setIn(key, value);
-  }
-  return String(doc);
-};
-nPromise = function(f){
-  return new Promise(f);
-};
-rmdef = R.reject(function(x){
-  return global_data.selected_keys.set.has(x);
-});
-only_str = be.str.cont(function(str){
-  return " - " + str;
-}).or(be.arr.cont(function(arr){
-  var fin, i$, len$, I;
-  fin = "";
-  for (i$ = 0, len$ = arr.length; i$ < len$; ++i$) {
-    I = arr[i$];
-    fin += "\n    - " + I;
-  }
-  return fin;
-})).fix("").wrap();
-function exec_list_option(yjson, info){
-  var keys, user_ones, i$, to$, I, name, des, results$ = [];
-  l(lit(['> FILE ', info.configfile], [c.warn, c.pink]));
-  keys = Object.keys(yjson);
-  user_ones = rmdef(keys);
-  if (user_ones.length === 0) {
-    l(lit(["  --- ", "< EMPTY >", " ---"], [c.pink, c.warn, c.pink]));
-  }
-  for (i$ = 0, to$ = user_ones.length; i$ < to$; ++i$) {
-    I = i$;
-    name = user_ones[I];
-    des = only_str(yjson[name].description);
-    results$.push(l(lit([" • ", name, des], [c.warn, c.ok, null])));
-  }
-  return results$;
-}
-tampax_parse = function(yaml_text, cmdargs, filename){
-  return nPromise(function(resolve, reject){
-    return tampax.yamlParseString(yaml_text, arrayFrom$(cmdargs), function(err, rawjson){
-      if (err) {
-        print.failed_in_tampax_parsing(filename, err);
-        resolve('error.validator.tampaxparsing');
-        return;
-      }
-      return resolve(rawjson);
-    });
-  });
-};
 V = {};
-mergeArray = function(deflength, def, arr){
-  var tail, len, rest, fin, i$, I;
-  tail = def[def.length - 1];
-  if (tail === Infinity) {
-    len = def.length - 1;
-    rest = arr.splice(len, arr.length);
-    if (rest.length > 0) {
-      rest = [rest.join(" ")];
-    }
-    arr = arrayFrom$(arr).concat(arrayFrom$(rest));
-    def[len] = '';
-  }
-  fin = [];
-  for (i$ = 0; i$ < deflength; ++i$) {
-    I = i$;
-    if (arr[I] === undefined && def[I] === undefined) {
-      break;
-    } else if (arr[I] === undefined) {
-      fin[I] = def[I];
-    } else {
-      fin[I] = arr[I];
-    }
-  }
-  return fin;
-};
 defarg_main = be.undefnull.cont(function(){
   var state;
   state = arguments[arguments.length - 1];
@@ -304,6 +207,277 @@ V.defarg = defarg_main.cont(function(data){
   }());
   return F(msg, path, info.cmd_filename);
 });
+san_var = function(str){
+  var sortir, e;
+  try {
+    sortir = JSON.parse(str);
+    return sortir;
+  } catch (e$) {
+    e = e$;
+    return {};
+  }
+};
+san_inpwd = be.bool.fix(false).wrap();
+rm_empty_lines = R.pipe(R.filter(function(str){
+  if (str.length === 0) {
+    return false;
+  } else {
+    return true;
+  }
+}));
+san_user_script = function(lin){
+  var todisp, toexit;
+  lin = rm_empty_lines(lin);
+  todisp = R.join('\n')(R.init(lin));
+  toexit = R.last(lin);
+  return [todisp, toexit];
+};
+run_script = function(str, inpwd, project, path){
+  var lines, sp, interpreter, script, cmd, cwd, stdin, sortir, err_msg, user_lines, ref$, to_disp, to_exit;
+  lines = str.split('\n');
+  sp = lines[0].split(" ");
+  interpreter = sp[sp.length - 1];
+  lines.unshift();
+  script = lines.join("\n");
+  cmd = script.replace(/"/g, '\\"');
+  cwd = inpwd ? undefined : project;
+  stdin = interpreter + " <<<\"" + cmd + "\"";
+  sortir = cp.spawnSync(stdin, [], {
+    shell: 'bash',
+    windowsVerbatimArguments: true,
+    cwd: cwd
+  });
+  err_msg = sortir.stderr.toString();
+  if (err_msg.length > 0) {
+    print.error_in_user_script(err_msg, path);
+  }
+  user_lines = sortir.stdout.toString().split("\n");
+  ref$ = san_user_script(user_lines), to_disp = ref$[0], to_exit = ref$[1];
+  process.stdout.write(to_disp);
+  return to_exit;
+};
+T = {};
+T.yaml_map = be.obj.and(function(gv){
+  var props, c;
+  props = Object.getOwnPropertyNames(gv);
+  c = ['schema', 'items', 'range'];
+  return !R.without(props, c).length;
+});
+loop_yaml_map = function(yaml_map, pwd, project){
+  var i$, ref$, len$, ref1$, key, value, inner_value, to_replace;
+  for (i$ = 0, len$ = (ref$ = yaml_map.items).length; i$ < len$; ++i$) {
+    ref1$ = ref$[i$], key = ref1$.key, value = ref1$.value;
+    if (T.yaml_map.auth(value)['continue']) {
+      loop_yaml_map(value, pwd, project);
+    } else if (typeof value.value === 'string') {
+      inner_value = value.value;
+      to_replace = run_script(inner_value, pwd, project);
+      value.value = to_replace;
+    }
+  }
+};
+get_all_script_paths = function(obj, path, hist){
+  var key, value, str, lines;
+  path == null && (path = []);
+  hist == null && (hist = []);
+  if (be.obj.auth(obj).error) {
+    return [];
+  }
+  for (key in obj) {
+    value = obj[key];
+    switch (R.type(value)) {
+    case 'Object':
+      get_all_script_paths(value, arrayFrom$(path).concat([key]), hist);
+      break;
+    case 'String':
+      str = value;
+      lines = str.split('\n');
+      if (lines.length > 1 && str[0] + str[1] === "#!") {
+        hist.push(arrayFrom$(path).concat([key]));
+      }
+    }
+  }
+  return hist;
+};
+run_global_var_script = function*(yjson, doc, info){
+  var cmdname, project, inpwd, all_script_path, i$, len$, path, script, to_replace, found;
+  cmdname = info.cmdname;
+  project = info.options.project;
+  inpwd = san_inpwd(yjson.inpwd);
+  all_script_path = get_all_script_paths(yjson['var'], ['var']);
+  for (i$ = 0, len$ = all_script_path.length; i$ < len$; ++i$) {
+    path = all_script_path[i$];
+    script = R.path(path, yjson);
+    to_replace = run_script(script, inpwd, project, path);
+    doc.setIn(path, to_replace);
+  }
+  if (cmdname) {
+    if (global_data.selected_keys.set.has(cmdname)) {
+      print.in_selected_key(cmdname, info.cmdline);
+      return 'error';
+    }
+    found = yjson[cmdname];
+    if (!found) {
+      print.could_not_find_custom_cmd(cmdname);
+      return 'error';
+    }
+    if (found.inpwd) {
+      inpwd = inpwd;
+    }
+    all_script_path = get_all_script_paths(yjson[cmdname]['var'], [cmdname, 'var']);
+    for (i$ = 0, len$ = all_script_path.length; i$ < len$; ++i$) {
+      path = all_script_path[i$];
+      script = R.path(path, yjson);
+      to_replace = run_script(script, inpwd, project, path);
+      doc.setIn(path, to_replace);
+    }
+  }
+  return String(doc);
+};
+modyaml = function(info){
+  var data, doc, docJson, globalVar, cmdname, i$, ref$, len$, ref1$, key, value, v_path, d_path, init, p, defargdoc, sortir, vars, nl, arr, merged;
+  data = R.toString(
+  fs.readFileSync(
+  info.configfile));
+  doc = yaml.parseDocument(data);
+  docJson = yaml.parse(data);
+  globalVar = docJson['var'];
+  cmdname = info.cmdname;
+  if (cmdname === undefined) {
+    for (i$ = 0, len$ = (ref$ = info.vars).length; i$ < len$; ++i$) {
+      ref1$ = ref$[i$], key = ref1$[0], value = ref1$[1];
+      if (key[0] === 'var') {
+        key.unshift();
+      }
+      doc.setIn(['var'].concat(arrayFrom$(key)), value);
+    }
+    v_path = ['var'];
+    d_path = ['defarg'];
+  } else {
+    for (i$ = 0, len$ = (ref$ = info.vars).length; i$ < len$; ++i$) {
+      ref1$ = ref$[i$], key = ref1$[0], value = ref1$[1];
+      if (key[0] === 'var') {
+        init = [];
+      } else {
+        init = [cmdname, 'var'];
+      }
+      p = arrayFrom$(init).concat(arrayFrom$(key));
+      doc.setIn(p, value);
+    }
+    v_path = [cmdname, 'var'];
+    d_path = [cmdname, 'defarg'];
+  }
+  defargdoc = eval(String(doc.getIn(d_path)));
+  sortir = V.defarg.auth(defargdoc, info);
+  if (sortir.error) {
+    throw "command line arguments could not be replaced in .defargs";
+  }
+  vars = san_var(String(doc.getIn(v_path)));
+  nl = /\n/g;
+  for (key in vars) {
+    value = vars[key];
+    if (value.match(nl)) {
+      vars[key] = '';
+    }
+  }
+  arr = sortir.value[2];
+  merged = R.mergeDeepLeft(arr, vars);
+  z(merged);
+  return [String(doc), merged, doc];
+};
+nPromise = function(f){
+  return new Promise(f);
+};
+rmdef = R.reject(function(x){
+  return global_data.selected_keys.set.has(x);
+});
+only_str = be.str.cont(function(str){
+  return " - " + str;
+}).or(be.arr.cont(function(arr){
+  var fin, i$, len$, I;
+  fin = "";
+  for (i$ = 0, len$ = arr.length; i$ < len$; ++i$) {
+    I = arr[i$];
+    fin += "\n    - " + I;
+  }
+  return fin;
+})).fix("").wrap();
+function exec_list_option(yjson, info){
+  var keys, user_ones, i$, to$, I, name, des, results$ = [];
+  l(lit(['> FILE ', info.configfile], [c.warn, c.pink]));
+  keys = Object.keys(yjson);
+  user_ones = rmdef(keys);
+  if (user_ones.length === 0) {
+    l(lit(["  --- ", "< EMPTY >", " ---"], [c.pink, c.warn, c.pink]));
+  }
+  for (i$ = 0, to$ = user_ones.length; i$ < to$; ++i$) {
+    I = i$;
+    name = user_ones[I];
+    des = only_str(yjson[name].description);
+    results$.push(l(lit([" • ", name, des], [c.warn, c.ok, null])));
+  }
+  return results$;
+}
+function exec_cat_option(yaml_text, concat_count){
+  var hash_first;
+  hash_first = RegExp('^#');
+  return emphasize.then(function(pod){
+    var lines, interm, i$, len$, I, text;
+    lines = yaml_text.split("\n");
+    interm = [];
+    switch (concat_count) {
+    case 1:
+      for (i$ = 0, len$ = lines.length; i$ < len$; ++i$) {
+        I = lines[i$];
+        if (!hash_first.exec(I) && I.length !== 0) {
+          interm.push(I);
+        }
+      }
+      break;
+    case 2:
+      interm = lines;
+    }
+    text = interm.join('\n');
+    return pod.emphasize.highlightAuto(text).value;
+  });
+}
+tampax_parse = function(yaml_text, cmdargs, filename){
+  return nPromise(function(resolve, reject){
+    return tampax.yamlParseString(yaml_text, cmdargs, function(err, rawjson){
+      if (err) {
+        print.failed_in_tampax_parsing(filename, err);
+        resolve('error.validator.tampaxparsing');
+        return;
+      }
+      return resolve(rawjson);
+    });
+  });
+};
+mergeArray = function(deflength, def, arr){
+  var tail, len, rest, fin, i$, I;
+  tail = def[def.length - 1];
+  if (tail === Infinity) {
+    len = def.length - 1;
+    rest = arr.splice(len, arr.length);
+    if (rest.length > 0) {
+      rest = [rest.join(" ")];
+    }
+    arr = arrayFrom$(arr).concat(arrayFrom$(rest));
+    def[len] = '';
+  }
+  fin = [];
+  for (i$ = 0; i$ < deflength; ++i$) {
+    I = i$;
+    if (arr[I] === undefined && def[I] === undefined) {
+      break;
+    } else if (arr[I] === undefined) {
+      fin[I] = def[I];
+    } else {
+      fin[I] = arr[I];
+    }
+  }
+  return fin;
+};
 unu = be.undefnull.cont(void 8);
 V.rsl = be.arr.cont(R.flatten).map(be.str.or(be.obj.and(function(obj){
   var keys;
@@ -563,7 +737,7 @@ dangling_colon = function(arr){
   }
   return sortir;
 };
-V.ssh = be.obj.on('option', be.str.or(be.undefnull.cont(void 8))).on('startwith', be.arr.map(be.str).or(be.undefnull.cont(function(){
+V.ssh = be.obj.on('option', be.str.or(unu)).on('startwith', be.arr.map(be.str).or(be.undefnull.cont(function(){
   return [];
 }))).alt(be.str.cont(function(str){
   return {
@@ -598,6 +772,13 @@ handle_ssh = function(user, def){
     user.ssh.option = def.ssh.option;
   }
 };
+V.vars = be.obj.or(be.undefnull.cont(function(){
+  return {};
+})).cont(function(ob){
+  var info;
+  info = arguments[arguments.length - 1];
+  return R.mergeDeepLeft(ob, info.origin['var']);
+});
 V.user = be.obj.err("custom user defined task, has to be object.").or(be.undefnull.cont(function(){
   return {};
 })).and(be.restricted(global_data.selected_keys.arr)).err("key not recognized.").alt(V.strlist.empty.cont(function(list){
@@ -608,8 +789,10 @@ V.user = be.obj.err("custom user defined task, has to be object.").or(be.undefnu
   var origin;
   origin = arguments[arguments.length - 1].origin;
   return origin[key];
-}))).cont(organize_rsync).and(V.rsync.throw_if_error).on('ssh', V.user_ssh);
-V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on(['inpwd', 'silent'], be.bool.or(be.undefnull.cont(false))).on('verbose', be.num.or(unu.cont(0))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', V.watch.def).on('ignore', V.ignore.def).on(['pre', 'local', 'final', 'remote'], V.execlist).on('rsync', V.rsync.init).cont(organize_rsync).and(V.rsync.throw_if_error).on('ssh', V.def_ssh).map(function(value, key){
+}))).cont(organize_rsync).and(V.rsync.throw_if_error).on('ssh', V.user_ssh).on('var', V.vars);
+V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on(['inpwd', 'silent'], be.bool.or(be.undefnull.cont(false))).on('verbose', be.num.or(be.undefnull.cont(0))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', V.watch.def).on('var', be.obj.or(be.undefnull.cont(function(){
+  return {};
+}))).on('ignore', V.ignore.def).on(['pre', 'local', 'final', 'remote'], V.execlist).on('rsync', V.rsync.init).cont(organize_rsync).and(V.rsync.throw_if_error).on('ssh', V.def_ssh).map(function(value, key){
   var state, def, user, put;
   state = arguments[arguments.length - 1];
   def = state.def, user = state.user;
@@ -648,7 +831,7 @@ V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on(['inpwd', 'si
     user: user,
     def: def
   };
-}).err(function(message, path){
+}).err(function(message, path, val){
   var info, sortir, topmsg, loc, Error, F;
   info = arguments[arguments.length - 1].info;
   sortir = be.flatro(message);
@@ -698,14 +881,8 @@ create_logger = function(info, gconfig){
   log = print.create_logger(buildname, verbose, silent);
   return [lconfig, log, buildname];
 };
-update = function*(lconfig, yaml_text, info){
-  var defarg, ref$, args, origin, vout, gconfig, log, buildname;
-  defarg = V.defarg.auth(lconfig.defarg, info);
-  if (defarg.error) {
-    return 'error';
-  }
-  ref$ = defarg.value, args = ref$[ref$.length - 1];
-  origin = (yield tampax_parse(yaml_text, args, info.configfile));
+update = function*(lconfig, origin, info){
+  var vout, gconfig, ref$, log, buildname;
   vout = V.def.auth(origin, {
     def: {},
     user: {},
@@ -717,6 +894,12 @@ update = function*(lconfig, yaml_text, info){
   }
   gconfig = vout.value;
   ref$ = create_logger(info, gconfig), lconfig = ref$[0], log = ref$[1], buildname = ref$[2];
+  if (info.options.concat === 3) {
+    emphasize.then(function(pod){
+      return l(pod.emphasize.highlightAuto(j(lconfig)).value);
+    });
+    return 'disp';
+  }
   if (info.options.watch_config_file) {
     lconfig.watch.unshift(info.configfile);
   }
@@ -1105,32 +1288,25 @@ ms_create_watch = function*(lconfig, info, log){
   return ms.drain();
 };
 restart = function*(info, log){
-  var msg, yaml_text, E, gconfig, lconfig, defarg, vari;
+  var msg, ref$, yaml_text, mods, E, gconfig, lconfig;
   msg = lit([info.configfile + "", " changed, restarting watch"], [c.warn, c.er1]);
   log.normal('err', msg);
   try {
-    yaml_text = modyaml(info);
+    ref$ = modyaml(info), yaml_text = ref$[0], mods = ref$[1];
   } catch (e$) {
     E = e$;
     print.failed_in_mod_yaml(filename, E);
     return;
   }
-  gconfig = (yield tampax_parse(yaml_text, info.cmdargs, info.configfile));
+  gconfig = (yield tampax_parse(yaml_text, mods, info.configfile));
   if (gconfig === 'error.validator.tampaxparsing') {
     return;
   }
   if (info.cmdname) {
-    lconfig = gconfig[info.cmdname];
-    defarg = lconfig.defarg;
+    return lconfig = gconfig[info.cmdname];
   } else {
-    lconfig = gconfig;
-    defarg = gconfig.defarg;
+    return lconfig = gconfig;
   }
-  vari = (yield* update(lconfig, yaml_text, info));
-  if (vari === 'error') {
-    return;
-  }
-  return lconfig = vari[0], log = vari[1], vari;
 };
 V.CONF = be.known.obj.on('rsync', V.rsync.init).on('ssh', V.ssh).cont(organize_rsync).and(V.rsync.throw_if_error).err(function(message, path){
   var info, topmsg, loc, Error, F;
@@ -1160,50 +1336,28 @@ check_conf_file = function(conf, info){
   return sortir.error;
 };
 get_all = function*(info){
-  var yaml_text, E, yjson, found, lconfig, vari, log;
+  var ref$, yaml_text, mods, doc, E, yjson, lconfig, concat;
   try {
-    yaml_text = modyaml(info);
-    if (info.options.edit) {
-      fs.writeFileSync(info.configfile, yaml_text);
-      return;
-    }
+    ref$ = modyaml(info), yaml_text = ref$[0], mods = ref$[1], doc = ref$[2];
   } catch (e$) {
     E = e$;
     print.failed_in_mod_yaml(info.configfile, E);
     return;
   }
-  yjson = (yield tampax_parse(yaml_text, info.cmdargs, info.configfile));
-  if (yjson === 'error.validator.tampaxparsing') {
+  if (info.options.edit) {
+    fs.writeFileSync(info.configfile, yaml_text);
     return;
   }
+  return;
+  yjson = sortir[0], lconfig = sortir[1];
   if (info.options.list) {
     exec_list_option(yjson, info);
     return;
   }
-  if (info.cmdname) {
-    if (global_data.selected_keys.set.has(info.cmdname)) {
-      print.in_selected_key(info.cmdname, info.cmdline);
-      return;
-    }
-    found = yjson[info.cmdname];
-    if (!found) {
-      print.could_not_find_custom_cmd(info.cmdname);
-      return;
-    }
-    lconfig = yjson[info.cmdname];
-  } else {
-    lconfig = yjson;
+  concat = info.options.concat;
+  if (concat === 1 || concat === 2) {
+    exec_cat_option(yaml_text, concat);
   }
-  vari = (yield* update(lconfig, yaml_text, info));
-  if (vari === 'error') {
-    return;
-  }
-  lconfig = vari[0], log = vari[1];
-  log.dry('err', metadata.version);
-  return most.generate(ms_create_watch, lconfig, info, log).recoverWith(function(sig){
-    resolve_signal(sig, log, info);
-    return most.empty();
-  }).drain();
 };
 main = function(cmd_data){
   return function(CONF){
@@ -1243,6 +1397,7 @@ main = function(cmd_data){
     y$.no_watch = cmd_data.no_watch.count();
     y$.silent = silent;
     y$.edit = edit;
+    y$.concat = concatenate;
     y$.project = project_name;
     y$.ssh = CONF.ssh;
     y$.rsync = CONF.rsync;

@@ -7,11 +7,13 @@
 
 {read-json,most,j,exec,chokidar,most_create,fs,metadata,optionParser,tampax,readline} = com
 
-{dotpat,spawn,yaml,compare_version,boxen} = com
+{dotpat,spawn,yaml,compare_version,boxen,emphasize,child_process} = com
 
 {l,z,zj,j,R,lit,c,wait,noop} = com.hoplon.utils
 
 be = com.hoplon.types
+
+cp = child_process
 
 homedir = (require \os).homedir!
 
@@ -42,6 +44,8 @@ cmd_data.addOption \n,'no-watch',null,\no_watch
 cmd_data.addOption \s,'silent',null,\silent
 
 #--------------------------------------------
+
+cmd_data.addOption \c,'cat',null,\cat
 
 cmd_data.addOption \e,'edit',null,\edit
 
@@ -147,7 +151,6 @@ init = ->*
 
     edit_config_file = true
 
-
   if (((epoc - lastchecktime)) > time_in_seconds)
 
     raw = exec "npm view #{metadata.name}"
@@ -213,6 +216,12 @@ if (cmd_data.help.count!) > 0
 
       -w --watch-config-file     restart on config file change
 
+      -c --cat                   dump the output of the current #{CONFIG_FILE_NAME} being used
+
+      -cc                        same as -c but with comments
+
+      -ccc                       show raw json for final process state
+
       -l --list                  list all user commands
 
       -m --auto-make-directory   make remote directory if it doesn't exist ( with user permission )
@@ -248,13 +257,23 @@ silent = cmd_data.silent.count!
 
 edit = cmd_data.edit.count!
 
+concatenate = cmd_data.cat.count!
+
 if (cmd_data.version.count! > 0)
 
   l c.er1 "[#{metadata.name}] version #{metadata.version}"
 
   return
 
-isvar = R.test /^[\.\w]+=/
+isvar = R.test /^[\.\w\/]+=/
+
+check_if_number = (str_data) ->
+
+  isnum = Number str_data
+
+  if not (isnum === NaN) then return isnum
+
+  return str_data
 
 vars = rest
 |> R.filter isvar
@@ -262,35 +281,10 @@ vars = rest
   R.split '='
   R.over do
     R.lensIndex 0
-    R.pipe do
-      R.split "/"
-      (key) ->
-
-        if key.length is 1
-
-          name = key[0]
-
-          if not global_data.selected_keys.set.has name
-
-            key.unshift "global"
-
-          return key
-
-        key
-
+    R.split "/"
   R.over do
     R.lensIndex 1
-    (str_data) ->
-
-      switch str_data
-      | \True,\true   => return true
-      | \False,\false =>  return false
-
-      isnum = parseFloat str_data
-
-      if not (isnum === NaN) then return isnum
-
-      return str_data
+    check_if_number
 
 args = R.reject isvar,rest
 
@@ -300,123 +294,9 @@ args = R.reject isvar,rest
 
 # vars = [ [ 'file', 'changelog.md' ] ]
 
-#-------------[looking for '.remotemon.yaml']---------------
-
-modyaml = (info) ->
-
-  data = info.configfile |> fs.readFileSync |> R.toString
-
-  doc = yaml.parseDocument data
-
-  vars = info.vars
-
-  for [key,value] in vars
-
-    doc.setIn key,value
-
-  String doc
-
-nPromise = (f) -> new Promise f
-
-rmdef = R.reject (x) -> global_data.selected_keys.set.has x
-
-only_str = be.str.cont (str) -> " - " + str
-
-.or be.arr.cont (arr) ->
-
-  fin  = ""
-
-  for I in arr
-
-    fin += "\n    - " + I
-
-  fin
-
-.fix ""
-
-.wrap!
-
-function exec_list_option yjson,info
-
-  l lit ['> FILE ',info.configfile],[c.warn,c.pink]
-
-  keys = Object.keys yjson
-
-  user_ones = rmdef keys
-
-  if user_ones.length is 0
-
-    l lit ["  --- ","< EMPTY >"," ---"],[c.pink,c.warn,c.pink]
-
-  for I from 0 til user_ones.length
-
-    name = user_ones[I]
-
-    des = only_str yjson[name].description
-
-    l lit [" • ",name,des],[c.warn,c.ok,null]
-
-
-# exec_list_option (alldata)
-
-tampax_parse = (yaml_text,cmdargs,filename) ->
-
-  (resolve,reject) <- nPromise
-
-  (err,rawjson) <- tampax.yamlParseString yaml_text,[...cmdargs]
-
-  if err
-
-    print.failed_in_tampax_parsing filename,err
-
-    resolve \error.validator.tampaxparsing
-
-    return
-
-  resolve rawjson
-
 V = {}
 
-# ----------------------------------------
-
-mergeArray = (deflength,def,arr) ->
-
-  [...,tail] = def
-
-  if tail is Infinity
-
-    len =  def.length - 1
-
-    rest = arr.splice len,arr.length
-
-    if rest.length > 0
-
-      rest =  [rest.join " "]
-
-    arr = [...arr,...rest]
-
-    def[len] = ''
-
-
-  fin = []
-
-  for I from 0 til deflength
-
-    if (arr[I] is undefined) and (def[I] is undefined)
-
-      break
-
-    else if (arr[I] is undefined)
-
-      fin[I] = def[I]
-
-    else
-
-      fin[I] = arr[I]
-
-  fin
-
-# ----------------------------------------
+#-------------[looking for '.remotemon.yaml']---------------
 
 defarg_main = be.undefnull.cont (...,state)-> [\arr,state.cmdargs.length,[]]
 
@@ -491,6 +371,386 @@ V.defarg = defarg_main
 
 # ----------------------------------------
 
+san_var = (str) ->
+
+  try 
+
+    sortir = JSON.parse str
+
+    return sortir
+
+  catch
+
+    return {}
+
+san_inpwd =  be.bool.fix false
+.wrap!
+
+
+rm_empty_lines =  R.pipe do
+
+  do
+
+    (str) <- R.filter
+
+    if str.length is 0 then return false
+
+    else return true
+
+san_user_script = (lin) ->
+
+  lin = rm_empty_lines lin
+
+  todisp = R.join '\n' <| R.init lin
+
+  toexit = R.last lin
+
+  [todisp,toexit]
+
+run_script = (str,inpwd,project,path) ->
+
+  lines = str.split '\n'
+
+  sp = (lines[0].split " ")
+
+  interpreter = sp[sp.length - 1]
+
+  lines.unshift!
+
+  script = lines.join "\n"
+
+  cmd = script.replace /"/g,'\\"'
+
+  cwd = if inpwd then undefined else project
+
+  stdin = "#{interpreter} <<<\"#{cmd}\""
+
+  sortir = cp.spawnSync do
+    stdin
+    []
+    {
+      shell:'bash'
+      windowsVerbatimArguments:true
+      cwd:cwd
+    }
+
+  err_msg = sortir.stderr.toString!
+
+  if (err_msg.length > 0)
+
+    print.error_in_user_script err_msg,path
+
+  user_lines = (sortir.stdout.toString!).split "\n"
+
+  [to_disp,to_exit] = san_user_script user_lines
+
+  process.stdout.write to_disp
+
+  return to_exit
+
+T = {}
+
+T.yaml_map = do
+
+  (gv) <- be.obj.and 
+
+  props = Object.getOwnPropertyNames gv
+
+  c = ['schema','items','range']
+
+  not ((R.without props,c).length)
+
+loop_yaml_map = (yaml_map,pwd,project) !->
+
+  for {key,value} in yaml_map.items
+
+    if ((T.yaml_map.auth value).continue)
+
+      loop_yaml_map value,pwd,project
+
+    else if ((typeof value.value) is \string)
+
+      inner_value = value.value
+
+      to_replace = run_script inner_value,pwd,project
+
+      value.value = to_replace
+
+
+get_all_script_paths = (obj,path = [],hist = []) ->
+
+  if (be.obj.auth obj).error then return []
+
+  for key,value of obj
+
+    switch R.type value
+
+    | \Object =>
+
+      get_all_script_paths value,[...path,key],hist
+
+    | \String =>
+
+      str = value
+
+      lines = str.split '\n'
+
+      if (lines.length > 1) and ((str[0] + str[1]) is "#!")
+
+        hist.push [...path,key]
+
+  hist
+
+run_global_var_script = (yjson,doc,info) ->*
+
+  cmdname = info.cmdname
+
+  project = info.options.project
+
+  inpwd = san_inpwd yjson.inpwd
+
+  all_script_path = get_all_script_paths yjson.var,[\var]
+
+  for path in all_script_path
+
+    script = R.path path,yjson
+
+    to_replace = run_script script,inpwd,project,path
+
+    doc.setIn path,to_replace
+
+  if cmdname
+
+    if global_data.selected_keys.set.has cmdname
+
+      print.in_selected_key cmdname,info.cmdline
+
+      return \error
+
+    found = yjson[cmdname]
+
+    if not found
+
+      print.could_not_find_custom_cmd cmdname
+
+      return \error
+
+    if found.inpwd
+
+      inpwd = inpwd
+
+    all_script_path = get_all_script_paths do
+      yjson[cmdname].var
+      [cmdname,\var]
+
+    for path in all_script_path
+
+      script = R.path path,yjson
+
+      to_replace = run_script script,inpwd,project,path
+
+      doc.setIn path,to_replace
+
+  String doc
+
+modyaml = (info) ->
+
+  data = info.configfile |> fs.readFileSync |> R.toString
+
+  doc = yaml.parseDocument data
+
+  docJson = yaml.parse data
+
+  globalVar = docJson.var
+
+  cmdname = info.cmdname
+
+  if cmdname is undefined
+
+    for [key,value] in info.vars
+
+      if (key[0] is \var)
+
+        key.unshift!
+
+      doc.setIn [\var,...key],value
+
+    v_path = [\var]
+
+    d_path = [\defarg]
+
+  else
+
+    for [key,value] in info.vars
+
+      if (key[0] is \var)
+
+        init = []
+
+      else
+
+        init = [cmdname,'var']
+
+      p = [...init,...key]
+
+      doc.setIn p,value
+
+    v_path = [cmdname,\var]
+
+    d_path = [cmdname,\defarg]
+
+  defargdoc = eval String (doc.getIn d_path)
+
+  sortir = (V.defarg.auth defargdoc,info)
+
+  if (sortir.error) then throw "command line arguments could not be replaced in .defargs"
+
+  vars = san_var String doc.getIn v_path
+
+  nl = /\n/g
+
+  for key,value of vars
+
+    if (value.match nl)
+
+      vars[key] = ''
+
+  arr = sortir.value[2]
+
+  merged = R.mergeDeepLeft arr,vars
+
+  z merged
+
+  [(String doc),merged,doc]
+
+nPromise = (f) -> new Promise f
+
+rmdef = R.reject (x) -> global_data.selected_keys.set.has x
+
+# --- { only_str } for displaying list
+
+only_str = be.str.cont (str) -> " - " + str
+
+.or be.arr.cont (arr) ->
+
+  fin  = ""
+
+  for I in arr
+
+    fin += "\n    - " + I
+
+  fin
+
+.fix ""
+
+.wrap!
+
+# exec_list_option (alldata)
+
+function exec_list_option yjson,info
+
+  l lit ['> FILE ',info.configfile],[c.warn,c.pink]
+
+  keys = Object.keys yjson
+
+  user_ones = rmdef keys
+
+  if user_ones.length is 0
+
+    l lit ["  --- ","< EMPTY >"," ---"],[c.pink,c.warn,c.pink]
+
+  for I from 0 til user_ones.length
+
+    name = user_ones[I]
+
+    des = only_str yjson[name].description
+
+    l lit [" • ",name,des],[c.warn,c.ok,null]
+
+function exec_cat_option yaml_text,concat_count
+
+  hash_first = RegExp '^#'
+
+  pod <- emphasize.then
+
+  lines = yaml_text.split "\n"
+
+  interm = []
+
+  switch concat_count
+
+  | 1 =>
+
+    for I in lines
+      if not (hash_first.exec I) and (I.length isnt 0)
+        interm.push I
+
+  | 2 =>
+
+    interm = lines
+
+  text = interm.join '\n'
+
+  (pod.emphasize.highlightAuto text).value
+
+
+tampax_parse = (yaml_text,cmdargs,filename) ->
+
+  (resolve,reject) <- nPromise
+
+  (err,rawjson) <- tampax.yamlParseString yaml_text,cmdargs
+
+  if err
+
+    print.failed_in_tampax_parsing filename,err
+
+    resolve \error.validator.tampaxparsing
+
+    return
+
+  resolve rawjson
+
+# ----------------------------------------
+
+mergeArray = (deflength,def,arr) ->
+
+  [...,tail] = def
+
+  if tail is Infinity
+
+    len =  def.length - 1
+
+    rest = arr.splice len,arr.length
+
+    if rest.length > 0
+
+      rest =  [rest.join " "]
+
+    arr = [...arr,...rest]
+
+    def[len] = ''
+
+
+  fin = []
+
+  for I from 0 til deflength
+
+    if (arr[I] is undefined) and (def[I] is undefined)
+
+      break
+
+    else if (arr[I] is undefined)
+
+      fin[I] = def[I]
+
+    else
+
+      fin[I] = arr[I]
+
+  fin
+
+#----------------------------------------
+
 unu = be.undefnull.cont void
 
 # ----------------------------------------
@@ -538,7 +798,7 @@ V.strlist.false       = V.strlist false
 
 #--------------------------------------------------------------
 
-is_false = (x) ->
+is_false = (x) -> 
 
   if (x is false) then return true
 
@@ -865,7 +1125,7 @@ dangling_colon = (arr) ->
 
 V.ssh = be.obj
 
-.on \option, be.str.or be.undefnull.cont void
+.on \option, be.str.or unu
 
 .on \startwith, do
   be.arr.map be.str
@@ -913,6 +1173,14 @@ handle_ssh = (user,def) !->
 
 #----------------------------------------------------
 
+V.vars = be.obj.or be.undefnull.cont -> {}
+
+.cont (ob,...,info)-> 
+
+  R.mergeDeepLeft ob,info.origin.var
+
+#----------------------------------------------------
+
 V.user = be.obj
 
 .err "custom user defined task, has to be object."
@@ -947,6 +1215,8 @@ V.user = be.obj
 
 .on \ssh                         , V.user_ssh
 
+.on \var                         , V.vars
+
 #----------------------------------------------------
 
 V.def = be.obj
@@ -955,11 +1225,13 @@ V.def = be.obj
 
 .on [\inpwd,\silent]             , be.bool.or be.undefnull.cont false
 
-.on \verbose                     , be.num.or unu.cont 0
+.on \verbose                     , be.num.or be.undefnull.cont 0
 
 .on \initialize                  , be.bool.or be.undefnull.cont true
 
 .on \watch                       , V.watch.def
+
+.on \var                         , be.obj.or be.undefnull.cont -> {}
 
 .on \ignore                      , V.ignore.def
 
@@ -1020,7 +1292,7 @@ V.def = be.obj
 
   {user,def}
 
-.err (message,path,...,{info}) !->
+.err (message,path,val,...,{info}) !->
 
   sortir = be.flatro message
 
@@ -1100,15 +1372,7 @@ create_logger = (info,gconfig) ->
 
   [lconfig,log,buildname]
 
-update = (lconfig,yaml_text,info)->*
-
-  defarg = V.defarg.auth lconfig.defarg,info
-
-  if defarg.error then return \error
-
-  [...,args] = defarg.value
-
-  origin = yield tampax_parse yaml_text,args,info.configfile
+update = (lconfig,origin,info)->*
 
   vout = V.def.auth do
     origin
@@ -1119,6 +1383,14 @@ update = (lconfig,yaml_text,info)->*
   gconfig = vout.value
 
   [lconfig,log,buildname] = create_logger info,gconfig
+
+  if (info.options.concat is 3)
+
+    do
+      pod <- emphasize.then
+      l (pod.emphasize.highlightAuto j lconfig).value
+
+    return \disp
 
   if info.options.watch_config_file
 
@@ -1662,7 +1934,7 @@ ms_create_watch = (lconfig,info,log) ->*
 
   ms.drain!
 
-restart = (info,log)->*
+restart = (info,log) ->*
 
   msg = lit do
     ["#{info.configfile}"," changed, restarting watch"]
@@ -1672,7 +1944,7 @@ restart = (info,log)->*
 
   try
 
-    yaml_text = modyaml info
+    [yaml_text,mods] = modyaml info
 
   catch E
 
@@ -1680,7 +1952,7 @@ restart = (info,log)->*
 
     return
 
-  gconfig = yield tampax_parse yaml_text,info.cmdargs,info.configfile
+  gconfig = yield tampax_parse yaml_text,mods,info.configfile
 
   if (gconfig is \error.validator.tampaxparsing) then return
 
@@ -1688,23 +1960,18 @@ restart = (info,log)->*
 
     lconfig = gconfig[info.cmdname]
 
-    defarg  = lconfig.defarg
-
   else
 
     lconfig = gconfig
 
-    defarg  = gconfig.defarg
+  # vari = yield from update lconfig,yaml_text,info
 
-  vari = yield from update lconfig,yaml_text,info
+  # if (vari in [\error,\disp]) then return
 
-  if (vari is \error) then return
-
-  [lconfig,log] = vari
+  # [lconfig,log] = vari
 
   # most.generate ms_create_watch,lconfig,info,log
   # .drain!
-
 
 V.CONF = be.known.obj
 
@@ -1742,18 +2009,11 @@ check_conf_file = (conf,info) ->
 
   sortir.error
 
-
 get_all = (info) ->*
 
   try
 
-    yaml_text = modyaml info
-
-    if info.options.edit
-
-      fs.writeFileSync info.configfile,yaml_text
-
-      return
+    [yaml_text,mods,doc] = modyaml info
 
   catch E
 
@@ -1761,11 +2021,27 @@ get_all = (info) ->*
 
     return
 
-  yjson = yield tampax_parse yaml_text,info.cmdargs,info.configfile
+  if info.options.edit
 
+    fs.writeFileSync info.configfile,yaml_text
 
-  if (yjson is \error.validator.tampaxparsing) then return
+    return
 
+  # init_parse = yield tampax_parse yaml_text,mods,info.configfile
+
+  # if (init_parse is \error.validator.tampaxparsing) then return
+
+  # sortir = yield from run_global_var_script init_parse,doc,info
+
+  # if (sortir is \error) then return
+
+  # yjson = yield tampax_parse sortir,mods,info.configfile
+
+  # zj yjson
+
+  return
+
+  [yjson,lconfig] = sortir
 
   if info.options.list
 
@@ -1773,44 +2049,30 @@ get_all = (info) ->*
 
     return
 
-  if info.cmdname
+  concat = info.options.concat
 
-    if global_data.selected_keys.set.has info.cmdname
+  if concat in [1,2]
 
-        print.in_selected_key info.cmdname,info.cmdline
+    exec_cat_option yaml_text,concat
 
-        return
-
-    found = yjson[info.cmdname]
-
-    if not found
-
-      print.could_not_find_custom_cmd info.cmdname
-
-      return
-
-    lconfig = yjson[info.cmdname]
+    return
 
 
-  else
+  # vari = yield from update lconfig,yjson,info
 
-    lconfig = yjson
+  # if vari in [\error,\disp] then return
 
-  vari = yield from update lconfig,yaml_text,info
+  # [lconfig,log] = vari
 
-  if vari is \error then return
+  # # ---------------------------------------------------------
 
-  [lconfig,log] = vari
+  # log.dry \err,metadata.version
 
-  # ---------------------------------------------------------
-
-  log.dry \err,metadata.version
-
-  most.generate ms_create_watch,lconfig,info,log
-  .recoverWith (sig)->
-    resolve_signal sig,log,info
-    most.empty!
-  .drain!
+  # most.generate ms_create_watch,lconfig,info,log
+  # .recoverWith (sig)->
+  #   resolve_signal sig,log,info
+  #   most.empty!
+  # .drain!
 
 main = (cmd_data) -> (CONF) ->
 
@@ -1875,6 +2137,7 @@ main = (cmd_data) -> (CONF) ->
       ..no_watch            = cmd_data.no_watch.count!
       ..silent              = silent
       ..edit                = edit
+      ..concat              = concatenate
       ..project             = project_name
       ..ssh                 = CONF.ssh
       ..rsync               = CONF.rsync
@@ -1890,4 +2153,6 @@ most.generate init
 .tap main cmd_data
 .recoverWith (E) -> l E.toString!;most.empty!
 .drain!
+
+
 

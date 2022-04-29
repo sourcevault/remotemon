@@ -37,21 +37,21 @@ data.selected_keys = {}
 
   ..arr =
      \ssh
+     \var 
      \pre
-     \inpwd
-     \watch
-     \rsync
+     \inpwd #
+     \watch #
+     \rsync #
      \local
      \final
-     \global
      \ignore
      \defarg
-     \remote
-     \silent
-     \verbose
-     \initialize
-     \remotefold
-     \remotehost
+     \remote 
+     \silent #
+     \verbose #
+     \initialize #
+     \remotefold #
+     \remotehost #
      \description
 
   ..undef =
@@ -64,7 +64,6 @@ data.selected_keys = {}
      # \remote
      # \final
      # \defarg
-     \global
      \ignore
      \silent
      \verbose

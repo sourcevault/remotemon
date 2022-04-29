@@ -33,6 +33,8 @@ com.tampax           = require \tampax
 
 com.yaml             = require \yaml
 
+com.path             = require \path
+
 com.child_process    = child_process
 
 cp                   = child_process
@@ -43,7 +45,12 @@ com.readline         = readline
 
 com.compare_version  = require \../dist/compare.version.js
 
-``var boxen = import('boxen')``
+``
+var boxen = import('boxen')
+var emphasize =  import('emphasize')
+``
+
+com.emphasize        = emphasize
 
 com.boxen            = boxen
 
@@ -76,7 +83,13 @@ com.spawn = (cmd,dir,inpwd) ->
   cp.spawnSync do
     cmd
     []
-    {shell:'bash',stdio:'inherit',windowsVerbatimArguments:true,cwd:cwd}
+    {
+      shell:'bash'
+      stdio:'inherit'
+      windowsVerbatimArguments:true
+      cwd:cwd
+    }
+    # {shell:'sh',stdio:'inherit',windowsVerbatimArguments:true,cwd:cwd}
 
 # ----------------------------------------------------------------------------
 
@@ -263,9 +276,9 @@ print.failed_in_mod_yaml = (filename,E) ->
     ["[#{metadata.name}]"," • parseError •"," unable to read YAML file."]
     [c.warn,c.er3,c.er1]
 
-  l "\n  " + c.er2 filename + "\n"
+  l "\n  " + (c.pink com.path.resolve filename)
 
-  l c.grey E
+  l c.er1 "\n  " + E
 
 
 print.failed_in_tampax_parsing = (filename,E) ->
@@ -274,7 +287,7 @@ print.failed_in_tampax_parsing = (filename,E) ->
     ["[#{metadata.name}]"," • parseError •"," yaml/tampex parsing error."]
     [c.warn,c.er2,c.er1]
 
-  l "\n  " + c.er2 filename + "\n"
+  l "\n  " + (c.pink com.path.resolve filename) + "\n"
 
   l c.grey E
 
@@ -297,12 +310,27 @@ print.in_selected_key = (key,cmd_str) ->
     [c.er2,c.er3]
 
   l lit do
-    ["  .#{key}"," is a selected key, cannot be used as a task name.\n"]
+    ["  #{key}"," is a selected key, cannot be used as a task name.\n"]
     [c.er3,c.warn]
 
   l lit do
     ["  ",(cmd_str.join " ")]
     [null,c.er1]
+
+
+print.error_in_user_script = (err_msg,path) ->
+
+  l lit do
+    ["[#{metadata.name}]"," • cmdFailure •"," error in user script.\n"]
+    [c.er2,c.er3,c.er1]
+
+  l lit do
+    ["  ",(path.join ".")," <-- error here.\n"]
+    [null,c.warn,c.er3]
+
+  
+  process.stdout.write c.grey err_msg
+
 
 # ----------------------------------------------------------------
 

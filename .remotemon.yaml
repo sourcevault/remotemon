@@ -1,4 +1,4 @@
-global:
+var:
   file: us
   proj:
     etc: service
@@ -6,8 +6,7 @@ global:
       - utils
       - next
   sshport: 45
-  first:
-    - verbose
+  first: null
   files:
     - test/opt.yaml
     - null
@@ -36,12 +35,25 @@ local:
 #   - -tt
 # ignore:
 #   - /mnt/c/code/remotemon/.remotemon.yaml
+
 longname:
+  var:
+    file: yellow
+
   verbose: 2
-  # defarg:
-  #   - foo
-  #   - bar
-  #   - paper
+
+  defarg:
+    - foo
+    - [1,[hello world],3]
+    - |-
+      #!/usr/bin/env lsc
+      ls -la
+
+  var:
+    ext: .ls
+
+  # bar
+  # paper
 
   local:
     - echo 'hello world 11'
@@ -50,8 +62,7 @@ longname:
 
 # ytv:
 #   defarg: 1
-#   watch: false
-#   local:
+#   watch: false   local:
 #     - youtube-dl -f 18 {{0}}
 # echo:
 #   verbose: 1

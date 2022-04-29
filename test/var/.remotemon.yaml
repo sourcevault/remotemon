@@ -1,0 +1,22 @@
+var: 
+  ext: &hello1
+    foo: &hello1 |-
+      #! lsc
+      console.log "hello world"
+    bar: 2
+  foo: &hello |-
+    #! lsc
+    console.log "{{1}}"
+
+inpwd: true
+
+longname:
+  defarg: ['hello','world']
+  var:
+    ext: ntfs
+    foo: &hello |-
+      #! lsc
+      console.log 'Japan {{0}} bro'
+  inpwd: true
+  local: 
+    - hello {{foo}}

@@ -6,7 +6,9 @@ TEST_NAME = $(shell ls test | grep ".\(ls\|yaml\)")
 
 # SRC_FILES = ${SRC_NAME:%=--watch src/%} --watch makefile --watch .remotemon.yaml
 
-SRC_FILES = ${SRC_NAME:%=--watch src/%} --watch makefile
+SRC_FILES = ${SRC_NAME:%=--watch src/%} --watch makefile --watch ./test/var/.remotemon.yaml
+
+# SRC_FILES = ${SRC_NAME:%=--watch src/%} --watch makefile 
 
 
 TEST_FILES = ${TEST_NAME:%=--watch test/%}
@@ -16,7 +18,7 @@ MAKEFLAGS += --no-print-directory
 file = test/test.js
 
 pkg:
-	yaml2json src/package.yaml > package.json
+	yaml2json -p src/package.yaml > package.json
 
 
 compile:
@@ -37,7 +39,12 @@ compile:
 # 	remotemon -p router hostapd.status
 
 # 	remotemon -vv longname
-	remotemon -p yt audio https://www.youtube.com/watch\?v\=EZgcSJ6D8cQ
+# 	remotemon -p yt audio https://www.youtube.com/watch\?v\=EZgcSJ6D8cQ
+
+# 	remotemon ext=ex4 remotehost="192.148.92.1"
+
+# 	remotemon -p remotemon/test/var longname foo bar ext=456
+	remotemon -p remotemon/test/var longname
 
 # 	remotemon -c ./test/opt.yaml version.update
 
@@ -51,7 +58,7 @@ compile:
 
 w.compile:
 # 	nodemon  --exec "make compile || exit 1" ${SRC_FILES} ${TEST_FILES}
-	nodemon  --delay 1 --exec "make compile || exit 1" ${SRC_FILES}
+	nodemon  --delay 1 --exec "make compile || exit 1" ${SRC_FILES} 
 
 .ONESHELL:
 SHELL = /bin/bash
