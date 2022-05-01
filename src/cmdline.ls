@@ -371,17 +371,26 @@ V.defarg = defarg_main
 
 # ----------------------------------------
 
-san_var = (str) ->
+san_mappable = (str,type = \obj) ->
 
-  try 
+  try
 
     sortir = JSON.parse str
 
-    return sortir
+    switch R.type sortir
+    | \Array, \Object => return sortir
+    | otherwise =>
+      switch type
+      | \arr => return []
+      | \obj => return {}
 
   catch
 
-    return {}
+    switch type
+    | \arr => return []
+    | \obj => return {}
+
+
 
 san_inpwd =  be.bool.fix false
 .wrap!
@@ -476,30 +485,38 @@ loop_yaml_map = (yaml_map,pwd,project) !->
 
       value.value = to_replace
 
+gs_path = {}
 
-get_all_script_paths = (obj,path = [],hist = []) ->
+  ..loop = null
+  ..main = null
 
-  if (be.obj.auth obj).error then return []
 
-  for key,value of obj
+gs_path.loop = be.obj.alt be.arr
 
-    switch R.type value
+.forEach -> (gs_path.loop.auth ...arguments).continue
 
-    | \Object =>
+.or do
 
-      get_all_script_paths value,[...path,key],hist
+  be.str.and (str) ->
 
-    | \String =>
+    lines = str.split '\n'
 
-      str = value
+    if (lines.length > 1) and ((str[0] + str[1]) is "#!")
 
-      lines = str.split '\n'
+      return true
 
-      if (lines.length > 1) and ((str[0] + str[1]) is "#!")
+    false
 
-        hist.push [...path,key]
+  .tap (str,...,hist) ->
 
-  hist
+    path = []
+
+    for I from 1 til (arguments.length - 1)
+
+      path.unshift arguments[I]
+
+    hist.push path
+
 
 run_global_var_script = (yjson,doc,info) ->*
 
@@ -509,9 +526,13 @@ run_global_var_script = (yjson,doc,info) ->*
 
   inpwd = san_inpwd yjson.inpwd
 
-  all_script_path = get_all_script_paths yjson.var,[\var]
+  vpaths = gs_path.main yjson.var,[\var]
 
-  for path in all_script_path
+  apaths = gs_path.main yjson.defarg,[\defarg]
+
+  apaths.push ...vpaths
+
+  for path in apaths
 
     script = R.path path,yjson
 
@@ -539,11 +560,17 @@ run_global_var_script = (yjson,doc,info) ->*
 
       inpwd = inpwd
 
-    all_script_path = get_all_script_paths do
+    vpaths = gs_path.main do
       yjson[cmdname].var
       [cmdname,\var]
 
-    for path in all_script_path
+    apaths = gs_path.main do
+      yjson[cmdname].defarg
+      [cmdname,\defarg]
+
+    apaths.push ...vpaths
+
+    for path in apaths
 
       script = R.path path,yjson
 
@@ -553,17 +580,58 @@ run_global_var_script = (yjson,doc,info) ->*
 
   String doc
 
-modyaml = (info) ->
+pathset_to_blank = (obj,path) ->
 
-  data = info.configfile |> fs.readFileSync |> R.toString
+  ou = obj
 
-  doc = yaml.parseDocument data
+  for I from 0 til ((path.length) - 1)
 
-  docJson = yaml.parse data
+    ou = ou[path[I]]
 
-  globalVar = docJson.var
+  ou[path[path.length - 1]] = ''
+
+  obj
+
+make_script_blank = (obj) !->
+
+  mpath = gs_path.main obj
+
+  for path in mpath
+
+    pathset_to_blank obj,path
+
+
+
+gs_path.main = (obj,path = []) ->
+
+  hist = []
+
+  gs_path.loop.auth obj,hist
+
+  sortir = []
+
+  for I in hist
+
+    sortir.push [...path,...I]
+
+  sortir
+
+get_path = (doc,path) ->
+
+  doc.getIn path
+  |> String 
+  |> JSON.parse _,path
+  |> gs_path.main _,path
+
+update_doc = (info,doc) ->
 
   cmdname = info.cmdname
+
+  path = {}
+    ..G_var    = []
+    ..G_defarg = []
+    ..L_var    = []
+    ..L_defarg = []
 
   if cmdname is undefined
 
@@ -578,6 +646,10 @@ modyaml = (info) ->
     v_path = [\var]
 
     d_path = [\defarg]
+
+    path.L_var = get_path doc,v_path
+
+    path.L_defarg = get_path doc,d_path
 
   else
 
@@ -599,29 +671,87 @@ modyaml = (info) ->
 
     d_path = [cmdname,\defarg]
 
-  defargdoc = eval String (doc.getIn d_path)
+    path.G_var = get_path doc,[\var]
 
-  sortir = (V.defarg.auth defargdoc,info)
+    path.G_defarg = get_path doc,[\defarg]
 
-  if (sortir.error) then throw "command line arguments could not be replaced in .defargs"
+    path.L_var = get_path doc,v_path
 
-  vars = san_var String doc.getIn v_path
+    path.L_defarg = get_path doc,d_path
 
-  nl = /\n/g
+  [v_path,d_path,path]
 
-  for key,value of vars
+modyaml = (info) ->*
 
-    if (value.match nl)
+  configfile = info.configfile
 
-      vars[key] = ''
+  data = configfile |> fs.readFileSync |> R.toString
 
-  arr = sortir.value[2]
+  doc = yaml.parseDocument data
 
-  merged = R.mergeDeepLeft arr,vars
+  [v_path,d_path,a_path] = update_doc info,doc
 
-  z merged
+  json = doc.toJS!
 
-  [(String doc),merged,doc]
+  defargdoc = R.view (R.lensPath d_path),json
+
+  defarg = V.defarg.auth defargdoc,info
+
+  if defarg.error then return [\error.defarg]
+
+  arr = defarg.value[2]
+
+  l_vars = R.view (R.lensPath v_path),json
+
+  g_vars = R.view (R.lensPath [\var]),json
+
+  merged = do
+    R.mergeDeepLeft arr,l_vars
+    |> R.mergeDeepLeft _,json
+
+  make_script_blank merged
+
+  project = info.options.project
+
+  for path in a_path.L_defarg
+
+    doc.getIn path
+    |> tampax _,merged
+    |> run_script _,inpwd,project,path
+    |> doc.setIn path,_
+
+  # z String doc
+  
+
+
+  # init_parse = yield tampax_parse do
+  #   String doc
+  #   merged
+  #   configfile
+
+  # zj merged
+
+  # if (init_parse is \error.validator.tampaxparsing) then return [\error.validator.tampaxparsing]
+
+  # final_yaml = yield from run_global_var_script init_parse,doc,info
+
+  # z String doc.getIn v_path
+
+  # z final_yaml
+
+  # z String doc.getIn d_path
+
+
+
+  # yield tampax_parse final_yaml,merged
+
+  # z final_yaml
+
+
+
+  # [(String doc),merged,doc]
+
+  []
 
 nPromise = (f) -> new Promise f
 
@@ -701,6 +831,8 @@ tampax_parse = (yaml_text,cmdargs,filename) ->
   (err,rawjson) <- tampax.yamlParseString yaml_text,cmdargs
 
   if err
+
+    err = (err.split "\n")[0]
 
     print.failed_in_tampax_parsing filename,err
 
@@ -1944,7 +2076,7 @@ restart = (info,log) ->*
 
   try
 
-    [yaml_text,mods] = modyaml info
+    # [yaml_text,mods] = modyaml info
 
   catch E
 
@@ -2011,33 +2143,19 @@ check_conf_file = (conf,info) ->
 
 get_all = (info) ->*
 
-  try
+  sortir = yield from modyaml info
 
-    [yaml_text,mods,doc] = modyaml info
-
-  catch E
-
-    print.failed_in_mod_yaml info.configfile,E
-
+  switch sortir[0]
+  | \error.validator.tampaxparsing, \error.defarg =>
     return
+
+  [yaml_text,mods,doc] = sortir
 
   if info.options.edit
 
     fs.writeFileSync info.configfile,yaml_text
 
     return
-
-  # init_parse = yield tampax_parse yaml_text,mods,info.configfile
-
-  # if (init_parse is \error.validator.tampaxparsing) then return
-
-  # sortir = yield from run_global_var_script init_parse,doc,info
-
-  # if (sortir is \error) then return
-
-  # yjson = yield tampax_parse sortir,mods,info.configfile
-
-  # zj yjson
 
   return
 

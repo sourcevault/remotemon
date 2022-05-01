@@ -44,7 +44,8 @@ compile:
 # 	remotemon ext=ex4 remotehost="192.148.92.1"
 
 # 	remotemon -p remotemon/test/var longname foo bar ext=456
-	remotemon -p remotemon/test/var longname
+# 	remotemon -p remotemon/test/var longname foo
+	remotemon -p remotemon/test/var longname ext=foobar
 
 # 	remotemon -c ./test/opt.yaml version.update
 

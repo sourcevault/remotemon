@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, emphasize, child_process, l, z, zj, R, lit, c, wait, noop, be, cp, homedir, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_var, san_inpwd, rm_empty_lines, san_user_script, run_script, T, loop_yaml_map, get_all_script_paths, run_global_var_script, modyaml, nPromise, rmdef, only_str, tampax_parse, mergeArray, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, handle_ssh, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, emphasize, child_process, l, z, zj, R, lit, c, wait, noop, be, cp, homedir, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_mappable, san_inpwd, rm_empty_lines, san_user_script, run_script, T, loop_yaml_map, x$, gs_path, run_global_var_script, pathset_to_blank, make_script_blank, get_path, update_doc, modyaml, nPromise, rmdef, only_str, tampax_parse, mergeArray, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, handle_ssh, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
 dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, compare_version = com.compare_version, boxen = com.boxen, emphasize = com.emphasize, child_process = com.child_process;
@@ -207,14 +207,31 @@ V.defarg = defarg_main.cont(function(data){
   }());
   return F(msg, path, info.cmd_filename);
 });
-san_var = function(str){
+san_mappable = function(str, type){
   var sortir, e;
+  type == null && (type = 'obj');
   try {
     sortir = JSON.parse(str);
-    return sortir;
+    switch (R.type(sortir)) {
+    case 'Array':
+    case 'Object':
+      return sortir;
+    default:
+      switch (type) {
+      case 'arr':
+        return [];
+      case 'obj':
+        return {};
+      }
+    }
   } catch (e$) {
     e = e$;
-    return {};
+    switch (type) {
+    case 'arr':
+      return [];
+    case 'obj':
+      return {};
+    }
   }
 };
 san_inpwd = be.bool.fix(false).wrap();
@@ -276,37 +293,39 @@ loop_yaml_map = function(yaml_map, pwd, project){
     }
   }
 };
-get_all_script_paths = function(obj, path, hist){
-  var key, value, str, lines;
-  path == null && (path = []);
-  hist == null && (hist = []);
-  if (be.obj.auth(obj).error) {
-    return [];
+x$ = gs_path = {};
+x$.loop = null;
+x$.main = null;
+gs_path.loop = be.obj.alt(be.arr).forEach(function(){
+  var ref$;
+  return (ref$ = gs_path.loop).auth.apply(ref$, arguments)['continue'];
+}).or(be.str.and(function(str){
+  var lines;
+  lines = str.split('\n');
+  if (lines.length > 1 && str[0] + str[1] === "#!") {
+    return true;
   }
-  for (key in obj) {
-    value = obj[key];
-    switch (R.type(value)) {
-    case 'Object':
-      get_all_script_paths(value, arrayFrom$(path).concat([key]), hist);
-      break;
-    case 'String':
-      str = value;
-      lines = str.split('\n');
-      if (lines.length > 1 && str[0] + str[1] === "#!") {
-        hist.push(arrayFrom$(path).concat([key]));
-      }
-    }
+  return false;
+}).tap(function(str){
+  var hist, path, i$, to$, I;
+  hist = arguments[arguments.length - 1];
+  path = [];
+  for (i$ = 1, to$ = arguments.length - 1; i$ < to$; ++i$) {
+    I = i$;
+    path.unshift(arguments[I]);
   }
-  return hist;
-};
+  return hist.push(path);
+}));
 run_global_var_script = function*(yjson, doc, info){
-  var cmdname, project, inpwd, all_script_path, i$, len$, path, script, to_replace, found;
+  var cmdname, project, inpwd, vpaths, apaths, i$, len$, path, script, to_replace, found;
   cmdname = info.cmdname;
   project = info.options.project;
   inpwd = san_inpwd(yjson.inpwd);
-  all_script_path = get_all_script_paths(yjson['var'], ['var']);
-  for (i$ = 0, len$ = all_script_path.length; i$ < len$; ++i$) {
-    path = all_script_path[i$];
+  vpaths = gs_path.main(yjson['var'], ['var']);
+  apaths = gs_path.main(yjson.defarg, ['defarg']);
+  apaths.push.apply(apaths, vpaths);
+  for (i$ = 0, len$ = apaths.length; i$ < len$; ++i$) {
+    path = apaths[i$];
     script = R.path(path, yjson);
     to_replace = run_script(script, inpwd, project, path);
     doc.setIn(path, to_replace);
@@ -324,9 +343,11 @@ run_global_var_script = function*(yjson, doc, info){
     if (found.inpwd) {
       inpwd = inpwd;
     }
-    all_script_path = get_all_script_paths(yjson[cmdname]['var'], [cmdname, 'var']);
-    for (i$ = 0, len$ = all_script_path.length; i$ < len$; ++i$) {
-      path = all_script_path[i$];
+    vpaths = gs_path.main(yjson[cmdname]['var'], [cmdname, 'var']);
+    apaths = gs_path.main(yjson[cmdname].defarg, [cmdname, 'defarg']);
+    apaths.push.apply(apaths, vpaths);
+    for (i$ = 0, len$ = apaths.length; i$ < len$; ++i$) {
+      path = apaths[i$];
       script = R.path(path, yjson);
       to_replace = run_script(script, inpwd, project, path);
       doc.setIn(path, to_replace);
@@ -334,15 +355,48 @@ run_global_var_script = function*(yjson, doc, info){
   }
   return String(doc);
 };
-modyaml = function(info){
-  var data, doc, docJson, globalVar, cmdname, i$, ref$, len$, ref1$, key, value, v_path, d_path, init, p, defargdoc, sortir, vars, nl, arr, merged;
-  data = R.toString(
-  fs.readFileSync(
-  info.configfile));
-  doc = yaml.parseDocument(data);
-  docJson = yaml.parse(data);
-  globalVar = docJson['var'];
+pathset_to_blank = function(obj, path){
+  var ou, i$, to$, I;
+  ou = obj;
+  for (i$ = 0, to$ = path.length - 1; i$ < to$; ++i$) {
+    I = i$;
+    ou = ou[path[I]];
+  }
+  ou[path[path.length - 1]] = '';
+  return obj;
+};
+make_script_blank = function(obj){
+  var mpath, i$, len$, path;
+  mpath = gs_path.main(obj);
+  for (i$ = 0, len$ = mpath.length; i$ < len$; ++i$) {
+    path = mpath[i$];
+    pathset_to_blank(obj, path);
+  }
+};
+gs_path.main = function(obj, path){
+  var hist, sortir, i$, len$, I;
+  path == null && (path = []);
+  hist = [];
+  gs_path.loop.auth(obj, hist);
+  sortir = [];
+  for (i$ = 0, len$ = hist.length; i$ < len$; ++i$) {
+    I = hist[i$];
+    sortir.push(arrayFrom$(path).concat(arrayFrom$(I)));
+  }
+  return sortir;
+};
+get_path = function(doc, path){
+  return gs_path.main(JSON.parse(String(
+  doc.getIn(path)), path), path);
+};
+update_doc = function(info, doc){
+  var cmdname, x$, path, i$, ref$, len$, ref1$, key, value, v_path, d_path, init, p;
   cmdname = info.cmdname;
+  x$ = path = {};
+  x$.G_var = [];
+  x$.G_defarg = [];
+  x$.L_var = [];
+  x$.L_defarg = [];
   if (cmdname === undefined) {
     for (i$ = 0, len$ = (ref$ = info.vars).length; i$ < len$; ++i$) {
       ref1$ = ref$[i$], key = ref1$[0], value = ref1$[1];
@@ -353,6 +407,8 @@ modyaml = function(info){
     }
     v_path = ['var'];
     d_path = ['defarg'];
+    path.L_var = get_path(doc, v_path);
+    path.L_defarg = get_path(doc, d_path);
   } else {
     for (i$ = 0, len$ = (ref$ = info.vars).length; i$ < len$; ++i$) {
       ref1$ = ref$[i$], key = ref1$[0], value = ref1$[1];
@@ -366,24 +422,34 @@ modyaml = function(info){
     }
     v_path = [cmdname, 'var'];
     d_path = [cmdname, 'defarg'];
+    path.G_var = get_path(doc, ['var']);
+    path.G_defarg = get_path(doc, ['defarg']);
+    path.L_var = get_path(doc, v_path);
+    path.L_defarg = get_path(doc, d_path);
   }
-  defargdoc = eval(String(doc.getIn(d_path)));
-  sortir = V.defarg.auth(defargdoc, info);
-  if (sortir.error) {
-    throw "command line arguments could not be replaced in .defargs";
+  return [v_path, d_path, path];
+};
+modyaml = function*(info){
+  var configfile, data, doc, ref$, v_path, d_path, a_path, json, defargdoc, defarg, arr, l_vars, g_vars, merged;
+  configfile = info.configfile;
+  data = R.toString(
+  fs.readFileSync(
+  configfile));
+  doc = yaml.parseDocument(data);
+  ref$ = update_doc(info, doc), v_path = ref$[0], d_path = ref$[1], a_path = ref$[2];
+  json = doc.toJS();
+  defargdoc = R.view(R.lensPath(d_path), json);
+  defarg = V.defarg.auth(defargdoc, info);
+  if (defarg.error) {
+    return ['error.defarg'];
   }
-  vars = san_var(String(doc.getIn(v_path)));
-  nl = /\n/g;
-  for (key in vars) {
-    value = vars[key];
-    if (value.match(nl)) {
-      vars[key] = '';
-    }
-  }
-  arr = sortir.value[2];
-  merged = R.mergeDeepLeft(arr, vars);
-  z(merged);
-  return [String(doc), merged, doc];
+  arr = defarg.value[2];
+  l_vars = R.view(R.lensPath(v_path), json);
+  g_vars = R.view(R.lensPath(['var']), json);
+  merged = R.mergeDeepLeft(R.mergeDeepLeft(arr, l_vars), json);
+  make_script_blank(merged);
+  z(info);
+  return [];
 };
 nPromise = function(f){
   return new Promise(f);
@@ -445,6 +511,7 @@ tampax_parse = function(yaml_text, cmdargs, filename){
   return nPromise(function(resolve, reject){
     return tampax.yamlParseString(yaml_text, cmdargs, function(err, rawjson){
       if (err) {
+        err = err.split("\n")[0];
         print.failed_in_tampax_parsing(filename, err);
         resolve('error.validator.tampaxparsing');
         return;
@@ -1288,12 +1355,10 @@ ms_create_watch = function*(lconfig, info, log){
   return ms.drain();
 };
 restart = function*(info, log){
-  var msg, ref$, yaml_text, mods, E, gconfig, lconfig;
+  var msg, E, gconfig, lconfig;
   msg = lit([info.configfile + "", " changed, restarting watch"], [c.warn, c.er1]);
   log.normal('err', msg);
-  try {
-    ref$ = modyaml(info), yaml_text = ref$[0], mods = ref$[1];
-  } catch (e$) {
+  try {} catch (e$) {
     E = e$;
     print.failed_in_mod_yaml(filename, E);
     return;
@@ -1336,14 +1401,14 @@ check_conf_file = function(conf, info){
   return sortir.error;
 };
 get_all = function*(info){
-  var ref$, yaml_text, mods, doc, E, yjson, lconfig, concat;
-  try {
-    ref$ = modyaml(info), yaml_text = ref$[0], mods = ref$[1], doc = ref$[2];
-  } catch (e$) {
-    E = e$;
-    print.failed_in_mod_yaml(info.configfile, E);
+  var sortir, yaml_text, mods, doc, yjson, lconfig, concat;
+  sortir = (yield* modyaml(info));
+  switch (sortir[0]) {
+  case 'error.validator.tampaxparsing':
+  case 'error.defarg':
     return;
   }
+  yaml_text = sortir[0], mods = sortir[1], doc = sortir[2];
   if (info.options.edit) {
     fs.writeFileSync(info.configfile, yaml_text);
     return;

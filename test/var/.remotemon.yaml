@@ -1,22 +1,35 @@
 var: 
-  ext: &hello1
-    foo: &hello1 |-
-      #! lsc
-      console.log "hello world"
-    bar: 2
-  foo: &hello |-
-    #! lsc
-    console.log "{{1}}"
+  # main: |-
+  #   #! lsc
+  #   console.log 'var.main {{0}}'
 
-inpwd: true
+  main: |-
+    something else
+
+defarg:
+  - carlos
+  - |-
+    #! lsc
+    console.log '{{0}} {{var.main}}'
 
 longname:
-  defarg: ['hello','world']
-  var:
-    ext: ntfs
-    foo: &hello |-
+  defarg:
+    - carlos
+    - |-
       #! lsc
-      console.log 'Japan {{0}} bro'
-  inpwd: true
-  local: 
-    - hello {{foo}}
+      console.log '{{0}} {{ext}}'
+  var:
+    ext: maybe-color
+    yellow:
+      color: |-
+        #! lsc
+        console.log '{{0}}'
+    green:
+      color: |-
+        #! lsc
+        console.log '{{0}}'
+
+  local:
+    - hello {{var.main}}
+
+
