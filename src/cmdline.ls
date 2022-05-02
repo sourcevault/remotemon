@@ -392,8 +392,14 @@ san_mappable = (str,type = \obj) ->
 
 
 
-san_inpwd =  be.bool.fix false
-.wrap!
+san_inpwd =  (l,g) ->
+
+  switch R.type l
+  | \Boolean => return l
+  | otherwise =>
+    switch R.type g
+    | \Boolean => return g
+    | otherwise => return false
 
 
 rm_empty_lines =  R.pipe do
@@ -518,68 +524,6 @@ gs_path.loop = be.obj.alt be.arr
     hist.push path
 
 
-run_global_var_script = (yjson,doc,info) ->*
-
-  cmdname = info.cmdname
-
-  project = info.options.project
-
-  inpwd = san_inpwd yjson.inpwd
-
-  vpaths = gs_path.main yjson.var,[\var]
-
-  apaths = gs_path.main yjson.defarg,[\defarg]
-
-  apaths.push ...vpaths
-
-  for path in apaths
-
-    script = R.path path,yjson
-
-    to_replace = run_script script,inpwd,project,path
-
-    doc.setIn path,to_replace
-
-  if cmdname
-
-    if global_data.selected_keys.set.has cmdname
-
-      print.in_selected_key cmdname,info.cmdline
-
-      return \error
-
-    found = yjson[cmdname]
-
-    if not found
-
-      print.could_not_find_custom_cmd cmdname
-
-      return \error
-
-    if found.inpwd
-
-      inpwd = inpwd
-
-    vpaths = gs_path.main do
-      yjson[cmdname].var
-      [cmdname,\var]
-
-    apaths = gs_path.main do
-      yjson[cmdname].defarg
-      [cmdname,\defarg]
-
-    apaths.push ...vpaths
-
-    for path in apaths
-
-      script = R.path path,yjson
-
-      to_replace = run_script script,inpwd,project,path
-
-      doc.setIn path,to_replace
-
-  String doc
-
 pathset_to_blank = (obj,path) ->
 
   ou = obj
@@ -588,18 +532,17 @@ pathset_to_blank = (obj,path) ->
 
     ou = ou[path[I]]
 
-  ou[path[path.length - 1]] = ''
+  ou[path[path.length - 1]] = '<remotemon:script.loop.error>'
 
   obj
 
-make_script_blank = (obj) !->
+make_script_blank = (obj,mpath) !->
 
   mpath = gs_path.main obj
 
   for path in mpath
 
     pathset_to_blank obj,path
-
 
 
 gs_path.main = (obj,path = []) ->
@@ -616,22 +559,11 @@ gs_path.main = (obj,path = []) ->
 
   sortir
 
-get_path = (doc,path) ->
-
-  doc.getIn path
-  |> String 
-  |> JSON.parse _,path
-  |> gs_path.main _,path
-
 update_doc = (info,doc) ->
 
   cmdname = info.cmdname
 
-  path = {}
-    ..G_var    = []
-    ..G_defarg = []
-    ..L_var    = []
-    ..L_defarg = []
+  path = []
 
   if cmdname is undefined
 
@@ -643,13 +575,7 @@ update_doc = (info,doc) ->
 
       doc.setIn [\var,...key],value
 
-    v_path = [\var]
-
-    d_path = [\defarg]
-
-    path.L_var = get_path doc,v_path
-
-    path.L_defarg = get_path doc,d_path
+    nominal_path = [] 
 
   else
 
@@ -667,19 +593,77 @@ update_doc = (info,doc) ->
 
       doc.setIn p,value
 
-    v_path = [cmdname,\var]
+    nominal_path = [cmdname]
 
-    d_path = [cmdname,\defarg]
+  v_path = [...nominal_path,\var]
 
-    path.G_var = get_path doc,[\var]
+  d_path = [...nominal_path,\defarg]
 
-    path.G_defarg = get_path doc,[\defarg]
+  json = doc.toJS!
 
-    path.L_var = get_path doc,v_path
+  all_path = gs_path.main json
 
-    path.L_defarg = get_path doc,d_path
+  alive = []
 
-  [v_path,d_path,path]
+  dead  = []
+
+  for_tampax = []
+
+  if cmdname is undefined
+
+    for path,index in all_path
+
+      [init,second] = path
+
+      for_tampax.push path
+
+      if init in [\var,\defarg]
+
+        alive.push path
+
+        for_tampax.push R.tail path
+
+      else
+
+        dead.push path
+
+  else
+
+    for path,index in all_path
+
+      [init,second] = path
+
+      for_tampax.push path
+
+      if (init is cmdname) and (second in [\var,\defarg])
+
+        alive.push path
+
+        for_tampax.push (R.splitAt 2,path)[1]
+
+      else
+
+        dead.push path
+
+
+  path =
+    *for_tampax: for_tampax
+     allpath: all_path
+     n: nominal_path
+     alive: alive
+     dead: dead
+     v: v_path
+     d: d_path
+
+
+  [path,json]
+
+
+show = (ob) ->
+
+  console.log ob
+
+  ob
 
 modyaml = (info) ->*
 
@@ -689,11 +673,10 @@ modyaml = (info) ->*
 
   doc = yaml.parseDocument data
 
-  [v_path,d_path,a_path] = update_doc info,doc
+  [path,json] = update_doc info,doc
 
-  json = doc.toJS!
-
-  defargdoc = R.view (R.lensPath d_path),json
+  defargdoc = R.lensPath path.d
+  |> R.view _,json
 
   defarg = V.defarg.auth defargdoc,info
 
@@ -701,37 +684,41 @@ modyaml = (info) ->*
 
   arr = defarg.value[2]
 
-  l_vars = R.view (R.lensPath v_path),json
-
-  g_vars = R.view (R.lensPath [\var]),json
+  l_vars = R.lensPath path.v
+  |> R.view _,json
 
   merged = do
     R.mergeDeepLeft arr,l_vars
-    |> R.mergeDeepLeft _,json
+    |> R.mergeDeepLeft _,(R.clone json)
 
-  make_script_blank merged
+  make_script_blank merged,path.for_tampax
 
   project = info.options.project
 
-  for path in a_path.L_defarg
+  inpwd = R.lensPath [...path.n,\inpwd]
+  |> R.view _ ,json
+  |> san_inpwd _ ,json.inpwd
 
-    doc.getIn path
+  for each in path.alive
+
+    R.view (R.lensPath each),json
     |> tampax _,merged
-    |> run_script _,inpwd,project,path
-    |> doc.setIn path,_
+    |> run_script _,inpwd,project,each
+    |> doc.setIn each,_
 
-  # z String doc
-  
+  for path in path.dead
 
+    doc.setIn path,'<>'
 
-  # init_parse = yield tampax_parse do
-  #   String doc
-  #   merged
-  #   configfile
+  init_parse = yield tampax_parse do
+    String doc
+    merged
+    configfile
 
-  # zj merged
+  if init_parse is \error.validator.tampaxparsing
+    return [\error.validator.tampaxparsing]
 
-  # if (init_parse is \error.validator.tampaxparsing) then return [\error.validator.tampaxparsing]
+  zj init_parse
 
   # final_yaml = yield from run_global_var_script init_parse,doc,info
 

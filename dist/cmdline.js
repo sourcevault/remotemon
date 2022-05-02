@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, emphasize, child_process, l, z, zj, R, lit, c, wait, noop, be, cp, homedir, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_mappable, san_inpwd, rm_empty_lines, san_user_script, run_script, T, loop_yaml_map, x$, gs_path, run_global_var_script, pathset_to_blank, make_script_blank, get_path, update_doc, modyaml, nPromise, rmdef, only_str, tampax_parse, mergeArray, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, handle_ssh, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, emphasize, child_process, l, z, zj, R, lit, c, wait, noop, be, cp, homedir, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_mappable, san_inpwd, rm_empty_lines, san_user_script, run_script, T, loop_yaml_map, x$, gs_path, pathset_to_blank, make_script_blank, update_doc, show, modyaml, nPromise, rmdef, only_str, tampax_parse, mergeArray, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, handle_ssh, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
 dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, compare_version = com.compare_version, boxen = com.boxen, emphasize = com.emphasize, child_process = com.child_process;
@@ -234,7 +234,19 @@ san_mappable = function(str, type){
     }
   }
 };
-san_inpwd = be.bool.fix(false).wrap();
+san_inpwd = function(l, g){
+  switch (R.type(l)) {
+  case 'Boolean':
+    return l;
+  default:
+    switch (R.type(g)) {
+    case 'Boolean':
+      return g;
+    default:
+      return false;
+    }
+  }
+};
 rm_empty_lines = R.pipe(R.filter(function(str){
   if (str.length === 0) {
     return false;
@@ -316,45 +328,6 @@ gs_path.loop = be.obj.alt(be.arr).forEach(function(){
   }
   return hist.push(path);
 }));
-run_global_var_script = function*(yjson, doc, info){
-  var cmdname, project, inpwd, vpaths, apaths, i$, len$, path, script, to_replace, found;
-  cmdname = info.cmdname;
-  project = info.options.project;
-  inpwd = san_inpwd(yjson.inpwd);
-  vpaths = gs_path.main(yjson['var'], ['var']);
-  apaths = gs_path.main(yjson.defarg, ['defarg']);
-  apaths.push.apply(apaths, vpaths);
-  for (i$ = 0, len$ = apaths.length; i$ < len$; ++i$) {
-    path = apaths[i$];
-    script = R.path(path, yjson);
-    to_replace = run_script(script, inpwd, project, path);
-    doc.setIn(path, to_replace);
-  }
-  if (cmdname) {
-    if (global_data.selected_keys.set.has(cmdname)) {
-      print.in_selected_key(cmdname, info.cmdline);
-      return 'error';
-    }
-    found = yjson[cmdname];
-    if (!found) {
-      print.could_not_find_custom_cmd(cmdname);
-      return 'error';
-    }
-    if (found.inpwd) {
-      inpwd = inpwd;
-    }
-    vpaths = gs_path.main(yjson[cmdname]['var'], [cmdname, 'var']);
-    apaths = gs_path.main(yjson[cmdname].defarg, [cmdname, 'defarg']);
-    apaths.push.apply(apaths, vpaths);
-    for (i$ = 0, len$ = apaths.length; i$ < len$; ++i$) {
-      path = apaths[i$];
-      script = R.path(path, yjson);
-      to_replace = run_script(script, inpwd, project, path);
-      doc.setIn(path, to_replace);
-    }
-  }
-  return String(doc);
-};
 pathset_to_blank = function(obj, path){
   var ou, i$, to$, I;
   ou = obj;
@@ -362,11 +335,11 @@ pathset_to_blank = function(obj, path){
     I = i$;
     ou = ou[path[I]];
   }
-  ou[path[path.length - 1]] = '';
+  ou[path[path.length - 1]] = '<remotemon:script.loop.error>';
   return obj;
 };
-make_script_blank = function(obj){
-  var mpath, i$, len$, path;
+make_script_blank = function(obj, mpath){
+  var i$, len$, path;
   mpath = gs_path.main(obj);
   for (i$ = 0, len$ = mpath.length; i$ < len$; ++i$) {
     path = mpath[i$];
@@ -385,18 +358,10 @@ gs_path.main = function(obj, path){
   }
   return sortir;
 };
-get_path = function(doc, path){
-  return gs_path.main(JSON.parse(String(
-  doc.getIn(path)), path), path);
-};
 update_doc = function(info, doc){
-  var cmdname, x$, path, i$, ref$, len$, ref1$, key, value, v_path, d_path, init, p;
+  var cmdname, path, i$, ref$, len$, ref1$, key, value, nominal_path, init, p, v_path, d_path, json, all_path, alive, dead, for_tampax, index, second;
   cmdname = info.cmdname;
-  x$ = path = {};
-  x$.G_var = [];
-  x$.G_defarg = [];
-  x$.L_var = [];
-  x$.L_defarg = [];
+  path = [];
   if (cmdname === undefined) {
     for (i$ = 0, len$ = (ref$ = info.vars).length; i$ < len$; ++i$) {
       ref1$ = ref$[i$], key = ref1$[0], value = ref1$[1];
@@ -405,10 +370,7 @@ update_doc = function(info, doc){
       }
       doc.setIn(['var'].concat(arrayFrom$(key)), value);
     }
-    v_path = ['var'];
-    d_path = ['defarg'];
-    path.L_var = get_path(doc, v_path);
-    path.L_defarg = get_path(doc, d_path);
+    nominal_path = [];
   } else {
     for (i$ = 0, len$ = (ref$ = info.vars).length; i$ < len$; ++i$) {
       ref1$ = ref$[i$], key = ref1$[0], value = ref1$[1];
@@ -420,35 +382,89 @@ update_doc = function(info, doc){
       p = arrayFrom$(init).concat(arrayFrom$(key));
       doc.setIn(p, value);
     }
-    v_path = [cmdname, 'var'];
-    d_path = [cmdname, 'defarg'];
-    path.G_var = get_path(doc, ['var']);
-    path.G_defarg = get_path(doc, ['defarg']);
-    path.L_var = get_path(doc, v_path);
-    path.L_defarg = get_path(doc, d_path);
+    nominal_path = [cmdname];
   }
-  return [v_path, d_path, path];
+  v_path = arrayFrom$(nominal_path).concat(['var']);
+  d_path = arrayFrom$(nominal_path).concat(['defarg']);
+  json = doc.toJS();
+  all_path = gs_path.main(json);
+  alive = [];
+  dead = [];
+  for_tampax = [];
+  if (cmdname === undefined) {
+    for (i$ = 0, len$ = all_path.length; i$ < len$; ++i$) {
+      index = i$;
+      path = all_path[i$];
+      init = path[0], second = path[1];
+      for_tampax.push(path);
+      if (init === 'var' || init === 'defarg') {
+        alive.push(path);
+        for_tampax.push(R.tail(path));
+      } else {
+        dead.push(path);
+      }
+    }
+  } else {
+    for (i$ = 0, len$ = all_path.length; i$ < len$; ++i$) {
+      index = i$;
+      path = all_path[i$];
+      init = path[0], second = path[1];
+      for_tampax.push(path);
+      if (init === cmdname && (second === 'var' || second === 'defarg')) {
+        alive.push(path);
+        for_tampax.push(R.splitAt(2, path)[1]);
+      } else {
+        dead.push(path);
+      }
+    }
+  }
+  path = {
+    for_tampax: for_tampax,
+    allpath: all_path,
+    n: nominal_path,
+    alive: alive,
+    dead: dead,
+    v: v_path,
+    d: d_path
+  };
+  return [path, json];
+};
+show = function(ob){
+  console.log(ob);
+  return ob;
 };
 modyaml = function*(info){
-  var configfile, data, doc, ref$, v_path, d_path, a_path, json, defargdoc, defarg, arr, l_vars, g_vars, merged;
+  var configfile, data, doc, ref$, path, json, defargdoc, defarg, arr, l_vars, merged, project, inpwd, i$, len$, each, init_parse;
   configfile = info.configfile;
   data = R.toString(
   fs.readFileSync(
   configfile));
   doc = yaml.parseDocument(data);
-  ref$ = update_doc(info, doc), v_path = ref$[0], d_path = ref$[1], a_path = ref$[2];
-  json = doc.toJS();
-  defargdoc = R.view(R.lensPath(d_path), json);
+  ref$ = update_doc(info, doc), path = ref$[0], json = ref$[1];
+  defargdoc = R.view(R.lensPath(path.d), json);
   defarg = V.defarg.auth(defargdoc, info);
   if (defarg.error) {
     return ['error.defarg'];
   }
   arr = defarg.value[2];
-  l_vars = R.view(R.lensPath(v_path), json);
-  g_vars = R.view(R.lensPath(['var']), json);
-  merged = R.mergeDeepLeft(R.mergeDeepLeft(arr, l_vars), json);
-  make_script_blank(merged);
-  z(info);
+  l_vars = R.view(R.lensPath(path.v), json);
+  merged = R.mergeDeepLeft(R.mergeDeepLeft(arr, l_vars), R.clone(json));
+  make_script_blank(merged, path.for_tampax);
+  project = info.options.project;
+  inpwd = san_inpwd(R.view(R.lensPath(arrayFrom$(path.n).concat(['inpwd'])), json), json.inpwd);
+  for (i$ = 0, len$ = (ref$ = path.alive).length; i$ < len$; ++i$) {
+    each = ref$[i$];
+    doc.setIn(each, run_script(tampax(R.view(R.lensPath(each), json), merged), inpwd, project, each));
+  }
+  for (i$ = 0, len$ = (ref$ = path.dead).length; i$ < len$; ++i$) {
+    path = ref$[i$];
+    doc.setIn(path, '<>');
+  }
+  init_parse = (yield tampax_parse(String(doc), merged, configfile));
+  if (init_parse === 'error.validator.tampaxparsing') {
+    return ['error.validator.tampaxparsing'];
+  }
+  zj(init_parse);
   return [];
 };
 nPromise = function(f){

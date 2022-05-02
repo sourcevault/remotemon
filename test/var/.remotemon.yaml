@@ -1,11 +1,10 @@
 var: 
-  # main: |-
-  #   #! lsc
-  #   console.log 'var.main {{0}}'
+  main: &main |-
+    #! lsc
+    console.log ' rick and morty {{0}} !'
 
-  main: |-
-    something else
 
+inpwd: true
 defarg:
   - carlos
   - |-
@@ -19,17 +18,8 @@ longname:
       #! lsc
       console.log '{{0}} {{ext}}'
   var:
-    ext: maybe-color
-    yellow:
-      color: |-
-        #! lsc
-        console.log '{{0}}'
-    green:
-      color: |-
-        #! lsc
-        console.log '{{0}}'
-
+    ext: *main
+    yellow: be
   local:
-    - hello {{var.main}}
-
+    - hello {{yellow}} !
 

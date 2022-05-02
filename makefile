@@ -45,7 +45,7 @@ compile:
 
 # 	remotemon -p remotemon/test/var longname foo bar ext=456
 # 	remotemon -p remotemon/test/var longname foo
-	remotemon -p remotemon/test/var longname ext=foobar
+	remotemon -p remotemon/test/var longname
 
 # 	remotemon -c ./test/opt.yaml version.update
 
