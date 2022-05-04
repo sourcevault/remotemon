@@ -193,8 +193,8 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
   it changes the internal value(s) of **associated key** in `global`:
 
   ```yaml
-  global:
-  file: /dist/main.js # <-- old value replaced with value taken from commandline
+  val:
+    file: /dist/main.js # <-- old value replaced with value taken from commandline
   remotehost: pi@192.152.65.12
   remotefold: ~/test
   local: make local {{global.file}}
