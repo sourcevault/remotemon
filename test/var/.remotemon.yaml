@@ -19,7 +19,7 @@ longname:
 
   defarg:
     - carlos
-    - dave
+    -  dave
     - |-
       #! lsc
       console.log '{{0}}'

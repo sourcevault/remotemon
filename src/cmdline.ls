@@ -654,7 +654,11 @@ modyaml = (info) ->*
   for each in path.dead
     doc.setIn each,''
 
-  yaml_text = String doc
+  try 
+
+    yaml_text = String doc
+
+  catch E then return SERR
 
   n_merged = R.mergeAll do
     [
@@ -748,6 +752,7 @@ function exec_cat_option yaml_text,concat_count
 
 
 SERR = Symbol \error
+OK   = Symbol \ok
 
 tampax_parse = (yaml_text,cmdargs,filename) ->
 
@@ -1430,7 +1435,7 @@ create_logger = (info,gconfig) ->
   [lconfig,log,buildname]
 
 update = (gjson,info)->*
-  
+
   vout = V.def.auth do
     gjson
     (def:{},user:{},origin:gjson,info:info)
@@ -1976,9 +1981,9 @@ ms_create_watch = (lconfig,info,log) ->*
 
       most.generate restart,info,log
 
-      .continueWith (str) ->
+      .continueWith (SIG) ->
 
-        z str
+        if SIG is OK then return most.empty!
 
         lconfig.initialize = false
 
@@ -1992,8 +1997,8 @@ ms_create_watch = (lconfig,info,log) ->*
           log.normal \err,msg
 
           msg = lit do
-            ["#{info.configfile}"," using old configuration.."]
-            [c.warn,c.er1]
+            ["setting up watch using using old configuration file.."]
+            [c.er1]
 
           log.normal \err,msg
 
@@ -2001,6 +2006,10 @@ ms_create_watch = (lconfig,info,log) ->*
           .drain!
 
         most.empty!
+
+      .drain!
+
+      most.empty!
 
     .tap (filename) ->
 
@@ -2014,12 +2023,9 @@ ms_create_watch = (lconfig,info,log) ->*
 
 
 
-
-
-
   ms.drain!
 
-restart = (info,log) ->*
+restart = (info,log) !->*
 
   msg = lit do
     ["#{info.configfile}"," changed, restarting watch.."]
@@ -2031,9 +2037,7 @@ restart = (info,log) ->*
 
     ref = yield from modyaml info
 
-  catch E
-
-    return SERR
+  catch E then return SERR
 
   if (ref is SERR) then return SERR
 
@@ -2045,8 +2049,10 @@ restart = (info,log) ->*
 
   [lconfig,log] = sortir
 
-  most.generate ms_create_watch,lconfig,info,log
+  aout = most.generate ms_create_watch,lconfig,info,log
   .drain!
+
+  return OK
 
 V.CONF = be.known.obj
 

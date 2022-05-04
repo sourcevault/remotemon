@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, emphasize, child_process, l, z, zj, R, lit, c, wait, noop, be, cp, homedir, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, rm_empty_lines, san_user_script, run_script, x$, gs_path, pathset, make_script_blank, update_doc, show, modyaml, nPromise, rmdef, only_str, SERR, tampax_parse, mergeArray, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, handle_ssh, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, emphasize, child_process, l, z, zj, R, lit, c, wait, noop, be, cp, homedir, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, rm_empty_lines, san_user_script, run_script, x$, gs_path, pathset, make_script_blank, update_doc, show, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, handle_ssh, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
 dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, compare_version = com.compare_version, boxen = com.boxen, emphasize = com.emphasize, child_process = com.child_process;
@@ -386,7 +386,7 @@ show = function(ob){
   return ob;
 };
 modyaml = function*(info){
-  var configfile, data, doc, ref$, path, json, defargdoc, defarg, arr, l_vars, merged, project, inpwd, i$, len$, each, result, yaml_text, n_merged, gjson, ljson, sortir;
+  var configfile, data, doc, ref$, path, json, defargdoc, defarg, arr, l_vars, merged, project, inpwd, i$, len$, each, result, yaml_text, E, n_merged, gjson, ljson, sortir;
   configfile = info.configfile;
   data = R.toString(
   fs.readFileSync(
@@ -414,7 +414,12 @@ modyaml = function*(info){
     each = ref$[i$];
     doc.setIn(each, '');
   }
-  yaml_text = String(doc);
+  try {
+    yaml_text = String(doc);
+  } catch (e$) {
+    E = e$;
+    return SERR;
+  }
   n_merged = R.mergeAll([
     JSON.parse(
     String(
@@ -490,6 +495,7 @@ function exec_cat_option(yaml_text, concat_count){
   });
 }
 SERR = Symbol('error');
+OK = Symbol('ok');
 tampax_parse = function(yaml_text, cmdargs, filename){
   return nPromise(function(resolve, reject){
     return tampax.yamlParseString(yaml_text, cmdargs, function(err, rawjson){
@@ -1324,19 +1330,22 @@ ms_create_watch = function*(lconfig, info, log){
     }
     return true;
   }).continueWith(function(filename){
-    return most.generate(restart, info, log).continueWith(function(str){
-      z(str);
+    most.generate(restart, info, log).continueWith(function(SIG){
+      if (SIG === OK) {
+        return most.empty();
+      }
       lconfig.initialize = false;
       wait(0, function(){
         var msg;
         msg = lit([info.configfile + "", " <--parse error"], [c.warn, c.er3]);
         log.normal('err', msg);
-        msg = lit([info.configfile + "", " using old configuration.."], [c.warn, c.er1]);
+        msg = lit(["setting up watch using using old configuration file.."], [c.er1]);
         log.normal('err', msg);
         return most.generate(ms_create_watch, lconfig, info, log).drain();
       });
       return most.empty();
-    });
+    }).drain();
+    return most.empty();
   }).tap(function(filename){
     var data;
     data = {
@@ -1352,7 +1361,7 @@ ms_create_watch = function*(lconfig, info, log){
   return ms.drain();
 };
 restart = function*(info, log){
-  var msg, ref, E, yaml_text, gjson, sortir, lconfig;
+  var msg, ref, E, yaml_text, gjson, sortir, lconfig, aout;
   msg = lit([info.configfile + "", " changed, restarting watch.."], [c.warn, c.er1]);
   log.normal('err', msg);
   try {
@@ -1370,7 +1379,8 @@ restart = function*(info, log){
     return SERR;
   }
   lconfig = sortir[0], log = sortir[1];
-  return most.generate(ms_create_watch, lconfig, info, log).drain();
+  aout = most.generate(ms_create_watch, lconfig, info, log).drain();
+  return OK;
 };
 V.CONF = be.known.obj.on('rsync', V.rsync.init).on('ssh', V.ssh).cont(organize_rsync).and(V.rsync.throw_if_error).err(function(message, path){
   var info, topmsg, loc, Error, F;
