@@ -252,8 +252,6 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 
 - `-V --version` displays version number
 
-- `-c --config` path to YAML configuration file
-
 - `-n --no-watch` force disable any and all watches
 
 - `-s --silent` do not show `remotemon` message
@@ -261,6 +259,13 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 - `-e --edit` make permanent edits to `.remotemon.yaml` values.
 
 - `-p --project` folder name ( in service directory ) to look for `.remotemon.yaml`
+
+- `-c --cat` dump the output of the current config file being used.
+
+  `-cc` same as -c but with comments
+
+  `-ccc` show raw json for final process state
+
 
 ##### 🔴 Bugs
 
