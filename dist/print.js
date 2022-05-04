@@ -19,12 +19,17 @@ readline = require('readline');
 com.optionParser = require('option-parser');
 com.tampax = require('tampax');
 com.yaml = require('yaml');
+com.path = require('path');
 com.child_process = child_process;
 cp = child_process;
 be = hoplon.types;
 com.readline = readline;
 com.compare_version = require('../dist/compare.version.js');
+
 var boxen = import('boxen')
+var emphasize =  import('emphasize')
+
+com.emphasize = emphasize;
 com.boxen = boxen;
 R = hoplon.utils.R;
 dotpat = be.str.edit(R.split(".")).or(be.undef.cont([])).wrap();
@@ -114,7 +119,7 @@ print.rsyncError = function(msg, path, filename){
   return l(c.grey("\n  please refer to docs to provide valid values."));
 };
 print.incorrect_arg_num = function(){
-  l(lit(["[" + metadata.name + "]", " • inputError •\n"], [c.er2, c.er3]));
+  l(lit(["[" + metadata.name + "]", " • inputError\n"], [c.er2, c.er3]));
   return l(lit(["  ", "incorrect number of arguments for function."], [0, c.er1, c.er3, c.er1]));
 };
 print.incorrect_custom = function(__, key){
@@ -129,7 +134,7 @@ print.reqError = function(props, path, filename){
   return l(c.er1("  ." + props.join(" .")));
 };
 print.defarg_req = function(len){
-  l(lit(["[" + metadata.name + "]", " • dataError •\n"], [c.er2, c.er3]));
+  l(lit(["[" + metadata.name + "]", " • dataError \n"], [c.er2, c.er3]));
   return l(lit(["  command requires minimum of ", len, " commandline argument."], [c.er2, c.er3, c.er2]));
 };
 print.cmdError = function(cmdname){
@@ -150,21 +155,26 @@ print.ob_in_str_list = function(type, path, filename){
 };
 print.failed_in_mod_yaml = function(filename, E){
   l(lit(["[" + metadata.name + "]", " • parseError •", " unable to read YAML file."], [c.warn, c.er3, c.er1]));
-  l("\n  " + c.er2(filename + "\n"));
-  return l(c.grey(E));
+  l("\n  " + c.pink(com.path.resolve(filename)));
+  return l(c.er1("\n  " + E));
 };
 print.failed_in_tampax_parsing = function(filename, E){
   var emsg;
   l(lit(["[" + metadata.name + "]", " • parseError •", " yaml/tampex parsing error."], [c.warn, c.er2, c.er1]));
-  l("\n  " + c.er2(filename + "\n"));
+  l("\n  " + c.pink(com.path.resolve(filename)) + "\n");
   l(c.grey(E));
   emsg = ["\n", c.warn("  make sure :\n\n"), c.er1("   - YAML file(s) can be parsed without error.\n"), c.er1("   - YAML file(s) has no duplicate field.\n"), c.er1("   - YAML file(s) is not empty.\n"), c.er1("   - correct path is provided.")];
   return l(emsg.join(""));
 };
 print.in_selected_key = function(key, cmd_str){
   l(lit(["[" + metadata.name + "]", " • cmdFailure •\n"], [c.er2, c.er3]));
-  l(lit(["  ." + key, " is a selected key, cannot be used as a task name.\n"], [c.er3, c.warn]));
+  l(lit(["  " + key, " is a selected key, cannot be used as a task name.\n"], [c.er3, c.warn]));
   return l(lit(["  ", cmd_str.join(" ")], [null, c.er1]));
+};
+print.error_in_user_script = function(err_msg, path){
+  l(lit(["[" + metadata.name + "]", " • cmdFailure •", " error in user script.\n"], [c.er2, c.er3, c.er1]));
+  l(lit(["  ", path.join("."), " <-- error here.\n"], [null, c.warn, c.er3]));
+  return process.stdout.write(c.grey(err_msg));
 };
 print.resError = function(props, path, filename){
   var key;
@@ -173,7 +183,7 @@ print.resError = function(props, path, filename){
   return l(show_body(path, [c.grey("unrecognized config key") + c.er3(" " + key) + "\n", c.grey("only acceptable keys are :\n"), c.pink("- " + props.join(" \n  - "))].join("\n  ")));
 };
 print.could_not_find_custom_cmd = function(cmdname){
-  l(lit(["[" + metadata.name + "]", " • dataError •\n"], [c.er2, c.er3]));
+  l(lit(["[" + metadata.name + "]", " • dataError\n"], [c.er2, c.er3]));
   return l(lit([" unable to locate ", cmdname + "", " task in config file."], [c.er1, c.warn, c.er1]));
 };
 print.custom_build = function(msg, path, filename){
