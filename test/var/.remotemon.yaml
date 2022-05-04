@@ -1,7 +1,7 @@
 var: 
   main: &main |-
     #! lsc
-    console.log ' rick and morty {{0}} !'
+    console.log '{{yellow}} {{0}}'
 
 
 inpwd: true
@@ -12,14 +12,17 @@ defarg:
     console.log '{{0}} {{var.main}}'
 
 longname:
-  defarg:
-    - carlos
-    - |-
-      #! lsc
-      console.log '{{0}} {{ext}}'
+  watch: false
   var:
     ext: *main
     yellow: be
+
+  defarg:
+    - carlos
+    - dave
+    - |-
+      #! lsc
+      console.log '{{0}}'
   local:
-    - hello {{yellow}} !
+    - echo '{{0}} {{1}} {{ext}}'
 

@@ -371,27 +371,6 @@ V.defarg = defarg_main
 
 # ----------------------------------------
 
-san_mappable = (str,type = \obj) ->
-
-  try
-
-    sortir = JSON.parse str
-
-    switch R.type sortir
-    | \Array, \Object => return sortir
-    | otherwise =>
-      switch type
-      | \arr => return []
-      | \obj => return {}
-
-  catch
-
-    switch type
-    | \arr => return []
-    | \obj => return {}
-
-
-
 san_inpwd =  (l,g) ->
 
   switch R.type l
@@ -463,36 +442,7 @@ run_script = (str,inpwd,project,path) ->
 
   return to_exit
 
-T = {}
-
-T.yaml_map = do
-
-  (gv) <- be.obj.and 
-
-  props = Object.getOwnPropertyNames gv
-
-  c = ['schema','items','range']
-
-  not ((R.without props,c).length)
-
-loop_yaml_map = (yaml_map,pwd,project) !->
-
-  for {key,value} in yaml_map.items
-
-    if ((T.yaml_map.auth value).continue)
-
-      loop_yaml_map value,pwd,project
-
-    else if ((typeof value.value) is \string)
-
-      inner_value = value.value
-
-      to_replace = run_script inner_value,pwd,project
-
-      value.value = to_replace
-
 gs_path = {}
-
   ..loop = null
   ..main = null
 
@@ -524,7 +474,7 @@ gs_path.loop = be.obj.alt be.arr
     hist.push path
 
 
-pathset_to_blank = (obj,path) ->
+pathset = (path,obj,str) ->
 
   ou = obj
 
@@ -532,17 +482,17 @@ pathset_to_blank = (obj,path) ->
 
     ou = ou[path[I]]
 
-  ou[path[path.length - 1]] = '<remotemon:script.loop.error>'
+  ou[path[path.length - 1]] = str
 
   obj
 
 make_script_blank = (obj,mpath) !->
 
-  mpath = gs_path.main obj
+  # mpath = gs_path.main obj
 
   for path in mpath
 
-    pathset_to_blank obj,path
+    pathset path,obj,'<remotemon:script.loop.error>'
 
 
 gs_path.main = (obj,path = []) ->
@@ -613,7 +563,7 @@ update_doc = (info,doc) ->
 
     for path,index in all_path
 
-      [init,second] = path
+      [init,second,third] = path
 
       for_tampax.push path
 
@@ -631,7 +581,7 @@ update_doc = (info,doc) ->
 
     for path,index in all_path
 
-      [init,second] = path
+      [init,second,third] = path
 
       for_tampax.push path
 
@@ -645,7 +595,6 @@ update_doc = (info,doc) ->
 
         dead.push path
 
-
   path =
     *for_tampax: for_tampax
      allpath: all_path
@@ -655,15 +604,9 @@ update_doc = (info,doc) ->
      v: v_path
      d: d_path
 
-
   [path,json]
 
-
-show = (ob) ->
-
-  console.log ob
-
-  ob
+show = (ob) -> console.log ob;ob
 
 modyaml = (info) ->*
 
@@ -675,17 +618,15 @@ modyaml = (info) ->*
 
   [path,json] = update_doc info,doc
 
-  defargdoc = R.lensPath path.d
-  |> R.view _,json
+  defargdoc = R.path path.d,json
 
   defarg = V.defarg.auth defargdoc,info
 
-  if defarg.error then return [\error.defarg]
+  if defarg.error then return SERR
 
   arr = defarg.value[2]
 
-  l_vars = R.lensPath path.v
-  |> R.view _,json
+  l_vars = R.path path.v,json
 
   merged = do
     R.mergeDeepLeft arr,l_vars
@@ -695,50 +636,45 @@ modyaml = (info) ->*
 
   project = info.options.project
 
-  inpwd = R.lensPath [...path.n,\inpwd]
-  |> R.view _ ,json
-  |> san_inpwd _ ,json.inpwd
+  inpwd = do
+    R.path [...path.n,\inpwd],json
+    |> san_inpwd _,json.inpwd
 
   for each in path.alive
 
-    R.view (R.lensPath each),json
-    |> tampax _,merged
-    |> run_script _,inpwd,project,each
-    |> doc.setIn each,_
+    result = do
+      R.path each,json
+      |> tampax _,merged
+      |> run_script _,inpwd,project,each
 
-  for path in path.dead
+    doc.setIn each,result
 
-    doc.setIn path,'<>'
+    pathset each,json,result
 
-  init_parse = yield tampax_parse do
-    String doc
-    merged
+  for each in path.dead
+    doc.setIn each,''
+
+  yaml_text = String doc
+
+  n_merged = R.mergeAll do
+    [
+      path.d |> doc.getIn |> String |> JSON.parse
+      path.v |> doc.getIn |> String |> JSON.parse
+    ]
+
+  gjson = yield tampax_parse do
+    yaml_text
+    n_merged
     configfile
 
-  if init_parse is \error.validator.tampaxparsing
-    return [\error.validator.tampaxparsing]
+  ljson = R.path path.n,gjson
 
-  zj init_parse
+  sortir = 
+    *yaml_text: yaml_text
+     gjson: gjson
+     ljson: ljson
 
-  # final_yaml = yield from run_global_var_script init_parse,doc,info
-
-  # z String doc.getIn v_path
-
-  # z final_yaml
-
-  # z String doc.getIn d_path
-
-
-
-  # yield tampax_parse final_yaml,merged
-
-  # z final_yaml
-
-
-
-  # [(String doc),merged,doc]
-
-  []
+  sortir
 
 nPromise = (f) -> new Promise f
 
@@ -811,6 +747,8 @@ function exec_cat_option yaml_text,concat_count
   (pod.emphasize.highlightAuto text).value
 
 
+SERR = Symbol \error
+
 tampax_parse = (yaml_text,cmdargs,filename) ->
 
   (resolve,reject) <- nPromise
@@ -823,7 +761,7 @@ tampax_parse = (yaml_text,cmdargs,filename) ->
 
     print.failed_in_tampax_parsing filename,err
 
-    resolve \error.validator.tampaxparsing
+    resolve SERR
 
     return
 
@@ -1338,6 +1276,8 @@ V.user = be.obj
 
 #----------------------------------------------------
 
+disp = (num) -> -> console.log num
+
 V.def = be.obj
 
 .on [\remotehost,\remotefold]    , be.str.or unu
@@ -1349,8 +1289,6 @@ V.def = be.obj
 .on \initialize                  , be.bool.or be.undefnull.cont true
 
 .on \watch                       , V.watch.def
-
-.on \var                         , be.obj.or be.undefnull.cont -> {}
 
 .on \ignore                      , V.ignore.def
 
@@ -1491,17 +1429,17 @@ create_logger = (info,gconfig) ->
 
   [lconfig,log,buildname]
 
-update = (lconfig,origin,info)->*
-
+update = (gjson,info)->*
+  
   vout = V.def.auth do
-    origin
-    (def:{},user:{},origin:origin,info:info)
+    gjson
+    (def:{},user:{},origin:gjson,info:info)
 
-  if vout.error then return \error
+  if vout.error then return SERR
 
-  gconfig = vout.value
+  gjson = vout.value
 
-  [lconfig,log,buildname] = create_logger info,gconfig
+  [lconfig,log,buildname] = create_logger info,gjson
 
   if (info.options.concat is 3)
 
@@ -1509,7 +1447,7 @@ update = (lconfig,origin,info)->*
       pod <- emphasize.then
       l (pod.emphasize.highlightAuto j lconfig).value
 
-    return \disp
+    return SERR
 
   if info.options.watch_config_file
 
@@ -1959,7 +1897,10 @@ ms_create_watch = (lconfig,info,log) ->*
 
     # rl = readline.createInterface {terminal:false}
 
-    rl = readline.createInterface {input:process.stdin,output:process.stdout,terminal:false}
+    rl = readline.createInterface do
+      {input:process.stdin,
+      output:process.stdout,
+      terminal:false}
 
     rl.on \line,(input) !->
 
@@ -2025,7 +1966,7 @@ ms_create_watch = (lconfig,info,log) ->*
 
     .takeWhile (filename) ->
 
-      if filename is CONFIG_FILE_NAME
+      if filename is info.configfile
         if info.options.watch_config_file
           return false
 
@@ -2033,11 +1974,33 @@ ms_create_watch = (lconfig,info,log) ->*
 
     .continueWith (filename) ->
 
-      most.generate restart,info,log,cont
+      most.generate restart,info,log
 
-      .drain!
+      .continueWith (str) ->
 
-      most.empty!
+        z str
+
+        lconfig.initialize = false
+
+        do
+          <- wait 0
+
+          msg = lit do
+            ["#{info.configfile}"," <--parse error"]
+            [c.warn,c.er3]
+
+          log.normal \err,msg
+
+          msg = lit do
+            ["#{info.configfile}"," using old configuration.."]
+            [c.warn,c.er1]
+
+          log.normal \err,msg
+
+          most.generate ms_create_watch,lconfig,info,log
+          .drain!
+
+        most.empty!
 
     .tap (filename) ->
 
@@ -2047,50 +2010,43 @@ ms_create_watch = (lconfig,info,log) ->*
 
       .recoverWith (x) -> most.just x
 
-      .tap print_final_message log,lconfig,info
+      .observe print_final_message log,lconfig,info
 
-      .drain!
+
+
+
+
 
   ms.drain!
 
 restart = (info,log) ->*
 
   msg = lit do
-    ["#{info.configfile}"," changed, restarting watch"]
+    ["#{info.configfile}"," changed, restarting watch.."]
     [c.warn,c.er1]
 
   log.normal \err,msg
 
   try
 
-    # [yaml_text,mods] = modyaml info
+    ref = yield from modyaml info
 
   catch E
 
-    print.failed_in_mod_yaml filename,E
+    return SERR
 
-    return
+  if (ref is SERR) then return SERR
 
-  gconfig = yield tampax_parse yaml_text,mods,info.configfile
+  {yaml_text,gjson} = ref
 
-  if (gconfig is \error.validator.tampaxparsing) then return
+  sortir = yield from update gjson,info
 
-  if info.cmdname
+  if (sortir in SERR) then return SERR
 
-    lconfig = gconfig[info.cmdname]
+  [lconfig,log] = sortir
 
-  else
-
-    lconfig = gconfig
-
-  # vari = yield from update lconfig,yaml_text,info
-
-  # if (vari in [\error,\disp]) then return
-
-  # [lconfig,log] = vari
-
-  # most.generate ms_create_watch,lconfig,info,log
-  # .drain!
+  most.generate ms_create_watch,lconfig,info,log
+  .drain!
 
 V.CONF = be.known.obj
 
@@ -2122,6 +2078,7 @@ check_conf_file = (conf,info) ->
   D.remotefold = ''
 
   origin = {}
+
     ..ssh = conf.ssh
 
   sortir = V.CONF.auth D,info.cmdname,{origin,info}
@@ -2130,13 +2087,11 @@ check_conf_file = (conf,info) ->
 
 get_all = (info) ->*
 
-  sortir = yield from modyaml info
+  ref = yield from modyaml info
 
-  switch sortir[0]
-  | \error.validator.tampaxparsing, \error.defarg =>
-    return
+  if ref is SERR then return
 
-  [yaml_text,mods,doc] = sortir
+  {yaml_text, gjson} = ref
 
   if info.options.edit
 
@@ -2144,13 +2099,9 @@ get_all = (info) ->*
 
     return
 
-  return
-
-  [yjson,lconfig] = sortir
-
   if info.options.list
 
-    exec_list_option yjson,info
+    exec_list_option gjson,info
 
     return
 
@@ -2158,26 +2109,25 @@ get_all = (info) ->*
 
   if concat in [1,2]
 
-    exec_cat_option yaml_text,concat
+    exec_cat_option ref.yaml_text,concat
 
     return
 
+  sortir = yield from update gjson,info
 
-  # vari = yield from update lconfig,yjson,info
+  if sortir is SERR then return
 
-  # if vari in [\error,\disp] then return
+  [lconfig,log] = sortir
 
-  # [lconfig,log] = vari
+  #  ---------------------------------------------------------
 
-  # # ---------------------------------------------------------
+  log.dry \err,metadata.version
 
-  # log.dry \err,metadata.version
-
-  # most.generate ms_create_watch,lconfig,info,log
-  # .recoverWith (sig)->
-  #   resolve_signal sig,log,info
-  #   most.empty!
-  # .drain!
+  most.generate ms_create_watch,lconfig,info,log
+  .recoverWith (sig)->
+    resolve_signal sig,log,info
+    most.empty!
+  .drain!
 
 main = (cmd_data) -> (CONF) ->
 
@@ -2258,6 +2208,3 @@ most.generate init
 .tap main cmd_data
 .recoverWith (E) -> l E.toString!;most.empty!
 .drain!
-
-
-

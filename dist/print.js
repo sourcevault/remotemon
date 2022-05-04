@@ -119,7 +119,7 @@ print.rsyncError = function(msg, path, filename){
   return l(c.grey("\n  please refer to docs to provide valid values."));
 };
 print.incorrect_arg_num = function(){
-  l(lit(["[" + metadata.name + "]", " • inputError •\n"], [c.er2, c.er3]));
+  l(lit(["[" + metadata.name + "]", " • inputError\n"], [c.er2, c.er3]));
   return l(lit(["  ", "incorrect number of arguments for function."], [0, c.er1, c.er3, c.er1]));
 };
 print.incorrect_custom = function(__, key){
@@ -134,7 +134,7 @@ print.reqError = function(props, path, filename){
   return l(c.er1("  ." + props.join(" .")));
 };
 print.defarg_req = function(len){
-  l(lit(["[" + metadata.name + "]", " • dataError •\n"], [c.er2, c.er3]));
+  l(lit(["[" + metadata.name + "]", " • dataError \n"], [c.er2, c.er3]));
   return l(lit(["  command requires minimum of ", len, " commandline argument."], [c.er2, c.er3, c.er2]));
 };
 print.cmdError = function(cmdname){
@@ -183,7 +183,7 @@ print.resError = function(props, path, filename){
   return l(show_body(path, [c.grey("unrecognized config key") + c.er3(" " + key) + "\n", c.grey("only acceptable keys are :\n"), c.pink("- " + props.join(" \n  - "))].join("\n  ")));
 };
 print.could_not_find_custom_cmd = function(cmdname){
-  l(lit(["[" + metadata.name + "]", " • dataError •\n"], [c.er2, c.er3]));
+  l(lit(["[" + metadata.name + "]", " • dataError\n"], [c.er2, c.er3]));
   return l(lit([" unable to locate ", cmdname + "", " task in config file."], [c.er1, c.warn, c.er1]));
 };
 print.custom_build = function(msg, path, filename){

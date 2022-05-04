@@ -208,7 +208,7 @@ print.rsyncError = (msg,path,filename) ->
 print.incorrect_arg_num = ->
 
   l lit do
-    ["[#{metadata.name}]"," • inputError •\n"]
+    ["[#{metadata.name}]"," • inputError\n"]
     [c.er2,c.er3]
 
   l lit do
@@ -246,7 +246,7 @@ print.reqError = (props,path,filename) ->
 print.defarg_req = (len) ->
 
   l lit do
-    ["[#{metadata.name}]"," • dataError •\n"]
+    ["[#{metadata.name}]"," • dataError \n"]
     [c.er2,c.er3]
 
   l lit ["  command requires minimum of ",len," commandline argument."],[c.er2,c.er3,c.er2]
@@ -352,7 +352,7 @@ print.resError = (props,path,filename) ->
 print.could_not_find_custom_cmd = (cmdname) ->
 
   l lit do
-    ["[#{metadata.name}]"," • dataError •\n"]
+    ["[#{metadata.name}]"," • dataError\n"]
     [c.er2,c.er3]
 
   l lit do
