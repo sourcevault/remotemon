@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, emphasize, child_process, l, z, zj, R, lit, c, wait, noop, be, cp, homedir, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, rm_empty_lines, san_user_script, run_script, x$, gs_path, pathset, make_script_blank, update_doc, show, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, handle_ssh, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, emphasize, child_process, l, z, zj, R, lit, c, wait, noop, be, cp, homedir, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_var, rm_empty_lines, san_user_script, run_script, x$, gs_path, pathset, make_script_blank, update_doc, show, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, handle_ssh, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
 dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, compare_version = com.compare_version, boxen = com.boxen, emphasize = com.emphasize, child_process = com.child_process;
@@ -220,6 +220,9 @@ san_inpwd = function(l, g){
     }
   }
 };
+san_var = be.obj.fix(function(){
+  return {};
+}).wrap();
 rm_empty_lines = R.pipe(R.filter(function(str){
   if (str.length === 0) {
     return false;
@@ -265,9 +268,10 @@ gs_path.loop = be.obj.alt(be.arr).forEach(function(){
   var ref$;
   return (ref$ = gs_path.loop).auth.apply(ref$, arguments)['continue'];
 }).or(be.str.and(function(str){
-  var lines;
+  var lines, shebang;
   lines = str.split('\n');
-  if (lines.length > 1 && str[0] + str[1] === "#!") {
+  shebang = lines[0].match(/!#|#!/);
+  if (lines.length > 1 && shebang) {
     return true;
   }
   return false;
@@ -386,7 +390,7 @@ show = function(ob){
   return ob;
 };
 modyaml = function*(info){
-  var configfile, data, doc, ref$, path, json, defargdoc, defarg, arr, l_vars, merged, project, inpwd, i$, len$, each, result, yaml_text, E, n_merged, gjson, ljson, sortir;
+  var configfile, data, doc, ref$, path, json, defargdoc, defarg, arr, l_vars, merged, project, inpwd, i$, len$, each, result, yaml_text, E, vars, n_merged, gjson, ljson, sortir;
   configfile = info.configfile;
   data = R.toString(
   fs.readFileSync(
@@ -399,7 +403,7 @@ modyaml = function*(info){
     return SERR;
   }
   arr = defarg.value[2];
-  l_vars = R.path(path.v, json);
+  l_vars = san_var(R.path(path.v, json));
   merged = R.mergeDeepLeft(R.mergeDeepLeft(arr, l_vars), R.clone(json));
   make_script_blank(merged, path.for_tampax);
   project = info.options.project;
@@ -420,15 +424,19 @@ modyaml = function*(info){
     E = e$;
     return SERR;
   }
-  n_merged = R.mergeAll([
-    JSON.parse(
-    String(
-    doc.getIn(
-    path.d))), JSON.parse(
-    String(
-    doc.getIn(
-    path.v)))
-  ]);
+  defarg = R.tryCatch(JSON.parse, function(){
+    return [];
+  })(
+  String(
+  doc.getIn(
+  path.d)));
+  vars = R.tryCatch(JSON.parse, function(){
+    return {};
+  })(
+  String(
+  doc.getIn(
+  path.v)));
+  n_merged = R.mergeAll([defarg, vars]);
   gjson = (yield tampax_parse(yaml_text, n_merged, configfile));
   ljson = R.path(path.n, gjson);
   sortir = {
