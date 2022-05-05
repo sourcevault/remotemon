@@ -45,7 +45,8 @@ compile:
 
 # 	remotemon -p remotemon/test/var longname foo bar ext=456
 # 	remotemon -p remotemon/test/var longname foo
-	remotemon -w -p remotemon/test/var longname
+# 	remotemon -w -p remotemon/test/var longname
+	remotemon -p mono/autousb prompt
 
 # 	remotemon -c ./test/opt.yaml version.update
 

@@ -380,6 +380,8 @@ san_inpwd =  (l,g) ->
     | \Boolean => return g
     | otherwise => return false
 
+san_var = be.obj.fix -> {}
+.wrap!
 
 rm_empty_lines =  R.pipe do
 
@@ -457,7 +459,9 @@ gs_path.loop = be.obj.alt be.arr
 
     lines = str.split '\n'
 
-    if (lines.length > 1) and ((str[0] + str[1]) is "#!")
+    shebang = (lines[0]).match /!#|#!/
+
+    if (lines.length > 1) and shebang
 
       return true
 
@@ -618,6 +622,8 @@ modyaml = (info) ->*
 
   [path,json] = update_doc info,doc
 
+  # -----
+
   defargdoc = R.path path.d,json
 
   defarg = V.defarg.auth defargdoc,info
@@ -626,7 +632,7 @@ modyaml = (info) ->*
 
   arr = defarg.value[2]
 
-  l_vars = R.path path.v,json
+  l_vars = san_var R.path path.v,json
 
   merged = do
     R.mergeDeepLeft arr,l_vars
@@ -660,11 +666,17 @@ modyaml = (info) ->*
 
   catch E then return SERR
 
-  n_merged = R.mergeAll do
-    [
-      path.d |> doc.getIn |> String |> JSON.parse
-      path.v |> doc.getIn |> String |> JSON.parse
-    ]
+  defarg = path.d
+  |> doc.getIn 
+  |> String 
+  |> R.tryCatch JSON.parse,-> []
+
+  vars = path.v
+  |> doc.getIn 
+  |> String 
+  |> R.tryCatch JSON.parse,-> {}
+
+  n_merged = R.mergeAll [defarg,vars]
 
   gjson = yield tampax_parse do
     yaml_text
