@@ -105,17 +105,18 @@ show_body = function(path, msg){
   return lit(txt, [c.warn, c.er3, c.er2, c.er1]);
 };
 print.rsyncError = function(msg, path, filename){
-  var itype, imsg;
+  var itype, imsg, fin;
   show_name(filename);
-  l(show_body(path));
   itype = msg[0], imsg = msg[1];
   switch (itype) {
   case 'duo':
-    l(lit(["\n  ", "." + imsg[0] + " ", imsg[1]], [0, c.er3, c.pink]));
+    fin = lit(["\n  ", "." + imsg[0] + " ", imsg[1]], [0, c.er3, c.pink]);
     break;
   case 'uno':
-    l(lit(["\n  ", imsg], [0, c.er1]));
+    fin = lit(["\n  ", imsg], [0, c.er1]);
   }
+  l(show_body(path));
+  l(fin);
   return l(c.grey("\n  please refer to docs to provide valid values."));
 };
 print.incorrect_arg_num = function(){

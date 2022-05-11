@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, emphasize, child_process, l, z, zj, R, lit, c, wait, noop, be, cp, homedir, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_var, rm_empty_lines, san_user_script, run_script, x$, gs_path, pathset, make_script_blank, update_doc, show, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, handle_ssh, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, san_cmdname, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, emphasize, child_process, l, z, zj, R, lit, c, wait, noop, be, cp, homedir, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_var, rm_empty_lines, san_user_script, run_script, x$, gs_path, pathset, make_script_blank, update_doc, show, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, handle_ssh, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, san_cmdname, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
 dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, compare_version = com.compare_version, boxen = com.boxen, emphasize = com.emphasize, child_process = com.child_process;
@@ -385,10 +385,9 @@ update_doc = function(info, doc){
   };
   return [path, json];
 };
-show = function(ob){
+show = R.tap(function(ob){
   console.log(ob);
-  return ob;
-};
+});
 modyaml = function*(info){
   var configfile, data, doc, ref$, path, json, defargdoc, defarg, arr, l_vars, merged, project, inpwd, i$, len$, each, result, yaml_text, E, vars, n_merged, gjson, ljson, sortir;
   configfile = info.configfile;
@@ -424,12 +423,12 @@ modyaml = function*(info){
     E = e$;
     return SERR;
   }
-  defarg = R.tryCatch(JSON.parse, function(){
-    return [];
-  })(
-  String(
-  doc.getIn(
-  path.d)));
+  defarg = V.defarg.auth(doc.getIn(
+  path.d), info);
+  if (defarg.error) {
+    return SERR;
+  }
+  defarg = defarg.value[2];
   vars = R.tryCatch(JSON.parse, function(){
     return {};
   })(
@@ -479,28 +478,25 @@ function exec_list_option(yjson, info){
   }
   return results$;
 }
-function exec_cat_option(yaml_text, concat_count){
-  var hash_first;
+function exec_cat_option(yaml_text, concat_count, info){
+  var hash_first, lines, interm, i$, len$, I, text;
   hash_first = RegExp('^#');
-  return emphasize.then(function(pod){
-    var lines, interm, i$, len$, I, text;
-    lines = yaml_text.split("\n");
-    interm = [];
-    switch (concat_count) {
-    case 1:
-      for (i$ = 0, len$ = lines.length; i$ < len$; ++i$) {
-        I = lines[i$];
-        if (!hash_first.exec(I) && I.length !== 0) {
-          interm.push(I);
-        }
+  lines = yaml_text.split("\n");
+  interm = [];
+  switch (concat_count) {
+  case 1:
+    for (i$ = 0, len$ = lines.length; i$ < len$; ++i$) {
+      I = lines[i$];
+      if (!hash_first.exec(I) && I.length !== 0) {
+        interm.push(I);
       }
-      break;
-    case 2:
-      interm = lines;
     }
-    text = interm.join('\n');
-    return pod.emphasize.highlightAuto(text).value;
-  });
+    break;
+  case 2:
+    interm = lines;
+  }
+  text = interm.join('\n');
+  return l(info.libs.emphasize.highlightAuto(text).value);
 }
 SERR = Symbol('error');
 OK = Symbol('ok');
@@ -616,7 +612,7 @@ V.str2arr = be.arr.map(be.str).or(be.str.cont(function(str){
 }));
 V.rsync = {};
 V.rsync.throw_if_error = function(data){
-  var rsync, ref$, msg, index, tosend;
+  var rsync, ref$, msg, index, tosend, i$, len$, each, path;
   rsync = data.rsync;
   if (rsync === false) {
     return true;
@@ -626,7 +622,26 @@ V.rsync.throw_if_error = function(data){
     tosend = [false, [':rsync', msg], ['rsync'].concat(arrayFrom$(index))];
     return tosend;
   }
+  for (i$ = 0, len$ = rsync.length; i$ < len$; ++i$) {
+    index = i$;
+    each = rsync[i$];
+    if (R.type(each.des) !== 'String') {
+      msg = [".des is not defined. maybe remotefold is not defined."];
+      path = R.slice(1, -1, arguments);
+      tosend = [false, [':rsync', ['uno', msg]], ['rsync', index, 'des']];
+      return tosend;
+    }
+  }
   return true;
+};
+san_remotefold = function(data, cmdname){
+  var st;
+  if (R.type(data.remotefold) !== 'String') {
+    st = {};
+    st.error = [['def', "remotefold is undefined (unable to substitute .des in rsync).", [cmdname, 'remotefold']], []];
+    return [SERR, st];
+  }
+  return [OK];
 };
 rsync_arr2obj = function(data, cmdname, remotefold){
   var fin, error, list, i$, len$, index, I, keys, k, val, ret, ref$;
@@ -675,7 +690,7 @@ rsync_arr2obj = function(data, cmdname, remotefold){
       val = I[k];
       if (k === 'des') {
         if (!(R.type(val) === 'String')) {
-          error.push(['duo', ['des', " has to be string type."]], [index]);
+          error.push(['duo', ['des', "has to be string type."]], [index]);
           fin.error = error;
           return fin;
         }
@@ -753,6 +768,9 @@ organize_rsync = function(data, cmdname){
   for (i$ = 0, to$ = rsync.length; i$ < to$; ++i$) {
     I = i$;
     st = rsync_arr2obj(rsync[I], cmdname, remotefold);
+    if (st === SERR) {
+      return data;
+    }
     if (st.error) {
       st.error[1].unshift(I);
       data.rsync = st;
@@ -923,7 +941,12 @@ V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on(['inpwd', 'si
       return print.basicError;
     }
   }());
-  F(Error, path, info.configfile);
+  if (info.options.concat === 3) {
+    l(info.libs.emphasize.highlightAuto(j(val)).value);
+    F(Error, path, info.configfile);
+  } else {
+    F(Error, path, info.configfile);
+  }
 });
 zero = function(arr){
   return arr.length === 0;
@@ -962,9 +985,7 @@ update = function*(gjson, info){
   gjson = vout.value;
   ref$ = create_logger(info, gjson), lconfig = ref$[0], log = ref$[1], buildname = ref$[2];
   if (info.options.concat === 3) {
-    emphasize.then(function(pod){
-      return l(pod.emphasize.highlightAuto(j(lconfig)).value);
-    });
+    l(info.libs.emphasize.highlightAuto(j(lconfig)).value);
     return SERR;
   }
   if (info.options.watch_config_file) {
@@ -1068,7 +1089,7 @@ exec_rsync = function*(data, each){
   }
 };
 bko = be.known.obj;
-check_if_remote_needed = bko.on('remotehost', be.undef).or(bko.on('remotefold', be.undef)).and(bko.on('remote', be.not(zero)).or(bko.on('rsync', be.not(V.isFalse)))).cont(true).fix(false).wrap();
+check_if_remote_needed = bko.on('remote', be.arr.and(be.not(zero))).and(bko.on('remotehost', be.undefnull).or(bko.on('remotefold', be.undefnull))).cont(true).fix(false).wrap();
 check_if_remotehost_present = function*(data){
   var lconfig, log, cont, tryToSSH, E;
   lconfig = data.lconfig, log = data.log, cont = data.cont;
@@ -1408,7 +1429,7 @@ check_conf_file = function(conf, info){
   D = {};
   D.rsync = conf.rsync;
   D.ssh = conf.ssh;
-  D.remotefold = '';
+  D.remotefold = '<CONF dummy / ignore>';
   x$ = origin = {};
   x$.ssh = conf.ssh;
   sortir = V.CONF.auth(D, info.cmdname, {
@@ -1433,7 +1454,11 @@ san_cmdname = function(info, gjson){
   return OK;
 };
 get_all = function*(info){
-  var ref, yaml_text, gjson, concat, sortir, lconfig, log;
+  var pod, ref, yaml_text, gjson, concat, sortir, lconfig, log;
+  pod = (yield emphasize);
+  info.libs.emphasize = pod.emphasize;
+  pod = (yield boxen);
+  info.libs.boxen = pod['default'];
   ref = (yield* modyaml(info));
   if (ref === SERR) {
     return;
@@ -1449,7 +1474,7 @@ get_all = function*(info){
   }
   concat = info.options.concat;
   if (concat === 1 || concat === 2) {
-    exec_cat_option(ref.yaml_text, concat);
+    exec_cat_option(ref.yaml_text, concat, info);
     return;
   }
   if (san_cmdname(info, gjson) === SERR) {
@@ -1468,7 +1493,7 @@ get_all = function*(info){
 };
 main = function(cmd_data){
   return function(CONF){
-    var project_name, service_directory, config_file_name, wcf, x$, info, y$;
+    var project_name, service_directory, config_file_name, wcf, x$, info, y$, z$;
     project_name = cmd_data.project.value();
     if (project_name) {
       service_directory = CONF.service_directory;
@@ -1495,19 +1520,22 @@ main = function(cmd_data){
     x$.configfile = config_file_name;
     x$.timedata = [0, 0, 0];
     x$.cmdline = R.drop(2, process.argv);
-    y$ = x$.options = {};
-    y$.verbose = cmd_data.verbose.count();
-    y$.dryRun = cmd_data.dryRun.count();
-    y$.watch_config_file = wcf;
-    y$.list = cmd_data.list.count();
-    y$.auto_make_directory = cmd_data.auto_make_directory.count();
-    y$.no_watch = cmd_data.no_watch.count();
-    y$.silent = silent;
-    y$.edit = edit;
-    y$.concat = concatenate;
-    y$.project = project_name;
-    y$.ssh = CONF.ssh;
-    y$.rsync = CONF.rsync;
+    y$ = x$.libs = {};
+    y$.emphasize = null;
+    y$.boxen = null;
+    z$ = x$.options = {};
+    z$.verbose = cmd_data.verbose.count();
+    z$.dryRun = cmd_data.dryRun.count();
+    z$.watch_config_file = wcf;
+    z$.list = cmd_data.list.count();
+    z$.auto_make_directory = cmd_data.auto_make_directory.count();
+    z$.no_watch = cmd_data.no_watch.count();
+    z$.silent = silent;
+    z$.edit = edit;
+    z$.concat = concatenate;
+    z$.project = project_name;
+    z$.ssh = CONF.ssh;
+    z$.rsync = CONF.rsync;
     if (check_conf_file(CONF, info)) {
       return;
     }
