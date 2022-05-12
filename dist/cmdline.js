@@ -1,13 +1,19 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, emphasize, child_process, l, z, zj, R, lit, c, wait, noop, be, cp, homedir, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_var, rm_empty_lines, san_user_script, run_script, x$, gs_path, pathset, make_script_blank, update_doc, show, san_defarg, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, handle_ssh, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, san_cmdname, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, emphasize, child_process, l, z, zj, R, lit, c, wait, noop, be, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_var, rm_empty_lines, san_user_script, run_script, x$, gs_path, pathset, make_script_blank, update_doc, show, san_defarg, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, handle_ssh, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, san_cmdname, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
 dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, compare_version = com.compare_version, boxen = com.boxen, emphasize = com.emphasize, child_process = com.child_process;
 ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, zj = ref$.zj, j = ref$.j, R = ref$.R, lit = ref$.lit, c = ref$.c, wait = ref$.wait, noop = ref$.noop;
 be = com.hoplon.types;
 cp = child_process;
-homedir = require('os').homedir();
+os = require('os');
+homedir = os.homedir();
+release = os.release();
+re = /Microsoft/g;
+if (release.match(re)) {
+  isWSL = true;
+}
 CONFIG_FILE_NAME = ".remotemon.yaml";
 cmd_data = new optionParser();
 cmd_data.addOption('h', 'help', null, 'help');
@@ -1061,7 +1067,7 @@ arrToStr = function(arr){
   return arr.join(" ") + gap;
 };
 create_rsync_cmd = function(rsync, remotehost){
-  var txt, str, obnormal, obarr, des, src, i$, len$, I, ref$, key, val, cmd;
+  var txt, str, obnormal, obarr, des, src, i$, len$, I, ref$, key, val, tsel, cmd;
   txt = "";
   str = rsync.str, obnormal = rsync.obnormal, obarr = rsync.obarr, des = rsync.des, src = rsync.src;
   for (i$ = 0, len$ = str.length; i$ < len$; ++i$) {
@@ -1076,7 +1082,8 @@ create_rsync_cmd = function(rsync, remotehost){
     val = obarr[key];
     txt += ("--" + key + "={") + (fn$()).join(',') + "} ";
   }
-  cmd = "rsync " + txt + arrToStr(src) + (remotehost + ":" + des);
+  tsel = remotehost + ":" + des;
+  cmd = "rsync " + txt + arrToStr(src) + tsel;
   return cmd;
   function fn$(){
     var i$, ref$, len$, results$ = [];
