@@ -86,7 +86,7 @@ __dirname + '/../package.json');
 metadata = com.metadata;
 show_name = function(filename){
   filename == null && (filename = '');
-  return l(lit(["[" + metadata.name + "]", " • dataError • ", filename, "\n"], [c.er3, c.er2, c.warn, null]));
+  return l(lit(["[" + metadata.name + "]", " dataError • ", filename, "\n"], [c.er3, c.er2, c.warn, null]));
 };
 rdot = /\./;
 clean_path = R.pipe(R.map(function(txt){
@@ -120,11 +120,11 @@ print.rsyncError = function(msg, path, filename){
   return l(c.grey("\n  please refer to docs to provide valid values."));
 };
 print.incorrect_arg_num = function(){
-  l(lit(["[" + metadata.name + "]", " • inputError\n"], [c.er2, c.er3]));
+  l(lit(["[" + metadata.name + "]", " dataError\n"], [c.er2, c.er3]));
   return l(lit(["  ", "incorrect number of arguments for function."], [0, c.er1, c.er3, c.er1]));
 };
 print.incorrect_custom = function(__, key){
-  l(lit(["[" + metadata.name + "]", " • incorrect custom task name ", "\n"], [c.er2, c.er3, c.er2, null]));
+  l(lit(["[" + metadata.name + "]", " dataError ", "\n"], [c.er2, c.er3, c.er2, null]));
   return l(lit(["  ", key, " <-- custom task name cannot contain", " \"/\" ", "character. "], [null, c.er3, c.er1, c.er3, c.er1]));
 };
 print.reqError = function(props, path, filename){
@@ -134,9 +134,10 @@ print.reqError = function(props, path, filename){
   l(lit(["  mandatory value " + c.er1("." + last) + " not present.\n\n", "  all mandatory value(s) :\n"], [c.grey, c.grey]));
   return l(c.er1("  ." + props.join(" .")));
 };
-print.defarg_req = function(len){
-  l(lit(["[" + metadata.name + "]", " • dataError \n"], [c.er2, c.er3]));
-  return l(lit(["  command requires minimum of ", len, " commandline argument."], [c.er2, c.er3, c.er2]));
+print.defarg_req = function(len, name){
+  name == null && (name = '');
+  l(lit(["[" + metadata.name + "]", " dataError \n"], [c.er2, c.er3]));
+  return l(lit(["  command ", name, "requires minimum of ", len, " commandline argument."], [c.pink, c.warn, c.pink, c.er3, c.pink]));
 };
 print.cmdError = function(cmdname){
   return l(lit(["[" + metadata.name + "] • cmdFailure • ", cmdname], [c.er2, c.warn]));
@@ -184,7 +185,7 @@ print.resError = function(props, path, filename){
   return l(show_body(path, [c.grey("unrecognized config key") + c.er3(" " + key) + "\n", c.grey("only acceptable keys are :\n"), c.pink("- " + props.join(" \n  - "))].join("\n  ")));
 };
 print.could_not_find_custom_cmd = function(cmdname){
-  l(lit(["[" + metadata.name + "]", " • dataError\n"], [c.er2, c.er3]));
+  l(lit(["[" + metadata.name + "]", " dataError\n"], [c.er2, c.er3]));
   return l(lit([" unable to locate ", cmdname + "", " task in config file."], [c.er1, c.warn, c.er1]));
 };
 print.custom_build = function(msg, path, filename){
@@ -195,6 +196,7 @@ print.basicError = function(msg, path, filename){
   show_name(filename);
   return l(show_body(path, msg));
 };
+print.defarg_required = function(){};
 print.no_match_for_arguments = function(){
   return l(lit(["[" + metadata.name + "]", " • argumentError \n\n", "   match for arguments failed.\n\n", "   " + j(arguments)], [c.er2, c.er3, c.warn, c.pink]));
 };

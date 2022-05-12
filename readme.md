@@ -163,6 +163,9 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 - `description` - provide a brief description of what the command does.
 
 - `defarg`      - default values for empty commandline arguments, for enforcing minimum commandline arguments, a number can be provided.
+
+- `defarg.required` - sometimes default values and mininum values are needed, in such situations we can use defarg.required.
+
 - `initialize`  - boolean value to specify if a first run is performed or not when command is run, default is `true`.
 
 - `rsync` - rsync options ( currently supported ) :
