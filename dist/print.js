@@ -1,4 +1,4 @@
-var x$, com, y$, most, hoplon, ref$, z, wait, most_create, child_process, readline, cp, be, R, dotpat, print, c, l, lit, j, readJson, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, internal, show, show_main, create_logger, print_wrap, I, key, out$ = typeof exports != 'undefined' && exports || this;
+var x$, com, y$, most, hoplon, ref$, z, wait, most_create, child_process, readline, cp, be, R, dotpat, rm_empty_lines, print, c, l, lit, j, readJson, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, internal, show, show_main, create_logger, print_wrap, I, key, out$ = typeof exports != 'undefined' && exports || this;
 x$ = com = {};
 y$ = x$.metadata = {};
 y$.name = null;
@@ -39,6 +39,14 @@ dotpat.take = function(amount, signal){
   return R.take(amount, sig).join(".");
 };
 com.dotpat = dotpat;
+rm_empty_lines = R.pipe(R.filter(function(str){
+  if (str.length === 0) {
+    return false;
+  } else {
+    return true;
+  }
+}));
+com.rm_empty_lines = rm_empty_lines;
 com.spawn = function(cmd, dir, inpwd){
   var cwd;
   if (inpwd) {
@@ -160,6 +168,17 @@ print.failed_in_mod_yaml = function(filename, E){
   l("\n  " + c.pink(com.path.resolve(filename)));
   return l(c.er1("\n  " + E));
 };
+print.yaml_parse_fail = function(msg, info){
+  var txt;
+  txt = R.join('\n')(
+  rm_empty_lines(
+  R.split('\n')(
+  String(
+  msg))));
+  l(lit(["[" + metadata.name + "]", " • parseError •", " YAML file."], [c.er3, c.er3, c.er3]));
+  l(lit(['\n Error in file ', info.configfile, "."], [c.er2, c.warn, c.er2]));
+  return l('\n' + c.er1(txt));
+};
 print.failed_in_tampax_parsing = function(filename, E){
   var emsg;
   l(lit(["[" + metadata.name + "]", " • parseError •", " yaml/tampex parsing error."], [c.warn, c.er2, c.er1]));
@@ -196,7 +215,6 @@ print.basicError = function(msg, path, filename){
   show_name(filename);
   return l(show_body(path, msg));
 };
-print.defarg_required = function(){};
 print.no_match_for_arguments = function(){
   return l(lit(["[" + metadata.name + "]", " • argumentError \n\n", "   match for arguments failed.\n\n", "   " + j(arguments)], [c.er2, c.er3, c.warn, c.pink]));
 };

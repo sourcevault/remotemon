@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, j, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, dotpat, spawn, yaml, compare_version, boxen, emphasize, child_process, l, z, zj, R, lit, c, wait, noop, be, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_var, rm_empty_lines, san_user_script, run_script, x$, gs_path, pathset, make_script_blank, update_doc, show, san_defarg, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, handle_ssh, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, san_cmdname, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, j, emphasize, child_process, rm_empty_lines, dotpat, spawn, yaml, compare_version, boxen, l, z, zj, R, lit, c, wait, noop, be, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_var, san_user_script, run_script, x$, gs_path, pathset, make_script_blank, update_doc, show, san_defarg, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_needed, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, san_cmdname, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
-readJson = com.readJson, most = com.most, j = com.j, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create, fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
-dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, compare_version = com.compare_version, boxen = com.boxen, emphasize = com.emphasize, child_process = com.child_process;
+readJson = com.readJson, most = com.most, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create;
+fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
+j = com.j, emphasize = com.emphasize, child_process = com.child_process, rm_empty_lines = com.rm_empty_lines;
+dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, compare_version = com.compare_version, boxen = com.boxen;
 ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, zj = ref$.zj, j = ref$.j, R = ref$.R, lit = ref$.lit, c = ref$.c, wait = ref$.wait, noop = ref$.noop;
 be = com.hoplon.types;
 cp = child_process;
@@ -229,13 +231,6 @@ san_inpwd = function(l, g){
 san_var = be.obj.fix(function(){
   return {};
 }).wrap();
-rm_empty_lines = R.pipe(R.filter(function(str){
-  if (str.length === 0) {
-    return false;
-  } else {
-    return true;
-  }
-}));
 san_user_script = function(lin){
   var todisp, toexit;
   lin = rm_empty_lines(lin);
@@ -404,12 +399,17 @@ san_defarg = function(x){
   }
 };
 modyaml = function*(info){
-  var configfile, data, doc, ref$, path, json, defargdoc, defarg, arr, l_vars, merged, project, inpwd, i$, len$, each, result, yaml_text, E, vars, n_merged, gjson, ljson, sortir;
+  var configfile, data, doc, error, ref$, path, json, defargdoc, defarg, arr, l_vars, merged, project, inpwd, i$, len$, each, result, yaml_text, E, vars, n_merged, gjson, ljson, sortir;
   configfile = info.configfile;
   data = R.toString(
   fs.readFileSync(
   configfile));
   doc = yaml.parseDocument(data);
+  error = doc.errors[0];
+  if (error) {
+    print.yaml_parse_fail(error, info);
+    return SERR;
+  }
   ref$ = update_doc(info, doc), path = ref$[0], json = ref$[1];
   defargdoc = R.path(path.d, json);
   defarg = V.defarg.auth(defargdoc, info);
@@ -849,12 +849,17 @@ V.ssh = be.obj.on('option', be.str.or(unu)).on('startwith', be.arr.map(be.str).o
     startwith: []
   };
 }));
+san_path = function(path){
+  return path;
+};
 V.def_ssh = V.ssh.cont(function(ob){
-  var state, origin;
+  var state, origin, path, tsel;
   state = arguments[arguments.length - 1];
   origin = state.origin;
   if (ob.startwith.length === 0) {
-    ob.startwith.push("cd " + origin.remotefold);
+    path = san_path(origin.remotefold);
+    tsel = "cd " + path + ";";
+    ob.startwith.push(tsel);
   }
   if (ob.option === void 8) {
     ob.option = state.info.options.ssh;
@@ -864,9 +869,18 @@ V.def_ssh = V.ssh.cont(function(ob){
 });
 V.user_ssh = V.ssh;
 handle_ssh = function(user, def){
+  var ssh, path, tsel;
+  ssh = user.ssh;
   if (user.ssh.startwith.length === 0) {
-    user.ssh.startwith = def.ssh.startwith;
+    if (user.remotefold) {
+      path = san_path(user.remotefold);
+      tsel = "cd " + path;
+      user.ssh.startwith.push(tsel);
+    } else {
+      user.ssh.startwith = def.ssh.startwith;
+    }
   }
+  ssh.startwith = dangling_colon(ssh.startwith);
   if (!user.ssh.option) {
     user.ssh.option = def.ssh.option;
   }
