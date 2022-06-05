@@ -1,4 +1,4 @@
-var x$, com, y$, most, hoplon, ref$, z, wait, most_create, child_process, readline, cp, be, R, dotpat, rm_empty_lines, print, c, l, lit, j, readJson, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, internal, show, show_main, create_logger, print_wrap, I, key, out$ = typeof exports != 'undefined' && exports || this;
+var x$, com, y$, most, hoplon, ref$, z, wait, most_create, child_process, readline, cp, be, vendor, R, dotpat, rm_empty_lines, print, c, l, lit, j, readJson, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, internal, show, show_main, create_logger, print_wrap, I, key, out$ = typeof exports != 'undefined' && exports || this;
 x$ = com = {};
 y$ = x$.metadata = {};
 y$.name = null;
@@ -24,7 +24,8 @@ com.child_process = child_process;
 cp = child_process;
 be = hoplon.types;
 com.readline = readline;
-com.compare_version = require('../dist/compare.version.js');
+vendor = require('./vendor.js');
+com.compare_version = vendor.compare_version;
 
 var boxen = import('boxen')
 var emphasize =  import('emphasize')
@@ -173,11 +174,10 @@ print.yaml_parse_fail = function(msg, info){
   txt = R.join('\n')(
   rm_empty_lines(
   R.split('\n')(
-  String(
-  msg))));
+  msg)));
   l(lit(["[" + metadata.name + "]", " • parseError •", " YAML file."], [c.er3, c.er3, c.er3]));
-  l(lit(['\n Error in file ', info.configfile, "."], [c.er2, c.warn, c.er2]));
-  return l('\n' + c.er1(txt));
+  l(lit(['\n Error in file ', info.configfile, "."], [c.er2, c.er2, c.er2]));
+  return l('\n ' + c.warn(txt));
 };
 print.failed_in_tampax_parsing = function(filename, E){
   var emsg;
@@ -189,13 +189,20 @@ print.failed_in_tampax_parsing = function(filename, E){
 };
 print.in_selected_key = function(key, cmd_str){
   l(lit(["[" + metadata.name + "]", " • cmdFailure \n"], [c.er2, c.er3]));
-  l(lit(["  " + key, " is a selected key, cannot be used as a task name.\n"], [c.er3, c.warn]));
+  l(lit(["  " + key, " is a print.error_in_user_script key, cannot be used as a task name.\n"], [c.er3, c.warn]));
   return l(lit(["  ", cmd_str.join(" ")], [null, c.er1]));
 };
+print.circular_ref = function(path){
+  l(lit(["[" + metadata.name + "]", " • data Error •", " circular expansion.\n"], [c.er2, c.er3, c.er1]));
+  l(lit(["  ", path, " <-- error here.\n"], [null, c.warn, c.er3]));
+  return l(lit(["  ", "Template string expansion cannot refer to itself."], [null, c.er1]));
+};
 print.error_in_user_script = function(err_msg, path){
+  var lines;
   l(lit(["[" + metadata.name + "]", " • cmdFailure •", " error in user script.\n"], [c.er2, c.er3, c.er1]));
-  l(lit(["  ", path.join("."), " <-- error here.\n"], [null, c.warn, c.er3]));
-  return process.stdout.write(c.grey(err_msg));
+  l(lit(["  ", path, " <-- error here.\n"], [null, c.warn, c.er3]));
+  lines = err_msg.split('\n');
+  return process.stdout.write(c.er3("  " + lines[0] + '\n'));
 };
 print.resError = function(props, path, filename){
   var key;
@@ -214,9 +221,6 @@ print.custom_build = function(msg, path, filename){
 print.basicError = function(msg, path, filename){
   show_name(filename);
   return l(show_body(path, msg));
-};
-print.no_match_for_arguments = function(){
-  return l(lit(["[" + metadata.name + "]", " • argumentError \n\n", "   match for arguments failed.\n\n", "   " + j(arguments)], [c.er2, c.er3, c.warn, c.pink]));
 };
 internal = {};
 internal.normal = hoplon.guard.unary.wh(function(arg$){
