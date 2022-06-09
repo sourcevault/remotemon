@@ -95,7 +95,8 @@ __dirname + '/../package.json');
 metadata = com.metadata;
 show_name = function(filename){
   filename == null && (filename = '');
-  return l(lit(["[" + metadata.name + "]", " • dataError • ", filename, "\n"], [c.er3, c.er2, c.warn, null]));
+  l(lit(["[" + metadata.name + "]", " • dataError • ", "\n"], [c.er3, c.er2, c.warn, null]));
+  return l(lit(['  ', filename + '\n'], [null, c.er3]));
 };
 rdot = /\./;
 clean_path = R.pipe(R.map(function(txt){

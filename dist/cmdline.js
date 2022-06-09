@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, dotpat, spawn, yaml, compare_version, boxen, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, update_doc, parseDoc, show, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, san_cmdname, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, dotpat, spawn, yaml, compare_version, boxen, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, update_doc, parseDoc, show, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create;
 fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
@@ -207,7 +207,7 @@ V.defarg = defarg_main.cont(function(data){
     // fallthrough
   default:
     path = [info.cmdname, 'defarg'];
-    return print.basicError(msg, path, info.cmd_filename);
+    return print.basicError(msg, path, info.configfile);
   }
 });
 san_inpwd = function(l, g){
@@ -228,7 +228,7 @@ san_obj = be.obj.fix(function(){
 }).wrap();
 san_arr = be.arr.fix(function(){
   return [];
-}).wrap();
+});
 san_user_script = function(lin){
   var todisp, toexit;
   lin = rm_empty_lines(lin);
@@ -291,20 +291,30 @@ get_str_type = function(str){
   }
   return [is_script, is_tampax];
 };
+handle_path_dot = {};
+handle_path_dot.save = be.str.tap(function(index, path, hist){
+  if (index.match("\\.")) {
+    return hist.dotpath.push([path, index]);
+  }
+}).alt(be.num).cont(function(index, path){
+  return path.concat(index);
+}).wrap();
 gs_path.js.loop = function(unknown, path, hist){
-  var w, index, value, i$, len$, spath, ref$, is_script, is_tampax, cmdname, index_name, results$ = [], results1$ = [];
+  var w, index, value, npath, i$, len$, spath, ref$, is_script, is_tampax, cmdname, index_name, results$ = [], results1$ = [];
   w = R.type(unknown);
   if (w === 'Object') {
     for (index in unknown) {
       value = unknown[index];
-      results$.push(gs_path.js.loop(value, path.concat(index), hist));
+      npath = handle_path_dot.save(index, path, hist);
+      results$.push(gs_path.js.loop(value, npath, hist));
     }
     return results$;
   } else if (w === 'Array') {
     for (i$ = 0, len$ = unknown.length; i$ < len$; ++i$) {
       index = i$;
       value = unknown[i$];
-      results1$.push(gs_path.js.loop(value, path.concat(index), hist));
+      npath = handle_path_dot.save(index, path, hist);
+      results1$.push(gs_path.js.loop(value, npath, hist));
     }
     return results1$;
   } else {
@@ -316,6 +326,7 @@ gs_path.js.loop = function(unknown, path, hist){
       return;
     }
     hist.all[spath] = unknown;
+    hist.pall.push(path);
     if (w === 'String') {
       ref$ = get_str_type(unknown), is_script = ref$[0], is_tampax = ref$[1];
       if (is_script) {
@@ -393,7 +404,9 @@ gs_path.js.main = function(obj, cmdname){
   x$.script_all = [];
   x$.tampax = {};
   x$.tampax_all = [];
+  x$.dotpath = [];
   x$.all = {};
+  x$.pall = [];
   x$.glovar = {};
   x$.cmdvar = {};
   x$.script = {};
@@ -440,7 +453,7 @@ rm_merge_key = function(data){
 san_defarg = function(js, info){
   return function(path){
     var defarg, arr;
-    defarg = V.defarg.auth(san_arr(R.path(path, js)), info);
+    defarg = V.defarg.auth(san_arr.auth(R.path(path, js)).value, info);
     if (defarg.error) {
       throw SERR;
     }
@@ -729,7 +742,7 @@ check_if_circular_ref = function(defarg, ref){
   }
 };
 update_doc = function(info, doc){
-  var cmdname, nominal_path, i$, ref$, len$, ref1$, key, value, p_cmdvar, p_empty, init, p, v_path, d_path, js, ref, index, path, defarg, sd, inpwd, a_path, clean_data;
+  var cmdname, nominal_path, i$, ref$, len$, ref1$, key, value, p_cmdvar, p_empty, init, p, v_path, d_path, js, ref, index, path, defarg, sd, inpwd, a_path, each;
   cmdname = info.cmdname;
   nominal_path = null;
   if (cmdname === undefined) {
@@ -806,8 +819,11 @@ update_doc = function(info, doc){
   check_if_circular_ref(defarg, ref);
   merge_ref_defarg(defarg, ref);
   clear.script(ref);
-  clean_data = com.hoplon.utils.flat.unflatten(ref.all);
-  return clean_data;
+  for (i$ = 0, len$ = (ref$ = ref.pall).length; i$ < len$; ++i$) {
+    each = ref$[i$];
+    z(each);
+  }
+  throw SERR;
 };
 parseDoc = function(data, info){
   var doc, error;
@@ -1279,7 +1295,7 @@ V.user = be.obj.err("custom user defined task, has to be object.").or(be.undefnu
   return {
     'local': list
   };
-})).on(['initialize', 'inpwd', 'silent'], be.bool.or(unu)).on('watch', V.watch.user).on('verbose', str_to_num.or(unu)).on('ignore', V.ignore.user).on(['pre', 'remote', 'local', 'final'], V.execlist).on('rsync', V.rsync.init).on('defarg.required', V.defarg_required).on(['remotehost', 'remotefold'], be.str.or(unu.cont(function(v, key){
+})).on(['initialize', 'inpwd', 'silent'], be.bool.or(unu)).on('watch', V.watch.user).on('defarg', san_arr).on('verbose', str_to_num.or(unu)).on('ignore', V.ignore.user).on(['pre', 'remote', 'local', 'final'], V.execlist).on('rsync', V.rsync.init).on('defarg.required', V.defarg_required).on(['remotehost', 'remotefold'], be.str.or(unu.cont(function(v, key){
   var origin;
   origin = arguments[arguments.length - 1].origin;
   return origin[key];
@@ -1289,7 +1305,7 @@ disp = function(num){
     return console.log(num);
   };
 };
-V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on(['inpwd', 'silent'], be.bool.or(be.undefnull.cont(false))).on('verbose', str_to_num.or(be.undefnull.cont(0))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', V.watch.def).on('defarg.required', V.defarg_required).on('ignore', V.ignore.def).on(['pre', 'local', 'final', 'remote'], V.execlist).on('rsync', V.rsync.init).cont(organize_rsync).and(V.rsync.throw_if_error).on('ssh', V.def_ssh).map(function(value, key){
+V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on(['inpwd', 'silent'], be.bool.or(be.undefnull.cont(false))).on('verbose', str_to_num.or(be.undefnull.cont(0))).on('initialize', be.bool.or(be.undefnull.cont(true))).on('watch', V.watch.def).on('defarg.required', V.defarg_required).on('defarg', san_arr).on('ignore', V.ignore.def).on(['pre', 'local', 'final', 'remote'], V.execlist).on('rsync', V.rsync.init).cont(organize_rsync).and(V.rsync.throw_if_error).on('ssh', V.def_ssh).map(function(value, key){
   var state, def, user, put;
   state = arguments[arguments.length - 1];
   def = state.def, user = state.user;
@@ -1695,7 +1711,13 @@ resolve_signal = be.arr.on(0, be.str.fix('<< program screwed up >>').cont(functi
     log.normal('err_light', "exit 1");
   }
   return 'error';
-}).alt(be.str).wrap();
+}).or(be(function(x){
+  return R.type(x) === 'Error';
+}).tap(function(E){
+  l('----');
+  l(c.er2(E.stack));
+  return l('----');
+})).alt(be.str).wrap();
 print_final_message = function(log, lconfig, info){
   return function(signal){
     var msg;
@@ -1872,21 +1894,6 @@ check_conf_file = function(conf, info){
     info: info
   });
   return sortir.error;
-};
-san_cmdname = function(info, gjson){
-  var found;
-  if (info.cmdname) {
-    if (global_data.selected_keys.set.has(info.cmdname)) {
-      print.in_selected_key(info.cmdname, info.cmdline);
-      return SERR;
-    }
-    found = gjson[info.cmdname];
-    if (!found) {
-      print.could_not_find_custom_cmd(info.cmdname);
-      return SERR;
-    }
-  }
-  return OK;
 };
 get_all = function*(info){
   var pod, ref$, yaml_text, gjson, E, concat, sortir, lconfig, log;
