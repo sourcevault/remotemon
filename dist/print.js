@@ -214,6 +214,13 @@ print.could_not_find_custom_cmd = function(cmdname){
   l(lit(["[" + metadata.name + "]", " • dataError\n"], [c.er2, c.er3]));
   return l(lit([" unable to locate ", cmdname + "", " task in config file."], [c.er1, c.warn, c.er1]));
 };
+print.script_in_wrong_place = function(path){
+  var emsg;
+  l(lit(["[" + metadata.name + "]", " • dataError •", " incorrect location for user script.\n"], [c.er2, c.er3, c.er1]));
+  l(lit(["  ", path, " <-- error here."], [null, c.warn, c.er3]));
+  emsg = ["\n", c.er1("  script cannot be defined outside of values in :\n\n"), c.er1("   - .defarg."), c.er3("{here}\n"), c.er1("   - .var."), c.er3("{here}\n"), c.er1("   - [...].defarg"), c.er3(".{here}\n"), c.er1("   - [...].var."), c.er3("{here}")];
+  return l(emsg.join(""));
+};
 print.custom_build = function(msg, path, filename){
   show_name(filename);
   return l(show_body(path, [c.grey("unrecognized value provided.") + "\n", c.grey("only acceptable value types :\n"), c.pink("- array of string ( defaults to local )."), c.pink("- object with restricted keys :"), c.warn("\n  - " + data.selected_keys.arr.join("\n  - "))].join("\n ")));

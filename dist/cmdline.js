@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, dotpat, spawn, yaml, compare_version, boxen, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, pathset, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, update_doc, parseDoc, show, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, san_cmdname, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, dotpat, spawn, yaml, compare_version, boxen, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, update_doc, parseDoc, show, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, san_cmdname, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create;
 fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
@@ -291,65 +291,53 @@ get_str_type = function(str){
   }
   return [is_script, is_tampax];
 };
-gs_path.js.loop = be.obj.alt(be.arr).forEach(function(){
-  var ref$;
-  return (ref$ = gs_path.js.loop).auth.apply(ref$, arguments)['continue'];
-}).or(be.str.tap(function(str){
-  var hist, ref$, is_script, is_tampax, last, path, p, cmdname, index_name;
-  hist = arguments[arguments.length - 1];
-  ref$ = get_str_type(str), is_script = ref$[0], is_tampax = ref$[1];
-  last = arguments.length - 2;
-  path = arguments[last];
-  while (--last) {
-    path = path + "." + arguments[last];
-  }
-  p = path.split(".");
-  if (!global_data.selected_keys.set.has(p[0]) && !(p[0] === hist.cmdname)) {
-    return;
-  }
-  if (p[0] === 'defarg' || p[1] === 'defarg') {
-    return;
-  }
-  hist.all[path] = str;
-  if (is_script) {
-    hist.script_all.push(path);
-    hist.script.add(path);
+gs_path.js.loop = function(unknown, path, hist){
+  var w, index, value, i$, len$, spath, ref$, is_script, is_tampax, cmdname, index_name, results$ = [], results1$ = [];
+  w = R.type(unknown);
+  if (w === 'Object') {
+    for (index in unknown) {
+      value = unknown[index];
+      results$.push(gs_path.js.loop(value, path.concat(index), hist));
+    }
+    return results$;
+  } else if (w === 'Array') {
+    for (i$ = 0, len$ = unknown.length; i$ < len$; ++i$) {
+      index = i$;
+      value = unknown[i$];
+      results1$.push(gs_path.js.loop(value, path.concat(index), hist));
+    }
+    return results1$;
   } else {
-    if (p[0] === 'var') {
-      hist.glovar[R.drop(1, p).join(".")] = str;
+    spath = path.join(".");
+    if (!global_data.selected_keys.set.has(path[0]) && !(path[0] === hist.cmdname)) {
+      return;
     }
-    if (p[1] === 'var') {
-      cmdname = p[0];
-      index_name = R.join(".")(
-      R.drop(2, p));
-      hist.cmdvar[index_name] = str;
+    if (path[0] === 'defarg' || path[1] === 'defarg') {
+      return;
+    }
+    hist.all[spath] = unknown;
+    if (w === 'String') {
+      ref$ = get_str_type(unknown), is_script = ref$[0], is_tampax = ref$[1];
+      if (is_script) {
+        hist.script_all.push(spath);
+        hist.script[spath] = path;
+      } else {
+        if (path[0] === 'var') {
+          hist.glovar[R.drop(1, path).join(".")] = unknown;
+        }
+        if (path[1] === 'var') {
+          cmdname = path[0];
+          index_name = R.join(".")(
+          R.drop(2, path));
+          hist.cmdvar[index_name] = unknown;
+        }
+      }
+      if (is_tampax) {
+        hist.tampax[spath] = void 8;
+        return hist.tampax_all.push(path);
+      }
     }
   }
-  if (is_tampax) {
-    hist.tampax[path] = void 8;
-    return hist.tampax_all.push(p);
-  }
-}).or(be(function(){
-  return true;
-}).cont(function(value){
-  var hist, last, path;
-  hist = arguments[arguments.length - 1];
-  last = arguments.length - 2;
-  path = arguments[last];
-  while (--last) {
-    path = path + "." + arguments[last];
-  }
-  hist.all[path] = value;
-})));
-pathset = function(path, obj, str){
-  var ou, i$, to$, I;
-  ou = obj;
-  for (i$ = 0, to$ = path.length - 1; i$ < to$; ++i$) {
-    I = i$;
-    ou = ou[path[I]];
-  }
-  ou[path[path.length - 1]] = str;
-  return obj;
 };
 gs_path.yl.loop = be(function(obj){
   var a;
@@ -408,9 +396,9 @@ gs_path.js.main = function(obj, cmdname){
   x$.all = {};
   x$.glovar = {};
   x$.cmdvar = {};
-  x$.script = new Set();
+  x$.script = {};
   x$.cmdname = cmdname;
-  gs_path.js.loop.auth(obj, hist);
+  gs_path.js.loop(obj, [], hist);
   return hist;
 };
 gs_path.yl.main = function(obj){
@@ -478,7 +466,9 @@ update_defarg = function(defarg, type){
 yaml_parse = function(doc, info){
   var js, E;
   try {
-    js = yaml.parse(doc.toString());
+    js = yaml.parse(doc.toString(), {
+      merge: true
+    });
     return js;
   } catch (e$) {
     E = e$;
@@ -534,7 +524,7 @@ clear.tampax = function(name, ref, path){
   for (i$ = 0, len$ = expansions.length; i$ < len$; ++i$) {
     each = expansions[i$];
     has_tampax = Boolean(ref.tampax[each]);
-    is_script = ref.script.has(each);
+    is_script = ref.script[each];
     exists = ref.all[each];
     if (is_script) {
       save = "[" + each + ":script]";
@@ -597,7 +587,7 @@ clear.script = function(ref){
     }
     val = run_script(script_text, pwd, ref.project, each);
     ref.all[each] = val;
-    ref.script['delete'](each);
+    ref.script[each] = void 8;
     delete ref.tampax[each];
   }
   tampax = ref.tampax;
@@ -739,7 +729,7 @@ check_if_circular_ref = function(defarg, ref){
   }
 };
 update_doc = function(info, doc){
-  var cmdname, nominal_path, i$, ref$, len$, ref1$, key, value, p_cmdvar, p_empty, init, p, v_path, d_path, js, ref, AA, aliases, anchor, defarg, sd, inpwd, a_path, clean_data;
+  var cmdname, nominal_path, i$, ref$, len$, ref1$, key, value, p_cmdvar, p_empty, init, p, v_path, d_path, js, ref, index, path, defarg, sd, inpwd, a_path, clean_data;
   cmdname = info.cmdname;
   nominal_path = null;
   if (cmdname === undefined) {
@@ -770,11 +760,13 @@ update_doc = function(info, doc){
   d_path = arrayFrom$(nominal_path).concat(['defarg']);
   js = yaml_parse(doc, info);
   ref = gs_path.js.main(js, cmdname);
-  AA = gs_path.yl.main(doc);
-  aliases = rm_merge_key(AA);
-  anchor = AA.anchor;
-  ref.aliases = aliases;
-  ref.anchor = anchor;
+  for (index in ref$ = ref.script) {
+    path = ref$[index];
+    if (!(((ref1$ = path[0]) === 'var' || ref1$ === 'defarg') || ((ref1$ = path[1]) === 'var' || ref1$ === 'defarg'))) {
+      print.script_in_wrong_place(index);
+      throw SERR;
+    }
+  }
   defarg = {};
   defarg.project = info.options.project;
   defarg.defarg = null;
@@ -792,7 +784,7 @@ update_doc = function(info, doc){
   if (cmdname) {
     if (!js[cmdname]) {
       print.could_not_find_custom_cmd(cmdname);
-      return SERR;
+      throw SERR;
     }
     inpwd = san_inpwd(js[cmdname].inpwd, js.inpwd);
     defarg.localpwd = inpwd;
@@ -1902,7 +1894,6 @@ get_all = function*(info){
     ref$ = (yield* modyaml(info)), yaml_text = ref$.yaml_text, gjson = ref$.gjson;
   } catch (e$) {
     E = e$;
-    l(c.er3(".getall " + String(E)));
     return;
   }
   if (info.options.edit) {
