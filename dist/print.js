@@ -210,8 +210,9 @@ print.resError = function(props, path, filename){
   key = R.last(path);
   return l(show_body(path, [c.grey("unrecognized config key") + c.er3(" " + key) + "\n", c.grey("only acceptable keys are :\n"), c.pink("- " + props.join(" \n  - "))].join("\n  ")));
 };
-print.could_not_find_custom_cmd = function(cmdname){
+print.could_not_find_custom_cmd = function(cmdname, info){
   l(lit(["[" + metadata.name + "]", " • dataError\n"], [c.er2, c.er3]));
+  l(lit([' ', info.configfile + '.\n'], [null, c.er3]));
   return l(lit([" unable to locate ", cmdname + "", " task in config file."], [c.er1, c.warn, c.er1]));
 };
 print.script_in_wrong_place = function(path){

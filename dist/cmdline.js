@@ -782,8 +782,12 @@ update_doc = function(info, doc){
   update_defarg(defarg, 'defarg');
   defarg.globalpwd = san_inpwd(js.inpwd, info.options.inpwd);
   if (cmdname) {
+    if (global_data.selected_keys.set.has(cmdname)) {
+      print.in_selected_key(cmdname, info.cmdline);
+      throw SERR;
+    }
     if (!js[cmdname]) {
-      print.could_not_find_custom_cmd(cmdname);
+      print.could_not_find_custom_cmd(cmdname, info);
       throw SERR;
     }
     inpwd = san_inpwd(js[cmdname].inpwd, js.inpwd);
@@ -1907,9 +1911,6 @@ get_all = function*(info){
   concat = info.options.concat;
   if (concat === 1 || concat === 2) {
     exec_cat_option(yaml_text, concat, info);
-    return;
-  }
-  if (san_cmdname(info, gjson) === SERR) {
     return;
   }
   sortir = (yield* update(gjson, info));
