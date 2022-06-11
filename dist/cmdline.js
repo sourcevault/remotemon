@@ -840,7 +840,7 @@ replace_dot.decode = function(ref, js){
   return js;
 };
 update_doc = function(info, doc){
-  var cmdname, nominal_path, i$, ref$, len$, ref1$, key, value, p_cmdvar, p_empty, init, p, v_path, d_path, js, ref, index, path, defarg, sd, inpwd, a_path, clean_data;
+  var cmdname, nominal_path, i$, ref$, len$, ref1$, key, value, p_cmdvar, p_empty, init, p, v_path, d_path, js_all, js, sk, index, ref, path, defarg, sd, inpwd, a_path, cd, clean_data;
   cmdname = info.cmdname;
   nominal_path = null;
   if (cmdname === undefined) {
@@ -869,7 +869,15 @@ update_doc = function(info, doc){
   }
   v_path = arrayFrom$(nominal_path).concat(['var']);
   d_path = arrayFrom$(nominal_path).concat(['defarg']);
-  js = yaml_parse(doc, info);
+  js_all = yaml_parse(doc, info);
+  js = {};
+  sk = global_data.selected_keys.set;
+  for (index in js_all) {
+    value = js_all[index];
+    if (sk.has(index) || index === cmdname) {
+      js[index] = value;
+    }
+  }
   ref = gs_path.js.main(js, cmdname);
   for (index in ref$ = ref.script) {
     path = ref$[index];
@@ -918,8 +926,8 @@ update_doc = function(info, doc){
   merge_ref_defarg(defarg, ref);
   clear.script(ref);
   replace_dot.encode(ref);
-  clean_data = com.hoplon.utils.flat.unflatten(ref.all);
-  replace_dot.decode(ref, clean_data);
+  cd = com.hoplon.utils.flat.unflatten(ref.all);
+  clean_data = replace_dot.decode(ref, cd);
   return clean_data;
 };
 parseDoc = function(data, info){
@@ -1359,8 +1367,7 @@ V.def_ssh = V.ssh.cont(function(ob){
 });
 V.user_ssh = V.ssh;
 handle_ssh = function(user, def){
-  var ssh, path, tsel;
-  ssh = user.ssh;
+  var path, tsel;
   if (user.ssh.startwith.length === 0) {
     if (user.remotefold) {
       path = san_path(user.remotefold);
@@ -1370,7 +1377,7 @@ handle_ssh = function(user, def){
       user.ssh.startwith = def.ssh.startwith;
     }
   }
-  ssh.startwith = dangling_colon(ssh.startwith);
+  user.ssh.startwith = dangling_colon(user.ssh.startwith);
   if (!user.ssh.option) {
     user.ssh.option = def.ssh.option;
   }
