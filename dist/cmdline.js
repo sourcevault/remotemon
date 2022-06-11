@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, dotpat, spawn, yaml, compare_version, boxen, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, update_doc, parseDoc, show, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, dotpat, spawn, yaml, compare_version, boxen, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, insert, match_exec, undy, doty, replace_dot, pathops, update_doc, parseDoc, show, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create;
 fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
@@ -294,11 +294,24 @@ get_str_type = function(str){
 handle_path_dot = {};
 handle_path_dot.save = be.str.tap(function(index, path, hist){
   if (index.match("\\.")) {
-    return hist.dotpath.push([path, index]);
+    return hist.dotpath.push(arrayFrom$(path).concat([index]));
   }
 }).alt(be.num).cont(function(index, path){
   return path.concat(index);
 }).wrap();
+handle_path_dot.save_matrix = function(path, yIndex, hist){
+  var i$, len$, xIndex, each, results$ = [];
+  for (i$ = 0, len$ = path.length; i$ < len$; ++i$) {
+    xIndex = i$;
+    each = path[i$];
+    if (R.type(each) === 'String') {
+      if (each.match("\\.")) {
+        results$.push(hist.dotmatrix.push([yIndex, xIndex]));
+      }
+    }
+  }
+  return results$;
+};
 gs_path.js.loop = function(unknown, path, hist){
   var w, index, value, npath, i$, len$, spath, ref$, is_script, is_tampax, cmdname, index_name, results$ = [], results1$ = [];
   w = R.type(unknown);
@@ -326,6 +339,7 @@ gs_path.js.loop = function(unknown, path, hist){
       return;
     }
     hist.all[spath] = unknown;
+    handle_path_dot.save_matrix(path, hist.pall.length, hist);
     hist.pall.push(path);
     if (w === 'String') {
       ref$ = get_str_type(unknown), is_script = ref$[0], is_tampax = ref$[1];
@@ -405,6 +419,7 @@ gs_path.js.main = function(obj, cmdname){
   x$.tampax = {};
   x$.tampax_all = [];
   x$.dotpath = [];
+  x$.dotmatrix = [];
   x$.all = {};
   x$.pall = [];
   x$.glovar = {};
@@ -741,8 +756,91 @@ check_if_circular_ref = function(defarg, ref){
     }
   }
 };
+insert = function(whole, index, str){
+  if (index > 0) {
+    return whole.substring(0, index) + str + whole.substr(index + 1);
+  }
+  return str + whole;
+};
+match_exec = function(re, str){
+  var m, sortir, f;
+  m = true;
+  sortir = [];
+  while (m) {
+    f = re.exec(str);
+    if (f) {
+      sortir.push(f.index);
+    }
+    m = f;
+  }
+  return sortir;
+};
+undy = /\:\s/g;
+doty = /\./g;
+replace_dot = {};
+replace_dot.replace = function(re, part, str){
+  var indexes, nstr, i$, len$, I;
+  part == null && (part = ": ");
+  indexes = match_exec(re, str);
+  nstr = str;
+  for (i$ = 0, len$ = indexes.length; i$ < len$; ++i$) {
+    I = indexes[i$];
+    nstr = insert(nstr, I, part);
+  }
+  return nstr;
+};
+replace_dot.encode = function(ref){
+  var i$, ref$, len$, ref1$, yAxis, xAxis, path, str, nstr, oldpath, npath, val, results$ = [];
+  for (i$ = 0, len$ = (ref$ = ref.dotmatrix).length; i$ < len$; ++i$) {
+    ref1$ = ref$[i$], yAxis = ref1$[0], xAxis = ref1$[1];
+    path = ref.pall[yAxis];
+    str = path[xAxis];
+    nstr = replace_dot.replace(doty, ": ", str);
+    oldpath = path.join('.');
+    path[xAxis] = nstr;
+    npath = path.join('.');
+    val = ref.all[oldpath];
+    delete ref.all[oldpath];
+    results$.push(ref.all[npath] = val);
+  }
+  return results$;
+};
+pathops = guard.ar(2, function(path, obj){
+  return pathops(path, obj, '', 'del');
+}).ar(3, function(path, obj, str){
+  return pathops(path, obj, str, 'mod');
+}).def(function(path, obj, str, type){
+  var ou, lastname, i$, to$, I;
+  ou = obj;
+  lastname = path[path.length - 1];
+  for (i$ = 0, to$ = path.length - 1; i$ < to$; ++i$) {
+    I = i$;
+    ou = ou[path[I]];
+  }
+  switch (type) {
+  case 'del':
+    delete ou[lastname];
+    break;
+  case 'mod':
+    ou[lastname] = str;
+  }
+  return obj;
+});
+replace_dot.decode = function(ref, js){
+  var i$, ref$, len$, each, ref1$, newpath, last, nstr, val;
+  for (i$ = 0, len$ = (ref$ = ref.dotpath).length; i$ < len$; ++i$) {
+    each = ref$[i$];
+    ref1$ = R.splitAt(-1, each), newpath = ref1$[0], last = ref1$[1];
+    nstr = replace_dot.replace(doty, ": ", last[0]);
+    newpath.push(nstr);
+    val = R.path(newpath, js);
+    pathops(each, js, val);
+    pathops(newpath, js);
+  }
+  return js;
+};
 update_doc = function(info, doc){
-  var cmdname, nominal_path, i$, ref$, len$, ref1$, key, value, p_cmdvar, p_empty, init, p, v_path, d_path, js, ref, index, path, defarg, sd, inpwd, a_path, each;
+  var cmdname, nominal_path, i$, ref$, len$, ref1$, key, value, p_cmdvar, p_empty, init, p, v_path, d_path, js, ref, index, path, defarg, sd, inpwd, a_path, clean_data;
   cmdname = info.cmdname;
   nominal_path = null;
   if (cmdname === undefined) {
@@ -819,11 +917,10 @@ update_doc = function(info, doc){
   check_if_circular_ref(defarg, ref);
   merge_ref_defarg(defarg, ref);
   clear.script(ref);
-  for (i$ = 0, len$ = (ref$ = ref.pall).length; i$ < len$; ++i$) {
-    each = ref$[i$];
-    z(each);
-  }
-  throw SERR;
+  replace_dot.encode(ref);
+  clean_data = com.hoplon.utils.flat.unflatten(ref.all);
+  replace_dot.decode(ref, clean_data);
+  return clean_data;
 };
 parseDoc = function(data, info){
   var doc, error;
@@ -1196,7 +1293,7 @@ organize_rsync = function(data, cmdname){
       if (data.ssh) {
         ssh = [['rsh', "ssh " + data.ssh]];
       } else if (state.origin.ssh) {
-        ssh = [['rsh', "ssh " + state.origin.ssh.option]];
+        ssh = [['rsh', "ssh " + st.ate.origin.ssh.option]];
       } else {
         ssh = [];
       }
