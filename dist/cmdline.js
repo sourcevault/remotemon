@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, dotpat, spawn, yaml, compare_version, boxen, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, insert, match_exec, undy, doty, replace_dot, pathops, update_doc, parseDoc, show, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, dotpat, spawn, yaml, compare_version, boxen, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, insert, match_exec, undy, doty, replace_dot, pathops, update_doc, parseDoc, show, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, ifTrue, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create;
 fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
@@ -55,7 +55,7 @@ if (!metadata.name) {
   return false;
 }
 init = function*(){
-  var configDirExists, cfolder, rmConfigFileExists, config_yaml_text, doc, service_dir, edit_config_file, q, str, ref$, str1, str2, lastchecktime, current_version_number, epoc, time_in_seconds, re, raw, ret, vn, corde, doc_as_json;
+  var configDirExists, cfolder, rmConfigFileExists, config_yaml_text, doc, service_dir, edit_config_file, q, str, ref$, str1, str2, lastchecktime, current_version_number, epoc, time_in_seconds, re, raw, ret, vn, corde, user_doc, prog_doc, fin_doc;
   configDirExists = fs.existsSync(homedir + "/.config");
   cfolder = homedir + "/.config/config.remotemon.yaml";
   rmConfigFileExists = fs.existsSync(cfolder);
@@ -125,8 +125,13 @@ init = function*(){
   if (edit_config_file) {
     fs.writeFileSync(cfolder, corde);
   }
-  doc_as_json = doc.toJSON();
-  return (yield doc_as_json);
+  user_doc = doc.toJSON();
+  prog_doc = yaml.parse(
+  R.toString(
+  fs.readFileSync(
+  "./src/config.remotemon.yaml")));
+  fin_doc = R.mergeLeft(user_doc, prog_doc);
+  return (yield fin_doc);
 };
 rest = cmd_data.parse();
 if (cmd_data.help.count() > 0) {
@@ -1099,17 +1104,35 @@ is_true = function(x){
 };
 V.isFalse = be(is_false);
 V.isTrue = be(is_true);
+ifTrue = function(type){
+  return function(){
+    var state, val;
+    state = arguments[arguments.length - 1];
+    val = state.origin[type];
+    if (Boolean(val)) {
+      return val;
+    } else {
+      return state.info.options[type];
+    }
+  };
+};
 V.watch = {};
-V.watch.main = V.rsl.or(V.isFalse.cont(function(){
-  return [];
-})).or(be.undefnull.cont(function(){
+V.watch.main = V.rsl.or(be.undefnull.alt(V.isFalse).cont(function(){
   return [];
 }));
-V.watch.def = V.watch.main.or(V.isTrue.cont(["."]));
-V.watch.user = V.watch.def;
+V.watch.def = V.watch.main.or(V.isTrue.cont(function(){
+  var state;
+  state = arguments[arguments.length - 1];
+  return state.info.options.watch;
+}));
+V.watch.user = V.watch.main.or(V.isTrue.cont(ifTrue('watch')));
 V.ignore = {};
-V.ignore.def = V.watch.def;
-V.ignore.user = V.watch.def;
+V.ignore.def = V.watch.main.or(V.isTrue.cont(function(){
+  var state;
+  state = arguments[arguments.length - 1];
+  return state.info.options.ignore;
+}));
+V.ignore.user = V.watch.main.or(V.isTrue.cont(ifTrue('ignore')));
 V.execlist = V.strlist.empty.cont(function(strlist){
   var sortir, i$, len$, str, nstr;
   sortir = [];
@@ -1972,7 +1995,9 @@ restart = function*(info, log){
   aout = most.generate(ms_create_watch, lconfig, info, log).drain();
   return OK;
 };
-V.CONF = be.known.obj.on('rsync', V.rsync.init).on('ssh', V.ssh).cont(organize_rsync).and(V.rsync.throw_if_error).err(function(message, path){
+V.CONF = be.known.obj.on('rsync', V.rsync.init).on('ssh', V.ssh).on('watch', be.undef.or(be.arr.or(be.str.cont(function(str){
+  return [str];
+})))).on('inpwd', be.undef.or(be.bool)).cont(organize_rsync).and(V.rsync.throw_if_error).err(function(message, path){
   var info, topmsg, loc, Error, F;
   info = arguments[arguments.length - 1];
   topmsg = be.flatro(message)[0];
@@ -1981,6 +2006,9 @@ V.CONF = be.known.obj.on('rsync', V.rsync.init).on('ssh', V.ssh).cont(organize_r
     switch (loc) {
     case ':rsync':
       return print.rsyncError;
+    default:
+      Error = topmsg;
+      return print.basicError;
     }
   }());
   return F(Error, path, "~/.config/config.remotemon.yaml");
@@ -2082,10 +2110,16 @@ main = function(cmd_data){
     z$.ssh = CONF.ssh;
     z$.rsync = CONF.rsync;
     z$.inpwd = CONF.inpwd;
+    z$.watch = CONF.watch;
     if (check_conf_file(CONF, info)) {
       return;
     }
-    return most.generate(get_all, info).drain();
+    return most.generate(get_all, info).recoverWith(function(E){
+      var str;
+      str = ' [ error at line 3086 ]';
+      l(c.er1(E.toString() + str));
+      return most.empty();
+    }).drain();
   };
 };
 most.generate(init).tap(main(cmd_data)).recoverWith(function(E){
