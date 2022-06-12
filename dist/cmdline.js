@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, dotpat, spawn, yaml, compare_version, boxen, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, insert, match_exec, undy, doty, replace_dot, pathops, update_doc, parseDoc, show, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, ifTrue, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, path, dotpat, spawn, yaml, compare_version, boxen, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, insert, match_exec, undy, doty, replace_dot, pathops, update_doc, parseDoc, show, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, ifTrue, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create;
 fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
-emphasize = com.emphasize, child_process = com.child_process, rm_empty_lines = com.rm_empty_lines;
+emphasize = com.emphasize, child_process = com.child_process, rm_empty_lines = com.rm_empty_lines, path = com.path;
 dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, compare_version = com.compare_version, boxen = com.boxen;
 ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, zj = ref$.zj, j = ref$.j, R = ref$.R, lit = ref$.lit, c = ref$.c, wait = ref$.wait, noop = ref$.noop, jspc = ref$.jspc;
 be = com.hoplon.types;
@@ -55,15 +55,18 @@ if (!metadata.name) {
   return false;
 }
 init = function*(){
-  var configDirExists, cfolder, rmConfigFileExists, config_yaml_text, doc, service_dir, edit_config_file, q, str, ref$, str1, str2, lastchecktime, current_version_number, epoc, time_in_seconds, re, raw, ret, vn, corde, user_doc, prog_doc, fin_doc;
+  var configDirExists, cfolder, rmConfigFileExists, mod_config_file, config_yaml_text, doc, service_dir, edit_config_file, q, str, ref$, str1, str2, lastchecktime, current_version_number, epoc, time_in_seconds, re, raw, ret, vn, corde, user_doc, prog_doc, fin_doc;
   configDirExists = fs.existsSync(homedir + "/.config");
   cfolder = homedir + "/.config/config.remotemon.yaml";
   rmConfigFileExists = fs.existsSync(cfolder);
   if (!configDirExists) {
     exec("mkdir " + homedir + "/.config");
   }
+  mod_config_file = path.resolve(__dirname + '/../src/config.remotemon.yaml');
   if (!rmConfigFileExists) {
-    exec("cp ./src/config.remotemon.yaml " + homedir + "/.config/");
+    exec("cp " + {
+      mod_config_file: mod_config_file
+    } + " " + homedir + "/.config/");
   }
   config_yaml_text = fs.readFileSync(homedir + "/.config/config.remotemon.yaml").toString();
   doc = yaml.parseDocument(config_yaml_text);
@@ -129,7 +132,7 @@ init = function*(){
   prog_doc = yaml.parse(
   R.toString(
   fs.readFileSync(
-  "./src/config.remotemon.yaml")));
+  mod_config_file)));
   fin_doc = R.mergeLeft(user_doc, prog_doc);
   return (yield fin_doc);
 };
@@ -933,7 +936,7 @@ update_doc = function(info, doc){
   replace_dot.encode(ref);
   cd = com.hoplon.utils.flat.unflatten(ref.all);
   clean_data = replace_dot.decode(ref, cd);
-  return clean_data;
+  return [clean_data, js_all];
 };
 parseDoc = function(data, info){
   var doc, error;
@@ -953,16 +956,17 @@ show = R.tap(function(ob){
   console.log([ob]);
 });
 modyaml = function*(info){
-  var configfile, data, doc, clean_data;
+  var configfile, data, doc, ref$, clean_data, js;
   configfile = info.configfile;
   data = R.toString(
   fs.readFileSync(
   configfile));
   doc = parseDoc(data, info);
-  clean_data = update_doc(info, doc);
+  ref$ = update_doc(info, doc), clean_data = ref$[0], js = ref$[1];
   return {
     gjson: clean_data,
-    yaml_text: data
+    yaml_text: data,
+    js: js
   };
 };
 nPromise = function(f){
@@ -994,7 +998,7 @@ function exec_list_option(yjson, info){
     I = i$;
     name = user_ones[I];
     des = only_str(yjson[name].description);
-    results$.push(l(lit([" • ", name, des], [c.warn, c.ok, null])));
+    results$.push(l(lit([" • ", name, des], [c.er1, c.warn, c.grey])));
   }
   return results$;
 }
@@ -2028,13 +2032,13 @@ check_conf_file = function(conf, info){
   return sortir.error;
 };
 get_all = function*(info){
-  var pod, ref$, yaml_text, gjson, E, concat, sortir, lconfig, log;
+  var pod, ref$, yaml_text, gjson, js, E, concat, sortir, lconfig, log;
   pod = (yield emphasize);
   info.libs.emphasize = pod.emphasize;
   pod = (yield boxen);
   info.libs.boxen = pod['default'];
   try {
-    ref$ = (yield* modyaml(info)), yaml_text = ref$.yaml_text, gjson = ref$.gjson;
+    ref$ = (yield* modyaml(info)), yaml_text = ref$.yaml_text, gjson = ref$.gjson, js = ref$.js;
   } catch (e$) {
     E = e$;
     return;
@@ -2044,7 +2048,7 @@ get_all = function*(info){
     return;
   }
   if (info.options.list) {
-    exec_list_option(gjson, info);
+    exec_list_option(js, info);
     return;
   }
   concat = info.options.concat;
