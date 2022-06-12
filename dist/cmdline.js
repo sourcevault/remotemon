@@ -62,7 +62,7 @@ init = function*(){
   if (!configDirExists) {
     exec("mkdir " + homedir + "/.config");
   }
-  mod_config_file = path.resolve(__dirname + '/../src/config.remotemon.yaml');
+  mod_config_file = path.resolve(__dirname + '/../dist/config.remotemon.yaml');
   if (!rmConfigFileExists) {
     exec("cp " + {
       mod_config_file: mod_config_file
