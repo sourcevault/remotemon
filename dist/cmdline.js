@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, path, dotpat, spawn, yaml, compare_version, boxen, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, insert, match_exec, undy, doty, replace_dot, pathops, update_doc, parseDoc, show, modyaml, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, ifTrue, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, path, dotpat, spawn, yaml, compare_version, boxen, moment, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, init, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, insert, match_exec, undy, doty, replace_dot, pathops, modyaml, parseDoc, show, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, ifTrue, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, if_current_hist_empty, colorize_cmd, getunique, exec_list_hist, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create;
 fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
 emphasize = com.emphasize, child_process = com.child_process, rm_empty_lines = com.rm_empty_lines, path = com.path;
-dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, compare_version = com.compare_version, boxen = com.boxen;
+dotpat = com.dotpat, spawn = com.spawn, yaml = com.yaml, compare_version = com.compare_version, boxen = com.boxen, moment = com.moment;
 ref$ = com.hoplon.utils, l = ref$.l, z = ref$.z, zj = ref$.zj, j = ref$.j, R = ref$.R, lit = ref$.lit, c = ref$.c, wait = ref$.wait, noop = ref$.noop, jspc = ref$.jspc;
 be = com.hoplon.types;
 guard = com.hoplon.guard;
@@ -54,21 +54,55 @@ question_init = function(){
 if (!metadata.name) {
   return false;
 }
+rest = cmd_data.parse();
+if (cmd_data.help.count() > 0) {
+  str = "" + metadata.name + " version " + metadata.version + "\n\noptions:\n\n  -v --verbose               more detail\n\n  -vv                        much more detail\n\n  -h --help                  display help message\n\n  -V --version               displays version number\n\n  -d --dry-run               perform a trial run without making any changes\n\n  -w --watch-config-file     restart on config file change\n\n  -c --cat                   dump the output of the current " + CONFIG_FILE_NAME + " being used\n\n  -cc                        same as -c but with comments\n\n  -ccc                       show raw json for final process state\n\n  -l --list                  list all user commands\n\n  -ll                        show history of all commands called\n\n  -m --auto-make-directory   make remote directory if it doesn't exist ( with user permission )\n\n     -mm                     ( with root permission )\n\n  -n --no-watch              force disable any and all watches\n\n  -s --silent                do not show " + metadata.name + " messages\n\n  -e --edit                  make permanent edits to " + CONFIG_FILE_NAME + " values\n\n  -p --project               folder name to look for " + CONFIG_FILE_NAME + "\n\n  ---- shorthands ----\n\n  CF <-- for configuration file\n\nvalues for internal variables (using .global object) can be changed using '=' (similar to makefiles) :\n\n> " + metadata.name + " --verbose file=dist/main.js\n\n[ documentation ] @ [ " + metadata.homepage + " ]\n";
+  l(str);
+  return;
+}
+silent = cmd_data.silent.count();
+edit = cmd_data.edit.count();
+concatenate = cmd_data.cat.count();
+if (cmd_data.version.count() > 0) {
+  l(c.er1("[" + metadata.name + "] version " + metadata.version));
+  return;
+}
+isvar = R.test(/^[\.\w\/]+=/);
+check_if_number = function(str_data){
+  var isnum;
+  isnum = Number(str_data);
+  if (!deepEq$(isnum, NaN, '===')) {
+    return isnum;
+  }
+  return str_data;
+};
+vars = R.map(R.pipe(R.split('='), R.over(R.lensIndex(0), R.split("/")), R.over(R.lensIndex(1), check_if_number)))(
+R.filter(isvar)(
+rest));
+args = R.reject(isvar, rest);
 init = function*(){
-  var configDirExists, cfolder, rmConfigFileExists, mod_config_file, config_yaml_text, doc, service_dir, edit_config_file, q, str, ref$, str1, str2, lastchecktime, current_version_number, epoc, time_in_seconds, re, raw, ret, vn, corde, user_doc, prog_doc, fin_doc;
-  configDirExists = fs.existsSync(homedir + "/.config");
-  cfolder = homedir + "/.config/config.remotemon.yaml";
-  rmConfigFileExists = fs.existsSync(cfolder);
-  if (!configDirExists) {
-    exec("mkdir " + homedir + "/.config");
+  var CONFIG_DIR, REMOTEMON_DIR, CONFIG_FILE, DEF_CONFIG_FILE, HIST_FILE, DEF_HIST_FILE, config_yaml_text, doc, service_dir, edit_config_file, q, str, ref$, str1, str2, lastchecktime, current_version_number, epoc, time_in_seconds, re, raw, ret, vn, corde, user_doc, prog_doc, fin_doc;
+  CONFIG_DIR = homedir + "/.config";
+  REMOTEMON_DIR = CONFIG_DIR + "/remotemon/";
+  CONFIG_FILE = REMOTEMON_DIR + "config.remotemon.yaml";
+  DEF_CONFIG_FILE = path.resolve(__dirname + '/../config.remotemon.yaml');
+  HIST_FILE = REMOTEMON_DIR + "hist.json";
+  DEF_HIST_FILE = path.resolve(__dirname + '/../hist.json');
+  if (!fs.existsSync(CONFIG_DIR)) {
+    exec("mkdir " + CONFIG_DIR);
   }
-  mod_config_file = path.resolve(__dirname + '/../dist/config.remotemon.yaml');
-  if (!rmConfigFileExists) {
-    exec("cp " + {
-      mod_config_file: mod_config_file
-    } + " " + homedir + "/.config/");
+  if (!fs.existsSync(REMOTEMON_DIR)) {
+    exec("mkdir " + REMOTEMON_DIR);
   }
-  config_yaml_text = fs.readFileSync(homedir + "/.config/config.remotemon.yaml").toString();
+  if (!fs.existsSync(CONFIG_FILE)) {
+    exec("cp " + DEF_CONFIG_FILE + " " + REMOTEMON_DIR);
+  }
+  if (!fs.existsSync(HIST_FILE)) {
+    exec("cp " + DEF_HIST_FILE + " " + REMOTEMON_DIR);
+  }
+  config_yaml_text = R.toString(
+  fs.readFileSync(
+  CONFIG_FILE));
   doc = yaml.parseDocument(config_yaml_text);
   service_dir = doc.getIn(['service_directory']);
   edit_config_file = false;
@@ -82,7 +116,7 @@ init = function*(){
     doc.setIn(['service_directory'], service_dir);
     edit_config_file = true;
     str1 = c.grey("service directory is set to " + c.warn(service_dir));
-    str2 = c.grey("can be changed anytime by editing ") + c.warn(homedir + "/.config/config.remotemon.yaml");
+    str2 = c.grey("can be changed anytime by editing ") + c.warn(CONFIG_FILE);
     l(str1);
     l(str2);
     q.close();
@@ -126,42 +160,21 @@ init = function*(){
   }
   corde = yaml.stringify(doc);
   if (edit_config_file) {
-    fs.writeFileSync(cfolder, corde);
+    wait(0, function(){
+      return fs.writeFile(CONFIG_FILE, corde, function(err){
+        return c.er1(err);
+      });
+    });
   }
   user_doc = doc.toJSON();
   prog_doc = yaml.parse(
   R.toString(
   fs.readFileSync(
-  mod_config_file)));
+  DEF_CONFIG_FILE)));
   fin_doc = R.mergeLeft(user_doc, prog_doc);
+  fin_doc.HIST_FILE = HIST_FILE;
   return (yield fin_doc);
 };
-rest = cmd_data.parse();
-if (cmd_data.help.count() > 0) {
-  str = "" + metadata.name + " version " + metadata.version + "\n\noptions:\n\n  -v --verbose               more detail\n\n  -vv                        much more detail\n\n  -h --help                  display help message\n\n  -V --version               displays version number\n\n  -d --dry-run               perform a trial run without making any changes\n\n  -w --watch-config-file     restart on config file change\n\n  -c --cat                   dump the output of the current " + CONFIG_FILE_NAME + " being used\n\n  -cc                        same as -c but with comments\n\n  -ccc                       show raw json for final process state\n\n  -l --list                  list all user commands\n\n  -m --auto-make-directory   make remote directory if it doesn't exist ( with user permission )\n\n     -mm                     ( with root permission )\n\n  -n --no-watch              force disable any and all watches\n\n  -s --silent                do not show " + metadata.name + " messages\n\n  -e --edit                  make permanent edits to " + CONFIG_FILE_NAME + " values\n\n  -p --project               folder name to look for " + CONFIG_FILE_NAME + "\n\n  ---- shorthands ----\n\n  CF <-- for configuration file\n\nvalues for internal variables (using .global object) can be changed using '=' (similar to makefiles) :\n\n> " + metadata.name + " --verbose file=dist/main.js\n\n[ documentation ] @ [ " + metadata.homepage + " ]\n";
-  l(str);
-  return;
-}
-silent = cmd_data.silent.count();
-edit = cmd_data.edit.count();
-concatenate = cmd_data.cat.count();
-if (cmd_data.version.count() > 0) {
-  l(c.er1("[" + metadata.name + "] version " + metadata.version));
-  return;
-}
-isvar = R.test(/^[\.\w\/]+=/);
-check_if_number = function(str_data){
-  var isnum;
-  isnum = Number(str_data);
-  if (!deepEq$(isnum, NaN, '===')) {
-    return isnum;
-  }
-  return str_data;
-};
-vars = R.map(R.pipe(R.split('='), R.over(R.lensIndex(0), R.split("/")), R.over(R.lensIndex(1), check_if_number)))(
-R.filter(isvar)(
-rest));
-args = R.reject(isvar, rest);
 V = {};
 defarg_main = be.undefnull.cont(function(){
   var state;
@@ -502,9 +515,8 @@ update_defarg = function(defarg, type){
 yaml_parse = function(doc, info){
   var js, E;
   try {
-    js = yaml.parse(doc.toString(), {
-      merge: true
-    });
+    doc.setSchema('1.1');
+    js = doc.toJS();
     return js;
   } catch (e$) {
     E = e$;
@@ -847,8 +859,13 @@ replace_dot.decode = function(ref, js){
   }
   return js;
 };
-update_doc = function(info, doc){
-  var cmdname, nominal_path, i$, ref$, len$, ref1$, key, value, p_cmdvar, p_empty, init, p, v_path, d_path, js_all, js, sk, index, ref, path, defarg, sd, inpwd, a_path, cd, clean_data;
+modyaml = function*(info){
+  var configfile, data, doc, cmdname, nominal_path, i$, ref$, len$, ref1$, key, value, p_cmdvar, p_empty, init, p, v_path, d_path, js_all, js, sk, index, ref, path, defarg, sd, inpwd, a_path, cd, clean_data;
+  configfile = info.configfile;
+  data = R.toString(
+  fs.readFileSync(
+  configfile));
+  doc = parseDoc(data, info);
   cmdname = info.cmdname;
   nominal_path = null;
   if (cmdname === undefined) {
@@ -879,6 +896,9 @@ update_doc = function(info, doc){
   d_path = arrayFrom$(nominal_path).concat(['defarg']);
   js_all = yaml_parse(doc, info);
   js = {};
+  if (info.options.edit || info.options.list) {
+    return [js_all, doc];
+  }
   sk = global_data.selected_keys.set;
   for (index in js_all) {
     value = js_all[index];
@@ -936,7 +956,7 @@ update_doc = function(info, doc){
   replace_dot.encode(ref);
   cd = com.hoplon.utils.flat.unflatten(ref.all);
   clean_data = replace_dot.decode(ref, cd);
-  return [clean_data, js_all];
+  return [clean_data];
 };
 parseDoc = function(data, info){
   var doc, error;
@@ -955,20 +975,6 @@ parseDoc = function(data, info){
 show = R.tap(function(ob){
   console.log([ob]);
 });
-modyaml = function*(info){
-  var configfile, data, doc, ref$, clean_data, js;
-  configfile = info.configfile;
-  data = R.toString(
-  fs.readFileSync(
-  configfile));
-  doc = parseDoc(data, info);
-  ref$ = update_doc(info, doc), clean_data = ref$[0], js = ref$[1];
-  return {
-    gjson: clean_data,
-    yaml_text: data,
-    js: js
-  };
-};
 nPromise = function(f){
   return new Promise(f);
 };
@@ -992,7 +998,7 @@ function exec_list_option(yjson, info){
   keys = Object.keys(yjson);
   user_ones = rmdef(keys);
   if (user_ones.length === 0) {
-    l(lit(["  --- ", "< EMPTY >", " ---"], [c.pink, c.warn, c.pink]));
+    l(lit(["  --- ", "< EMPTY USER CMD >", " ---"], [c.pink, c.er1, c.pink]));
   }
   for (i$ = 0, to$ = user_ones.length; i$ < to$; ++i$) {
     I = i$;
@@ -1075,14 +1081,15 @@ V.rsl = be.arr.cont(R.flatten).map(be.str.or(be.obj.and(function(obj){
 })).or(unu)).alt(be.str.cont(function(x){
   return [x];
 })).err(function(all){
-  var msg, type;
-  msg = be.flatro(all)[0];
-  type = msg[0];
+  var sortie, type, msg;
+  sortie = be.flatro(all);
+  type = sortie[0], msg = sortie[1];
   switch (type) {
   case ':ob_in_str_list':
     return msg;
+  default:
+    return "not string or string list.";
   }
-  return "not string or string list.";
 }).cont(R.without([void 8]));
 V.strlist = function(F){
   return V.rsl.or(be.undefnull.cont(F));
@@ -1666,7 +1673,7 @@ exec_rsync = function*(data, each){
   }
 };
 bko = be.known.obj;
-check_if_remote_not_defined = bko.on('remote', be.arr.and(be.not(zero))).and(bko.on('remotehost', be.undefnull).or(bko.on('remotefold', be.undefnull))).cont(true).fix(false).wrap();
+check_if_remote_not_defined = bko.on([['and', 'remote', be.arr.and(be.not(zero))], ['alt', ['remotehost', 'remotefold'], be.undefnull]]).cont(true).fix(false).wrap();
 check_if_remotehost_present = function*(data){
   var lconfig, log, cont, tryToSSH, E;
   lconfig = data.lconfig, log = data.log, cont = data.cont;
@@ -1986,7 +1993,7 @@ restart = function*(info, log){
   msg = lit([info.configfile + "", " changed, restarting watch.."], [c.warn, c.er1]);
   log.normal('err', msg);
   try {
-    gjson = (yield* modyaml(info)).gjson;
+    gjson = (yield* modyaml(info))[0];
   } catch (e$) {
     E = e$;
     return SERR;
@@ -2001,7 +2008,7 @@ restart = function*(info, log){
 };
 V.CONF = be.known.obj.on('rsync', V.rsync.init).on('ssh', V.ssh).on('watch', be.undef.or(be.arr.or(be.str.cont(function(str){
   return [str];
-})))).on('inpwd', be.undef.or(be.bool)).cont(organize_rsync).and(V.rsync.throw_if_error).err(function(message, path){
+})))).on('inpwd', be.undef.or(be.bool)).on('histsize', be.num.fix(100)).cont(organize_rsync).and(V.rsync.throw_if_error).err(function(message, path){
   var info, topmsg, loc, Error, F;
   info = arguments[arguments.length - 1];
   topmsg = be.flatro(message)[0];
@@ -2023,6 +2030,7 @@ check_conf_file = function(conf, info){
   D.rsync = conf.rsync;
   D.ssh = conf.ssh;
   D.remotefold = '<CONF dummy / ignore>';
+  D.histsize = conf.histsize;
   x$ = origin = {};
   x$.ssh = conf.ssh;
   sortir = V.CONF.auth(D, info.cmdname, {
@@ -2031,14 +2039,64 @@ check_conf_file = function(conf, info){
   });
   return sortir.error;
 };
+if_current_hist_empty = be.undef.alt(be.arr.and(function(a){
+  return a.length === 0;
+})).cont(true).fix(false).wrap();
+colorize_cmd = R.pipe(R.map(function(each){
+  if (isvar(each)) {
+    return c.grey(each);
+  } else {
+    return c.grey(each);
+  }
+}), R.join(" "));
+getunique = R.uniqWith(function(arg$, arg1$){
+  var _, cmd1, cmd2;
+  _ = arg$[0], cmd1 = arg$[1];
+  _ = arg1$[0], cmd2 = arg1$[1];
+  return R.equals(cmd1, cmd2);
+});
+exec_list_hist = function(info){
+  var path, val, project_name, current_hist, color, padLeft, fin_string, i$, len$, index, ref$, time, cmd, mtime, rel_time, abs_time, current_color, init, fin;
+  path = homedir + "/.config" + "/remotemon/" + "hist.json";
+  val = JSON.parse(
+  R.toString(
+  fs.readFileSync(
+  path)));
+  project_name = info.options.project;
+  current_hist = val[project_name];
+  if_current_hist_empty(current_hist);
+  l(lit(['> PROJECT ', project_name], [c.warn, c.pink]));
+  if (if_current_hist_empty(current_hist)) {
+    l(lit([" --- ", "< EMPTY HISTORY >", " --- "], [c.pink, c.er1, c.pink]));
+    return;
+  }
+  color = [c.er1, c.er3];
+  padLeft = com.hoplon.utils.pad.padLeft;
+  current_hist = getunique(current_hist);
+  fin_string = [];
+  for (i$ = 0, len$ = current_hist.length; i$ < len$; ++i$) {
+    index = i$;
+    ref$ = current_hist[i$], time = ref$[0], cmd = ref$[1];
+    mtime = moment(time);
+    rel_time = moment(mtime.format('YYYYMMDDkkmmss'), 'YYYYMMDDkkmmss').fromNow();
+    rel_time = padLeft(rel_time, 17, ' ');
+    abs_time = mtime.format('MMM-DD ') + padLeft(mtime.format('hA'), 4, ' ');
+    abs_time = padLeft(abs_time, 10, ' ');
+    current_color = color[index % 2];
+    init = current_color(abs_time + "  " + rel_time);
+    fin = colorize_cmd(cmd);
+    fin_string.push(init + " " + fin);
+  }
+  return l(fin_string.join("\n"));
+};
 get_all = function*(info){
-  var pod, ref$, yaml_text, gjson, js, E, concat, sortir, lconfig, log;
+  var pod, ref$, gjson, yaml_text, E, concat, sortir, lconfig, log;
   pod = (yield emphasize);
   info.libs.emphasize = pod.emphasize;
   pod = (yield boxen);
   info.libs.boxen = pod['default'];
   try {
-    ref$ = (yield* modyaml(info)), yaml_text = ref$.yaml_text, gjson = ref$.gjson, js = ref$.js;
+    ref$ = (yield* modyaml(info)), gjson = ref$[0], yaml_text = ref$[1];
   } catch (e$) {
     E = e$;
     return;
@@ -2047,8 +2105,12 @@ get_all = function*(info){
     fs.writeFileSync(info.configfile, yaml_text);
     return;
   }
-  if (info.options.list) {
-    exec_list_option(js, info);
+  switch (info.options.list) {
+  case 1:
+    exec_list_option(gjson, info);
+    return;
+  case 2:
+    exec_list_hist(info);
     return;
   }
   concat = info.options.concat;
@@ -2115,6 +2177,35 @@ main = function(cmd_data){
     z$.rsync = CONF.rsync;
     z$.inpwd = CONF.inpwd;
     z$.watch = CONF.watch;
+    wait(0, function(){
+      return fs.readFile(CONF.HIST_FILE, function(err, data){
+        var hist, local_hist, last;
+        if (err) {
+          c.er1(err);
+          return;
+        }
+        hist = JSON.parse(data.toString());
+        if (!hist[project_name]) {
+          local_hist = [];
+          hist[project_name] = local_hist;
+        } else {
+          local_hist = hist[project_name];
+        }
+        while (local_hist.length > CONF.histsize) {
+          local_hist.shift();
+        }
+        last = R.last(local_hist);
+        if (last && R.equals(last[1], info.cmdline)) {
+          local_hist.pop();
+        }
+        local_hist.push([new Date().getTime(), info.cmdline]);
+        return fs.writeFile(CONF.HIST_FILE, R.toString(hist), function(err){
+          if (err) {
+            c.er1(err);
+          }
+        });
+      });
+    });
     if (check_conf_file(CONF, info)) {
       return;
     }

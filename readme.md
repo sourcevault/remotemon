@@ -249,6 +249,8 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 
 - `-l,--list` to see all the different commands from the command line itself.
 
+- `-ll` show history of all commands called.
+
 - `-m --auto-make-directory` make remote directory if it doesn't exist.
 
     `-mm`  ( with root permission )

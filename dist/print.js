@@ -20,6 +20,7 @@ com.optionParser = require('option-parser');
 com.tampax = require('tampax');
 com.yaml = require('yaml');
 com.path = require('path');
+com.moment = require('moment');
 com.child_process = child_process;
 cp = child_process;
 be = hoplon.types;
@@ -226,9 +227,6 @@ print.script_in_wrong_place = function(path){
 print.custom_build = function(msg, path, filename){
   show_name(filename);
   return l(show_body(path, [c.grey("unrecognized value provided.") + "\n", c.grey("only acceptable value types :\n"), c.pink("- array of string ( defaults to local )."), c.pink("- object with restricted keys :"), c.warn("\n  - " + data.selected_keys.arr.join("\n  - "))].join("\n ")));
-};
-print.configFile = function(){
-  return z(arguments);
 };
 print.basicError = function(msg, path, filename){
   show_name(filename);
