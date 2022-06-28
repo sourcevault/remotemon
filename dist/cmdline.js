@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, path, dotpat, spawn, yaml, compare_version, boxen, moment, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, init, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, insert, match_exec, undy, doty, replace_dot, pathops, modyaml, parseDoc, show, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, ifTrue, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, if_current_hist_empty, colorize_cmd, getunique, exec_list_hist, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, path, dotpat, spawn, yaml, compare_version, boxen, moment, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, rest, str, silent, edit, concatenate, isvar, check_if_number, vars, args, init, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, insert, match_exec, undy, doty, replace_dot, pathops, modyaml, parseDoc, show, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, ifTrue, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, execFinale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, print_final_message, ms_create_watch, restart, check_conf_file, if_current_hist_empty, getunique, exec_list_hist, get_all, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create;
 fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
@@ -994,11 +994,11 @@ only_str = be.str.cont(function(str){
 })).fix("").wrap();
 function exec_list_option(yjson, info){
   var keys, user_ones, i$, to$, I, name, des, results$ = [];
-  l(lit(['> FILE ', info.configfile], [c.warn, c.pink]));
+  l(lit(['> FILE ', info.configfile], [c.er1, c.blue]));
   keys = Object.keys(yjson);
   user_ones = rmdef(keys);
   if (user_ones.length === 0) {
-    l(lit(["  --- ", "< EMPTY USER CMD >", " ---"], [c.pink, c.er1, c.pink]));
+    l(lit(["  --- ", "< EMPTY USER CMD >", " ---"], [c.pink, c.er2, c.pink]));
   }
   for (i$ = 0, to$ = user_ones.length; i$ < to$; ++i$) {
     I = i$;
@@ -2042,13 +2042,6 @@ check_conf_file = function(conf, info){
 if_current_hist_empty = be.undef.alt(be.arr.and(function(a){
   return a.length === 0;
 })).cont(true).fix(false).wrap();
-colorize_cmd = R.pipe(R.map(function(each){
-  if (isvar(each)) {
-    return c.grey(each);
-  } else {
-    return c.grey(each);
-  }
-}), R.join(" "));
 getunique = R.uniqWith(function(arg$, arg1$){
   var _, cmd1, cmd2;
   _ = arg$[0], cmd1 = arg$[1];
@@ -2056,7 +2049,7 @@ getunique = R.uniqWith(function(arg$, arg1$){
   return R.equals(cmd1, cmd2);
 });
 exec_list_hist = function(info){
-  var path, val, project_name, current_hist, color, padLeft, fin_string, i$, len$, index, ref$, time, cmd, mtime, rel_time, abs_time, current_color, init, fin;
+  var path, val, project_name, current_hist, padLeft, fin_string, max_mid_len, max_time_len, i$, len$, index, ref$, time, cmd, mtime, date, rel_time, each, results$ = [];
   path = homedir + "/.config" + "/remotemon/" + "hist.json";
   val = JSON.parse(
   R.toString(
@@ -2065,29 +2058,38 @@ exec_list_hist = function(info){
   project_name = info.options.project;
   current_hist = val[project_name];
   if_current_hist_empty(current_hist);
-  l(lit(['> PROJECT ', project_name], [c.warn, c.pink]));
+  l(lit(['> PROJECT ', project_name], [c.er1, c.blue]));
   if (if_current_hist_empty(current_hist)) {
-    l(lit([" --- ", "< EMPTY HISTORY >", " --- "], [c.pink, c.er1, c.pink]));
+    l(lit([" --- ", "< EMPTY HISTORY >", " --- "], [c.pink, c.er2, c.pink]));
     return;
   }
-  color = [c.er1, c.er3];
   padLeft = com.hoplon.utils.pad.padLeft;
   current_hist = getunique(current_hist);
   fin_string = [];
+  max_mid_len = 0;
+  max_time_len = 0;
   for (i$ = 0, len$ = current_hist.length; i$ < len$; ++i$) {
     index = i$;
     ref$ = current_hist[i$], time = ref$[0], cmd = ref$[1];
     mtime = moment(time);
+    date = mtime.format('MMM-DD');
+    time = mtime.format('hA');
     rel_time = moment(mtime.format('YYYYMMDDkkmmss'), 'YYYYMMDDkkmmss').fromNow();
-    rel_time = padLeft(rel_time, 17, ' ');
-    abs_time = mtime.format('MMM-DD ') + padLeft(mtime.format('hA'), 4, ' ');
-    abs_time = padLeft(abs_time, 10, ' ');
-    current_color = color[index % 2];
-    init = current_color(abs_time + "  " + rel_time);
-    fin = colorize_cmd(cmd);
-    fin_string.push(init + " " + fin);
+    if (time.length >= max_time_len) {
+      max_time_len = time.length;
+    }
+    if (rel_time.length >= max_mid_len) {
+      max_mid_len = rel_time.length;
+    }
+    fin_string.push([date, time, rel_time, cmd]);
   }
-  return l(fin_string.join("\n"));
+  for (i$ = 0, len$ = fin_string.length; i$ < len$; ++i$) {
+    each = fin_string[i$];
+    each[1] = padLeft(each[1], max_time_len, ' ');
+    each[2] = padLeft(each[2], max_mid_len, ' ');
+    results$.push(l(lit([each[0], ' ', each[1], ' ', each[2], ' ', each[3].join(' ')], [c.pink, null, c.pink, null, c.grey, null, c.warn])));
+  }
+  return results$;
 };
 get_all = function*(info){
   var pod, ref$, gjson, yaml_text, E, concat, sortir, lconfig, log;
