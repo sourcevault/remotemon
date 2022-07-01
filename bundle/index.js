@@ -54406,7 +54406,7 @@ V.def_ssh = V.ssh.cont(function(ob){
     ob.startwith.push(tsel);
   }
   if (ob.option === void 8) {
-    ob.option = state.info.options.ssh;
+    ob.option = state.info.options.ssh.option;
   }
   ob.startwith = dangling_colon(ob.startwith);
   return ob;
