@@ -53345,54 +53345,54 @@ handle_path_dot.save_matrix = function(path, yIndex, hist){
   return results$;
 };
 symbol_script = Symbol('is_script');
-gs_path.js.loop = function(unknown, path, hist){
+gs_path.js.loop = function(unknown, path, ref){
   var w, index, value, npath, i$, len$, spath, ref$, is_script, is_tampax, cmdname, index_name, results$ = [], results1$ = [];
   w = R.type(unknown);
   if (w === 'Object') {
     for (index in unknown) {
       value = unknown[index];
-      npath = handle_path_dot.save(index, path, hist);
-      results$.push(gs_path.js.loop(value, npath, hist));
+      npath = handle_path_dot.save(index, path, ref);
+      results$.push(gs_path.js.loop(value, npath, ref));
     }
     return results$;
   } else if (w === 'Array') {
     for (i$ = 0, len$ = unknown.length; i$ < len$; ++i$) {
       index = i$;
       value = unknown[i$];
-      npath = handle_path_dot.save(index, path, hist);
-      results1$.push(gs_path.js.loop(value, npath, hist));
+      npath = handle_path_dot.save(index, path, ref);
+      results1$.push(gs_path.js.loop(value, npath, ref));
     }
     return results1$;
   } else {
     spath = path.join(".");
-    if (!global_data.selected_keys.set.has(path[0]) && !(path[0] === hist.cmdname)) {
+    if (!global_data.selected_keys.set.has(path[0]) && !(path[0] === ref.cmdname)) {
       return;
     }
     if (path[0] === 'defarg' || path[1] === 'defarg') {
       return;
     }
-    hist.all[spath] = unknown;
-    handle_path_dot.save_matrix(path, hist.pall.length, hist);
-    hist.pall.push(path);
+    ref.all[spath] = unknown;
+    handle_path_dot.save_matrix(path, ref.pall.length, ref);
+    ref.pall.push(path);
     if (w === 'String') {
       ref$ = get_str_type(unknown), is_script = ref$[0], is_tampax = ref$[1];
       if (is_script) {
-        hist.script_all.push(spath);
-        hist.script[spath] = path;
+        ref.script_all.push(spath);
+        ref.script[spath] = path;
         unknown = symbol_script;
       }
       if (path[0] === 'var') {
-        hist.glovar[R.drop(1, path).join(".")] = unknown;
+        ref.glovar[R.drop(1, path).join(".")] = unknown;
       }
       if (path[1] === 'var') {
         cmdname = path[0];
         index_name = R.join(".")(
         R.drop(2, path));
-        hist.cmdvar[index_name] = unknown;
+        ref.cmdvar[index_name] = unknown;
       }
       if (is_tampax) {
-        hist.tampax[spath] = void 8;
-        return hist.tampax_all.push(path);
+        ref.tampax[spath] = void 8;
+        return ref.tampax_all.push(path);
       }
     }
   }
@@ -53401,30 +53401,30 @@ gs_path.yl.loop = be(function(obj){
   var a;
   a = yaml.isMap(obj.value);
   return a;
-}).tap(function(obj, type, path, hist){
+}).tap(function(obj, type, path, ref){
   var items, i$, len$, each, p, results$ = [];
   items = obj.value.items;
   for (i$ = 0, len$ = items.length; i$ < len$; ++i$) {
     each = items[i$];
     p = arrayFrom$(path).concat([each.key.value]);
-    results$.push(gs_path.yl.loop.auth(each, 'map', p, hist));
+    results$.push(gs_path.yl.loop.auth(each, 'map', p, ref));
   }
   return results$;
 }).or(be(function(obj){
   var b;
   b = yaml.isSeq(obj.value);
   return b;
-}).tap(function(obj, type, path, hist){
+}).tap(function(obj, type, path, ref){
   var items, i$, len$, index, each, p, results$ = [];
   items = obj.value.items;
   for (i$ = 0, len$ = items.length; i$ < len$; ++i$) {
     index = i$;
     each = items[i$];
     p = arrayFrom$(path).concat([index]);
-    results$.push(gs_path.yl.loop.auth(each, 'seq', p, hist));
+    results$.push(gs_path.yl.loop.auth(each, 'seq', p, ref));
   }
   return results$;
-})).or(be.tap(function(obj, type, path, hist){
+})).or(be.tap(function(obj, type, path, ref){
   var sortir;
   switch (type) {
   case 'map':
@@ -53433,15 +53433,15 @@ gs_path.yl.loop = be(function(obj){
         alias: obj.value.source,
         path: path
       };
-      hist.alias.push(sortir);
+      ref.alias.push(sortir);
     }
     if (obj.value.anchor) {
-      return hist.anchor[obj.value.anchor] = path.join('.');
+      return ref.anchor[obj.value.anchor] = path.join('.');
     }
     break;
   case 'seq':
     if (obj.anchor) {
-      return hist.anchor[obj.anchor] = path.join('.');
+      return ref.anchor[obj.anchor] = path.join('.');
     }
   }
 }));
@@ -53552,7 +53552,7 @@ get_curly = function(str){
 tampax_abs = {};
 clear = {};
 merge_ref_defarg = function(defarg, ref){
-  var nset, n_script_all, index, ref$, value, i$, len$, str, p, results$ = [];
+  var nset, n_script_all, index, ref$, value, i$, len$, str, path, p, results$ = [];
   ref.project = defarg.project;
   ref.localpwd = defarg.localpwd;
   ref.globalpwd = defarg.globalpwd;
@@ -53568,12 +53568,17 @@ merge_ref_defarg = function(defarg, ref){
     index = i$;
     str = ref$[i$];
     ref.all['defarg.' + index] = str;
+    path = ['defarg', index];
+    ref.pall.push(path);
   }
   p = ref.cmdname + '.defarg';
   for (i$ = 0, len$ = (ref$ = defarg[p]).length; i$ < len$; ++i$) {
     index = i$;
     str = ref$[i$];
-    results$.push(ref.all[p + '.' + index] = str);
+    ref.all[p + '.' + index] = str;
+    path = [ref.cmdname, 'defarg', index];
+    handle_path_dot.save_matrix(path, ref.pall.length, ref);
+    results$.push(ref.pall.push(path));
   }
   return results$;
 };
