@@ -271,12 +271,7 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 
   `-ccc` show raw json for final process state
 
-
-##### 🔴 Bugs
-
-- [same object ref doesn't work #6](https://github.com/arthurlacoste/tampa/issues/6)
-
-For now it's not possible for `remotemon` to do two levels of referencing in config file, as `remotemon` uses `tampax`, and the issue is with `tampax`, write your config files to work around the issue ( for now ).
+- `-r --resume` resume from failpoint if `remotemon` can pattern match command with older build failure.
 
 #### LICENCE
 
