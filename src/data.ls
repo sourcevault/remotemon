@@ -53,6 +53,7 @@ data.selected_keys = {}
      \remotefold #
      \remotehost #
      \description
+     \defarg.required
 
   ..undef =
      \ssh

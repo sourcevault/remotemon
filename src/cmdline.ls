@@ -210,8 +210,6 @@ init = ->*
 
   DEF_CONFIG_FILE = path.resolve (__dirname + '/../config.remotemon.yaml')
 
-  z DEF_CONFIG_FILE
-
   HIST_FILE = REMOTEMON_DIR + "hist.json"
 
   DEF_HIST_FILE = path.resolve (__dirname + '/../hist.json')
@@ -282,6 +280,7 @@ init = ->*
 
   lastchecktime = doc.getIn [\last_check_time]
 
+
   current_version_number = doc.getIn [\current_version_number]
 
   epoc  = (Date.now!)/1000
@@ -328,6 +327,7 @@ init = ->*
             msg
             {padding: 1,borderColor:"green",textAlignment:"left"}
 
+
   corde = yaml.stringify doc
 
   if edit_config_file
@@ -342,7 +342,7 @@ init = ->*
 
   user_doc = doc.toJSON!
 
-  prog_doc = DEF_CONFIG_FILE
+  prog_doc = CONFIG_FILE
   |> fs.readFileSync
   |> R.toString
   |> yaml.parse
@@ -770,9 +770,9 @@ rm_merge_key = (data) ->
 
 san_defarg = (js,info) -> (path) ->
 
-  defarg  = do
-    (san_arr.auth R.path path,js).value
-    |> V.defarg.auth _,info
+  dirty_defarg = R.path path,js
+
+  defarg = V.defarg.auth dirty_defarg,info
 
   if defarg.error then throw SERR
 
@@ -2277,6 +2277,8 @@ V.def = be.obj
 
 .err (message,path,val,...,{info}) !->
 
+
+
   sortir = be.flatro message
 
   [topmsg] = sortir
@@ -3339,8 +3341,6 @@ main = (cmd_data) -> (CONF) ->
       ..histsize            = CONF.histsize
       ..resume              = cmd_data.resume.count!
       ..startpoint          = []
-
-  z info
 
   if info.options.resume
 

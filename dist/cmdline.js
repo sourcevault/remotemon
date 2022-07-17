@@ -93,7 +93,6 @@ init = function*(){
   REMOTEMON_DIR = CONFIG_DIR + "/remotemon/";
   CONFIG_FILE = REMOTEMON_DIR + "config.remotemon.yaml";
   DEF_CONFIG_FILE = path.resolve(__dirname + '/../config.remotemon.yaml');
-  z(DEF_CONFIG_FILE);
   HIST_FILE = REMOTEMON_DIR + "hist.json";
   DEF_HIST_FILE = path.resolve(__dirname + '/../hist.json');
   if (!fs.existsSync(CONFIG_DIR)) {
@@ -178,7 +177,7 @@ init = function*(){
   prog_doc = yaml.parse(
   R.toString(
   fs.readFileSync(
-  DEF_CONFIG_FILE)));
+  CONFIG_FILE)));
   fin_doc = R.mergeLeft(user_doc, prog_doc);
   fin_doc.HIST_FILE = HIST_FILE;
   return (yield fin_doc);
@@ -507,8 +506,9 @@ rm_merge_key = function(data){
 };
 san_defarg = function(js, info){
   return function(path){
-    var defarg, arr;
-    defarg = V.defarg.auth(san_arr.auth(R.path(path, js)).value, info);
+    var dirty_defarg, defarg, arr;
+    dirty_defarg = R.path(path, js);
+    defarg = V.defarg.auth(dirty_defarg, info);
     if (defarg.error) {
       throw SERR;
     }
@@ -2290,7 +2290,6 @@ main = function(cmd_data){
     z$.histsize = CONF.histsize;
     z$.resume = cmd_data.resume.count();
     z$.startpoint = [];
-    z(info);
     if (info.options.resume) {
       archive = JSON.parse(
       R.toString(
