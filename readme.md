@@ -163,9 +163,6 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 - `description` - provide a brief description of what the command does.
 
 - `defarg`      - default values for empty commandline arguments, for enforcing minimum commandline arguments, a number can be provided.
-
-- `defarg.required` - sometimes default values and mininum values are needed, in such situations we can use defarg.required.
-
 - `initialize`  - boolean value to specify if a first run is performed or not when command is run, default is `true`.
 
 - `rsync` - rsync options ( currently supported ) :
@@ -249,8 +246,6 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 
 - `-l,--list` to see all the different commands from the command line itself.
 
-- `-ll` show history of all commands called.
-
 - `-m --auto-make-directory` make remote directory if it doesn't exist.
 
     `-mm`  ( with root permission )
@@ -271,7 +266,12 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 
   `-ccc` show raw json for final process state
 
-- `-r --resume` resume from failpoint if `remotemon` can pattern match command with older build failure.
+
+##### 🔴 Bugs
+
+- [same object ref doesn't work #6](https://github.com/arthurlacoste/tampa/issues/6)
+
+For now it's not possible for `remotemon` to do two levels of referencing in config file, as `remotemon` uses `tampax`, and the issue is with `tampax`, write your config files to work around the issue ( for now ).
 
 #### LICENCE
 
