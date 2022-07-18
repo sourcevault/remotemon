@@ -1,4 +1,4 @@
-var x$, com, y$, most, hoplon, ref$, z, wait, most_create, child_process, readline, cp, be, R, dotpat, print, c, l, lit, j, readJson, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, internal, show, show_main, create_logger, print_wrap, I, key, out$ = typeof exports != 'undefined' && exports || this;
+var x$, com, y$, most, hoplon, ref$, z, wait, most_create, child_process, readline, cp, be, R, dotpat, print, c, l, lit, j, readJson, create_stack, show_stack, metadata, show_name, rdot, clean_path, show_body, rm_empty_lines, internal, show, show_main, create_logger, print_wrap, I, key, out$ = typeof exports != 'undefined' && exports || this;
 x$ = com = {};
 y$ = x$.metadata = {};
 y$.name = null;
@@ -117,6 +117,24 @@ print.rsyncError = function(msg, path, filename){
     l(lit(["\n  ", imsg], [0, c.er1]));
   }
   return l(c.grey("\n  please refer to docs to provide valid values."));
+};
+rm_empty_lines = R.pipe(R.filter(function(str){
+  if (str.length === 0) {
+    return false;
+  } else {
+    return true;
+  }
+}));
+com.rm_empty_lines = rm_empty_lines;
+print.yaml_parse_fail = function(msg, info){
+  var txt;
+  txt = R.join('\n ')(
+  rm_empty_lines(
+  R.split('\n')(
+  msg)));
+  l(lit(["[" + metadata.name + "]", " • parseError •", " YAML file."], [c.er3, c.er3, c.er3]));
+  l(lit(['\n Error in file ', info.configfile, "."], [c.er2, c.er2, c.er2]));
+  return process.stdout.write('\n ' + c.warn(txt));
 };
 print.incorrect_arg_num = function(){
   l(lit(["[" + metadata.name + "]", " • inputError\n"], [c.er2, c.er3]));

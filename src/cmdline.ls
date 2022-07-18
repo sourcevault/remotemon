@@ -738,6 +738,7 @@ gs_path.yl.find_cmd_name = (contents) ->
   for each in contents.items
     all_top_values.push each.key.value
 
+
   only_cmds = R.difference all_top_values,global_data.selected_keys.arr
 
   only_cmds
@@ -1258,7 +1259,7 @@ replace_dot.decode = (ref,js) ->
   js
 
 modyaml = (info) ->*
-
+  
   configfile = info.configfile
 
   data = configfile |> fs.readFileSync |> R.toString
@@ -3027,7 +3028,12 @@ restart = (info,log) !->*
 
     [gjson] = yield from modyaml info
 
-  catch E then return SERR
+  catch E 
+
+    if E is SERR then return SERR
+    else
+      l c.er1 E
+      return
 
   sortir = yield from update gjson,info
 
@@ -3192,10 +3198,11 @@ get_all = (info) ->*
 
     [gjson,yaml_text] = yield from modyaml info
 
-
-  catch E
-
-    return
+  catch E 
+    if E is SERR then return SERR
+    else
+      l c.er1 E
+      return
 
   if info.options.edit
 
@@ -3341,6 +3348,7 @@ main = (cmd_data) -> (CONF) ->
       ..histsize            = CONF.histsize
       ..resume              = cmd_data.resume.count!
       ..startpoint          = []
+
 
   if info.options.resume
 

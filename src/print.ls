@@ -205,6 +205,39 @@ print.rsyncError = (msg,path,filename) ->
 
 # ----------------------------------------------------------------
 
+rm_empty_lines =  R.pipe do
+
+  do
+
+    (str) <- R.filter
+
+    if str.length is 0 then return false
+
+    else return true
+
+com.rm_empty_lines = rm_empty_lines
+
+
+print.yaml_parse_fail = (msg,info) ->
+
+  txt = msg
+  |> R.split '\n'
+  |> rm_empty_lines
+  |> R.join '\n '
+
+
+  l lit do
+    ["[#{metadata.name}]"," • parseError •"," YAML file."]
+    [              c.er3,             c.er3,        c.er3]
+
+  l lit do
+    ['\n Error in file ',info.configfile,  "."]
+    [              c.er2,         c.er2, c.er2]
+
+  process.stdout.write '\n ' + c.warn txt
+
+# ----------------------------------------------------------------
+
 print.incorrect_arg_num = ->
 
   l lit do

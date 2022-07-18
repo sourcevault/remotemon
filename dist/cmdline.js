@@ -2070,7 +2070,12 @@ restart = function*(info, log){
     gjson = (yield* modyaml(info))[0];
   } catch (e$) {
     E = e$;
-    return SERR;
+    if (E === SERR) {
+      return SERR;
+    } else {
+      l(c.er1(E));
+      return;
+    }
   }
   sortir = (yield* update(gjson, info));
   if (in$(sortir, SERR)) {
@@ -2187,7 +2192,12 @@ get_all = function*(info){
     ref$ = (yield* modyaml(info)), gjson = ref$[0], yaml_text = ref$[1];
   } catch (e$) {
     E = e$;
-    return;
+    if (E === SERR) {
+      return SERR;
+    } else {
+      l(c.er1(E));
+      return;
+    }
   }
   if (info.options.edit) {
     fs.writeFileSync(info.configfile, yaml_text);
