@@ -3,7 +3,9 @@
 
 **Install**
 ```js
-npm install -g remotemon
+sudo npm i -g remotemon 
+sudo yarn global add remotemon # OR
+sudo pnpm add -g remotemon # OR
 ```
 
 `remotemon` is a cli automation tool for building/copying/executing code on remote machines and monitoring the result.
