@@ -1465,7 +1465,7 @@ parseDoc = (data,info) ->
   if not doc.contents
 
     print.yaml_parse_fail do
-      'yaml file is empty.'
+      'yaml file is empty.\n'
       info
 
     throw SERR
@@ -2119,6 +2119,7 @@ V.user_vars = V.def_vars
 str_to_num = be.str.cont (str) -> Number str
 .and be.int.pos
 .or be.int.pos
+.err 'not number'
 
 V.defarg_required = str_to_num
 .or do
@@ -2520,7 +2521,6 @@ check_if_remote_not_defined = bko
 .fix false
 .wrap!
 
-
 check_if_remotehost_present = (data) ->*
 
   {lconfig,log,cont} = data
@@ -2657,7 +2657,7 @@ onchange = (data) ->*
       "⚡️⚡️ error"
       c.er1 "empty execution, no command to execute / unable to find user command."
 
-    yield \error
+    yield \error#empty_exec
 
     return
 
@@ -2771,7 +2771,7 @@ resolve_signal = be.arr
 
     log.normal \err_light,"exit 1"
 
-  [\error,location]
+  [\error#location,location]
 
 .or do
   be (x) -> (R.type x) is \Error
@@ -2781,7 +2781,11 @@ resolve_signal = be.arr
     l '----'
     []
 
-.alt be.str.cont (str) -> [str]
+.alt do
+  be.str.cont (str) -> [str]
+
+.cont ([sig,data]) -> [(sig.split '#'),data]
+
 .wrap!
 
 save_failed_build = (loc,info) !->
@@ -2796,7 +2800,6 @@ save_failed_build = (loc,info) !->
   |> fs.readFileSync
   |> R.toString
   |> JSON.parse
-
 
   pdata = alldata[info.options.project]
 
@@ -2824,7 +2827,7 @@ save_failed_build = (loc,info) !->
 
 print_final_message = (log,lconfig,info) -> (signal) !->
 
-  [sig,loc] = resolve_signal signal,log,info
+  [[sig,type],loc] = resolve_signal signal,log,info
 
   if info.options.watch_config_file
 
@@ -2837,7 +2840,8 @@ print_final_message = (log,lconfig,info) -> (signal) !->
   switch sig
   | \error =>
 
-    save_failed_build loc,info
+    if type is \location
+      save_failed_build loc,info
 
     message_type = \err
 
@@ -2845,13 +2849,15 @@ print_final_message = (log,lconfig,info) -> (signal) !->
 
     message_type = \ok
 
-  if not lconfig.should_I_watch
+  if (not lconfig.should_I_watch) or
 
-    lconfig.rl.close!
+    ((type is \empty_exec) and not info.options.watch_config_file)
 
-    return
+    return most.throwError!
 
   log.normal message_type,msg
+
+  return most.empty!
 
 ms_create_watch = (lconfig,info,log) ->*
 
@@ -3004,7 +3010,7 @@ ms_create_watch = (lconfig,info,log) ->*
 
       most.empty!
 
-    .tap (filename) ->
+    .chain (filename) ->
 
       data = {info,lconfig,log,cont}
 
@@ -3012,7 +3018,11 @@ ms_create_watch = (lconfig,info,log) ->*
 
       .recoverWith (x) -> most.just x
 
-      .observe print_final_message log,lconfig,info
+      .map print_final_message log,lconfig,info
+
+    .chain R.identity
+
+    .recoverWith -> most.empty!
 
   ms.drain!
 
@@ -3116,6 +3126,8 @@ exec_list_hist = (val,project_name) ->
   val = path |> fs.readFileSync |> R.toString |> JSON.parse
 
   l lit ['> PROJECT ',project_name],[c.er2,c.blue]
+
+  current_hist = val[project_name].call
 
   if if_current_hist_empty current_hist
 
@@ -3227,7 +3239,6 @@ get_all = (info) ->*
 
   sortir = yield from update gjson,info
 
-
   if sortir is SERR then return
 
   [lconfig,log] = sortir
@@ -3245,6 +3256,15 @@ get_all = (info) ->*
     \err_light
     'starting from resume point'
     c.warn info.options.startpoint.join '.'
+
+  # if check_if_empty lconfig
+
+  #   log.normal do
+  #     \err
+  #     "⚡️⚡️ error"
+  #     c.er1 "empty execution, no command to execute / unable to find user command."
+
+  #   return
 
   most.generate ms_create_watch,lconfig,info,log
   .recoverWith (sig)->

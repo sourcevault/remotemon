@@ -982,7 +982,7 @@ parseDoc = function(data, info){
     throw SERR;
   }
   if (!doc.contents) {
-    print.yaml_parse_fail('yaml file is empty.', info);
+    print.yaml_parse_fail('yaml file is empty.\n', info);
     throw SERR;
   }
   return doc;
@@ -1443,7 +1443,7 @@ V.user_vars = V.def_vars.cont(function(ob){
 });
 str_to_num = be.str.cont(function(str){
   return Number(str);
-}).and(be.int.pos).or(be.int.pos);
+}).and(be.int.pos).or(be.int.pos).err('not number');
 V.defarg_required = str_to_num.or(be.undefnull.cont(function(obj){
   var state, defarg, max_null, i$, len$, I;
   state = arguments[arguments.length - 1];
@@ -1807,7 +1807,7 @@ onchange = function*(data){
   }
   if (check_if_empty(lconfig)) {
     log.normal('err', "⚡️⚡️ error", c.er1("empty execution, no command to execute / unable to find user command."));
-    (yield 'error');
+    (yield 'error#empty_exec');
     return;
   }
   remotehost = lconfig.remotehost, remotefold = lconfig.remotefold;
@@ -1887,7 +1887,7 @@ resolve_signal = be.arr.on(0, be.str.fix('<< program screwed up >>').cont(functi
   } else {
     log.normal('err_light', "exit 1");
   }
-  return ['error', location];
+  return ['error#location', location];
 }).or(be(function(x){
   return R.type(x) === 'Error';
 }).cont(function(E){
@@ -1897,7 +1897,11 @@ resolve_signal = be.arr.on(0, be.str.fix('<< program screwed up >>').cont(functi
   return [];
 })).alt(be.str.cont(function(str){
   return [str];
-})).wrap();
+})).cont(function(arg$){
+  var sig, data;
+  sig = arg$[0], data = arg$[1];
+  return [sig.split('#'), data];
+}).wrap();
 save_failed_build = function(loc, info){
   var startpoint, alldata, pdata, patt, fail, last;
   startpoint = info.options.startpoint;
@@ -1929,8 +1933,8 @@ save_failed_build = function(loc, info){
 };
 print_final_message = function(log, lconfig, info){
   return function(signal){
-    var ref$, sig, loc, msg, message_type;
-    ref$ = resolve_signal(signal, log, info), sig = ref$[0], loc = ref$[1];
+    var ref$, ref1$, sig, type, loc, msg, message_type;
+    ref$ = resolve_signal(signal, log, info), ref1$ = ref$[0], sig = ref1$[0], type = ref1$[1], loc = ref$[1];
     if (info.options.watch_config_file) {
       msg = c.warn("returning to watch ") + c.pink("*CF");
     } else {
@@ -1938,17 +1942,19 @@ print_final_message = function(log, lconfig, info){
     }
     switch (sig) {
     case 'error':
-      save_failed_build(loc, info);
+      if (type === 'location') {
+        save_failed_build(loc, info);
+      }
       message_type = 'err';
       break;
     case 'done':
       message_type = 'ok';
     }
-    if (!lconfig.should_I_watch) {
-      lconfig.rl.close();
-      return;
+    if (!lconfig.should_I_watch || (type === 'empty_exec' && !info.options.watch_config_file)) {
+      return most.throwError();
     }
     log.normal(message_type, msg);
+    return most.empty();
   };
 };
 ms_create_watch = function*(lconfig, info, log){
@@ -2048,7 +2054,7 @@ ms_create_watch = function*(lconfig, info, log){
       return most.empty();
     }).drain();
     return most.empty();
-  }).tap(function(filename){
+  }).chain(function(filename){
     var data;
     data = {
       info: info,
@@ -2058,7 +2064,9 @@ ms_create_watch = function*(lconfig, info, log){
     };
     return most.generate(onchange, data).recoverWith(function(x){
       return most.just(x);
-    }).observe(print_final_message(log, lconfig, info));
+    }).map(print_final_message(log, lconfig, info));
+  }).chain(R.identity).recoverWith(function(){
+    return most.empty();
   });
   return ms.drain();
 };
@@ -2128,13 +2136,14 @@ getunique = R.uniqWith(function(arg$, arg1$){
   return R.equals(cmd1, cmd2);
 });
 exec_list_hist = function(val, project_name){
-  var path, padLeft, current_hist, fin_string, max_mid_len, max_time_len, i$, len$, index, ref$, time, cmd, mtime, date, rel_time, color, each, results$ = [];
+  var path, current_hist, padLeft, fin_string, max_mid_len, max_time_len, i$, len$, index, ref$, time, cmd, mtime, date, rel_time, color, each, results$ = [];
   path = homedir + "/.config" + "/remotemon/" + "hist.json";
   val = JSON.parse(
   R.toString(
   fs.readFileSync(
   path)));
   l(lit(['> PROJECT ', project_name], [c.er2, c.blue]));
+  current_hist = val[project_name].call;
   if (if_current_hist_empty(current_hist)) {
     l(lit([" --- ", "< EMPTY HISTORY >", " --- "], [c.pink, c.warn, c.pink]));
     return;

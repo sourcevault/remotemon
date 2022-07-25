@@ -43,6 +43,8 @@ be                   = hoplon.types
 
 com.readline         = readline
 
+com.moment           = require \moment
+
 com.compare_version  = require \../dist/compare.version.js
 
 ``

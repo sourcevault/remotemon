@@ -64,7 +64,8 @@ compile:
 # 	./dist/cmdline.js -p rpi fail.build --resume
 
 # 	./dist/cmdline.js -p yt -f 140 https://www.youtube.com/watch\?v\=EZgcSJ6D8cQ
-	./dist/cmdline.js -p yt empty 'https://twitter.com/fomocapdao/status/1547175698984468481'
+# 	./dist/cmdline.js -p yt empty 'https://twitter.com/fomocapdao/status/1547175698984468481'
+	./dist/cmdline.js -p mono/gitfer -ll
 # 	./dist/cmdline.js -p yt video
 
 

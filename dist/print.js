@@ -24,6 +24,7 @@ com.child_process = child_process;
 cp = child_process;
 be = hoplon.types;
 com.readline = readline;
+com.moment = require('moment');
 com.compare_version = require('../dist/compare.version.js');
 
 var boxen = import('boxen')

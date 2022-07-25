@@ -12,19 +12,19 @@
     "test": "make travis"
   },
   "bin": {
-    "remotemon": "bundle/index.js"
+    "remotemon": "dist/cmdline.js"
   },
   "dependencies": {
     "@most/create": "2.0.1",
     "option-parser": "1.0.1",
     "chokidar": "3.5.2",
-    "tampax": "1.2.2",
-    "hoplon": "0.2.30",
+    "hoplon": "*",
     "ramda": "0.27.1",
     "most": "1.9.0",
     "yaml": "2.0.0-7",
     "boxen": "6.2.1",
-    "emphasize": "5.0.0"
+    "emphasize": "5.0.0",
+    "moment": "2.29.4"
   },
   "keywords": [
     "remote",
