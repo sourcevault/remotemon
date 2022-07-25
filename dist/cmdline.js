@@ -1950,7 +1950,10 @@ print_final_message = function(log, lconfig, info){
     case 'done':
       message_type = 'ok';
     }
-    if (!lconfig.should_I_watch || (type === 'empty_exec' && !info.options.watch_config_file)) {
+    if (type === 'empty_exec' && !info.options.watch_config_file) {
+      return most.throwError();
+    }
+    if (!lconfig.should_I_watch) {
       return most.throwError();
     }
     log.normal(message_type, msg);
@@ -2014,6 +2017,7 @@ ms_create_watch = function*(lconfig, info, log){
       });
       watcher.on('change', add);
       return function(){
+        z('watcher close !');
         watcher.close();
         rl.close();
         lconfig.rl = void 8;
@@ -2030,7 +2034,7 @@ ms_create_watch = function*(lconfig, info, log){
     log.verbose(cmd);
     (yield* cont(cmd, ['pre', index]));
   }
-  ms = ms_file_watch.timestamp().loop(handle_inf(log, lconfig), info.timedata).switchLatest().takeWhile(function(filename){
+  return ms = ms_file_watch.timestamp().loop(handle_inf(log, lconfig), info.timedata).switchLatest().takeWhile(function(filename){
     if (filename === lconfig.CFname) {
       if (info.options.watch_config_file) {
         return false;
@@ -2064,11 +2068,10 @@ ms_create_watch = function*(lconfig, info, log){
     };
     return most.generate(onchange, data).recoverWith(function(x){
       return most.just(x);
-    }).map(print_final_message(log, lconfig, info));
-  }).chain(R.identity).recoverWith(function(){
-    return most.empty();
-  });
-  return ms.drain();
+    }).map(print_final_message(log, lconfig, info)).recoverWith(function(){
+      return most.empty();
+    });
+  }).chain(R.identity).observe();
 };
 restart = function*(info, log){
   var msg, gjson, E, sortir, lconfig, aout;

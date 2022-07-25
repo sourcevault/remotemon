@@ -2824,7 +2824,6 @@ save_failed_build = (loc,info) !->
     info.options.hist_file_address
     jspc alldata
 
-
 print_final_message = (log,lconfig,info) -> (signal) !->
 
   [[sig,type],loc] = resolve_signal signal,log,info
@@ -2841,6 +2840,7 @@ print_final_message = (log,lconfig,info) -> (signal) !->
   | \error =>
 
     if type is \location
+
       save_failed_build loc,info
 
     message_type = \err
@@ -2849,9 +2849,10 @@ print_final_message = (log,lconfig,info) -> (signal) !->
 
     message_type = \ok
 
-  if (not lconfig.should_I_watch) or
+  if ((type is \empty_exec) and not info.options.watch_config_file)
+    return most.throwError!
 
-    ((type is \empty_exec) and not info.options.watch_config_file)
+  if (not lconfig.should_I_watch)
 
     return most.throwError!
 
@@ -2934,6 +2935,7 @@ ms_create_watch = (lconfig,info,log) ->*
       watcher.on \change,add
 
       !->
+        z 'watcher close !'
         watcher.close!
         rl.close!
         lconfig.rl = void
@@ -3019,12 +3021,12 @@ ms_create_watch = (lconfig,info,log) ->*
       .recoverWith (x) -> most.just x
 
       .map print_final_message log,lconfig,info
+      .recoverWith -> most.empty!
 
     .chain R.identity
 
-    .recoverWith -> most.empty!
+    .observe!
 
-  ms.drain!
 
 restart = (info,log) !->*
 
