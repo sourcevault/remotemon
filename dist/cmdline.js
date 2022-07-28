@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, path, dotpat, spawn, yaml, compare_version, boxen, moment, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, rest, E, str, silent, edit, concatenate, isvar, check_if_number, vars, args, init, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, symbol_script, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, replace_dot, pathops, modyaml, parseDoc, show, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, ifTrue, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, exec_finale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, ms_empty, handle_inf, resolve_signal, save_failed_build, print_final_message, ms_create_watch, restart, check_conf_file, if_current_hist_empty, getunique, exec_list_hist, start_from_resume_point, get_all, rm_resume, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, path, dotpat, spawn, yaml, compare_version, boxen, moment, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, rest, E, str, silent, edit, concatenate, isvar, check_if_number, vars, args, init, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, symbol_script, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, replace_dot, pathops, modyaml, parseDoc, show, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, ifTrue, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, exec_finale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, handle_inf, resolve_signal, save_failed_build, print_final_message, restart, ms_create_watch, check_conf_file, if_current_hist_empty, getunique, exec_list_hist, start_from_resume_point, get_all, rm_resume, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create;
 fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
@@ -1844,7 +1844,6 @@ diff = R.pipe(R.aperture(2), R.map(function(arg$){
   x = arg$[0], y = arg$[1];
   return y - x;
 }));
-ms_empty = most.empty();
 handle_inf = function(log, lconfig){
   return function(db, ob){
     var time_bin_size, ref$, first, second, fin;
@@ -1861,9 +1860,9 @@ handle_inf = function(log, lconfig){
       if (lconfig.watch.length > 0) {
         log.normal('err', " returing to watch ");
       }
-      fin.value = ms_empty;
+      fin.value = SERR;
     } else {
-      fin.value = most.just(ob.value);
+      fin.value = ob.value;
     }
     return fin;
   };
@@ -1950,18 +1949,19 @@ print_final_message = function(log, lconfig, info){
     case 'done':
       message_type = 'ok';
     }
-    if (type === 'empty_exec' && !info.options.watch_config_file) {
-      return most.throwError();
+    if (signal === 'error#empty_exec' && !info.options.watch_config_file) {
+      return SERR;
     }
     if (!lconfig.should_I_watch) {
-      return most.throwError();
+      return SERR;
     }
     log.normal(message_type, msg);
-    return most.empty();
+    return OK;
   };
 };
+restart = {};
 ms_create_watch = function*(lconfig, info, log){
-  var should_I_watch, disp, I, ms_file_watch, cont, pre, i$, len$, index, cmd, ms;
+  var should_I_watch, disp, I, ms_file_watch, cont, pre, i$, len$, index, cmd;
   should_I_watch = lconfig.watch.length > 0 && info.options.no_watch === 0;
   lconfig.should_I_watch = should_I_watch;
   if (should_I_watch) {
@@ -1988,7 +1988,7 @@ ms_create_watch = function*(lconfig, info, log){
     }())).join(" "));
   }
   ms_file_watch = most_create(function(add, end, error){
-    var rl, cwd, watcher;
+    var rl, cwd, watcher, dispose;
     if (lconfig.initialize) {
       add(null);
     }
@@ -2000,7 +2000,6 @@ ms_create_watch = function*(lconfig, info, log){
     rl.on('line', function(input){
       process.stdout.write(input);
     });
-    lconfig.rl = rl;
     if (lconfig.inpwd) {
       cwd = undefined;
       lconfig.CFname = info.configfile;
@@ -2016,14 +2015,19 @@ ms_create_watch = function*(lconfig, info, log){
         cwd: cwd
       });
       watcher.on('change', add);
-      return function(){
-        z('watcher close !');
+      lconfig.watcher = watcher;
+      dispose = function(){
         watcher.close();
         rl.close();
-        lconfig.rl = void 8;
+        end();
+      };
+    } else {
+      dispose = function(){
+        rl.close();
         end();
       };
     }
+    return dispose;
   });
   cont = init_continuation(info.options.dryRun, info.options.project, lconfig.inpwd);
   pre = lconfig.pre;
@@ -2034,30 +2038,14 @@ ms_create_watch = function*(lconfig, info, log){
     log.verbose(cmd);
     (yield* cont(cmd, ['pre', index]));
   }
-  return ms = ms_file_watch.timestamp().loop(handle_inf(log, lconfig), info.timedata).switchLatest().takeWhile(function(filename){
+  return ms_file_watch.timestamp().loop(handle_inf(log, lconfig), info.timedata).takeWhile(function(filename){
     if (filename === lconfig.CFname) {
       if (info.options.watch_config_file) {
+        restart.stream(info, log, lconfig);
         return false;
       }
     }
     return true;
-  }).continueWith(function(filename){
-    most.generate(restart, info, log).continueWith(function(SIG){
-      if (SIG === OK) {
-        return most.empty();
-      }
-      lconfig.initialize = false;
-      wait(0, function(){
-        var msg;
-        msg = lit([info.configfile + "", " <--parse error"], [c.warn, c.er3]);
-        log.normal('err', msg);
-        msg = lit(["setting up watch using using old configuration file.."], [c.er1]);
-        log.normal('err', msg);
-        return most.generate(ms_create_watch, lconfig, info, log).drain();
-      });
-      return most.empty();
-    }).drain();
-    return most.empty();
   }).chain(function(filename){
     var data;
     data = {
@@ -2068,12 +2056,33 @@ ms_create_watch = function*(lconfig, info, log){
     };
     return most.generate(onchange, data).recoverWith(function(x){
       return most.just(x);
-    }).map(print_final_message(log, lconfig, info)).recoverWith(function(){
-      return most.empty();
-    });
-  }).chain(R.identity).observe();
+    }).map(print_final_message(log, lconfig, info));
+  }).takeWhile(function(sig){
+    if (sig === SERR) {
+      return false;
+    }
+    return true;
+  }).drain();
 };
-restart = function*(info, log){
+restart.stream = function(info, log, lconfig){
+  return most.generate(restart.main, info, log).subscribe({
+    complete: function(SIG){
+      if (SIG === OK) {
+        return;
+      }
+      lconfig.initialize = false;
+      return wait(0, function(){
+        var msg;
+        msg = lit([info.configfile + "", " <--parse error in file"], [c.warn, c.er3]);
+        log.normal('err', msg);
+        msg = lit(["setting up watch using using old configuration file.."], [c.er1]);
+        log.normal('err', msg);
+        return most.generate(ms_create_watch, lconfig, info, log).drain();
+      });
+    }
+  });
+};
+restart.main = function*(info, log){
   var msg, gjson, E, sortir, lconfig, aout;
   msg = lit([info.configfile + "", " changed, restarting watch.."], [c.warn, c.er1]);
   log.normal('err', msg);

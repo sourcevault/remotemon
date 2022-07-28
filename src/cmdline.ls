@@ -2707,8 +2707,6 @@ diff = R.pipe do
   R.aperture 2
   R.map ([x,y]) -> y - x
 
-ms_empty = most.empty!
-
 handle_inf = (log,lconfig) -> (db,ob) ->
 
   db.shift!
@@ -2736,11 +2734,11 @@ handle_inf = (log,lconfig) -> (db,ob) ->
         \err
         " returing to watch "
 
-    fin.value = ms_empty
+    fin.value = SERR
 
   else
 
-    fin.value = most.just ob.value
+    fin.value = ob.value
 
   fin
 
@@ -2849,16 +2847,19 @@ print_final_message = (log,lconfig,info) -> (signal) !->
 
     message_type = \ok
 
-  if ((type is \empty_exec) and not info.options.watch_config_file)
-    return most.throwError!
+  if ((signal is \error#empty_exec) and not info.options.watch_config_file)
+
+    return SERR
 
   if (not lconfig.should_I_watch)
 
-    return most.throwError!
+    return SERR
 
   log.normal message_type,msg
 
-  return most.empty!
+  return OK
+
+restart = {}
 
 ms_create_watch = (lconfig,info,log) ->*
 
@@ -2909,8 +2910,6 @@ ms_create_watch = (lconfig,info,log) ->*
 
       process.stdout.write input
 
-    lconfig.rl = rl
-
     #--------------------------------------------------------------------------------------
 
     if lconfig.inpwd
@@ -2934,12 +2933,17 @@ ms_create_watch = (lconfig,info,log) ->*
 
       watcher.on \change,add
 
-      !->
-        z 'watcher close !'
-        watcher.close!
-        rl.close!
-        lconfig.rl = void
-        end!
+      lconfig.watcher = watcher
+
+      dispose = !-> watcher.close!;rl.close!;end!
+
+
+    else
+
+      dispose = !-> rl.close!;end!
+
+    dispose
+
 
   cont = init_continuation do
     info.options.dryRun
@@ -2960,75 +2964,68 @@ ms_create_watch = (lconfig,info,log) ->*
 
     yield from cont cmd,[\pre,index]
 
-  ms = do
+  ms_file_watch
 
-    ms_file_watch
+  .timestamp!
 
-    .timestamp!
+  .loop (handle_inf log,lconfig),info.timedata
 
-    .loop (handle_inf log,lconfig),info.timedata
+  .takeWhile (filename) ->
 
-    .switchLatest!
+    if filename is lconfig.CFname
+      if info.options.watch_config_file
+        restart.stream info,log,lconfig # <-- restart
+        return false
+    true
 
-    .takeWhile (filename) ->
+  .chain (filename) ->
 
-      if filename is lconfig.CFname
-        if info.options.watch_config_file
-          return false
+    data = {info,lconfig,log,cont}
 
-      true
+    most.generate onchange,data
 
-    .continueWith (filename) ->
+    .recoverWith (x) -> most.just x
 
-      most.generate restart,info,log
+    .map print_final_message log,lconfig,info
 
-      .continueWith (SIG) ->
+  .takeWhile (sig) ->
 
-        if SIG is OK then return most.empty!
+    if sig is SERR then return false
 
-        lconfig.initialize = false
+    true
 
-        do
-          <- wait 0
+  .drain!
 
-          msg = lit do
-            ["#{info.configfile}"," <--parse error"]
-            [c.warn,c.er3]
 
-          log.normal \err,msg
+restart.stream = (info,log,lconfig) ->
 
-          msg = lit do
-            ["setting up watch using using old configuration file.."]
-            [c.er1]
+  most.generate restart.main,info,log
+  .subscribe do
+    complete: (SIG) ->
 
-          log.normal \err,msg
+      if SIG is OK then return
 
-          most.generate ms_create_watch,lconfig,info,log
-          .drain!
+      lconfig.initialize = false
 
-        most.empty!
+      <- wait 0
 
+      msg = lit do
+        ["#{info.configfile}"," <--parse error in file"]
+        [c.warn,c.er3]
+
+      log.normal \err,msg
+
+      msg = lit do
+        ["setting up watch using using old configuration file.."]
+        [c.er1]
+
+      log.normal \err,msg
+
+      most.generate ms_create_watch,lconfig,info,log
       .drain!
 
-      most.empty!
 
-    .chain (filename) ->
-
-      data = {info,lconfig,log,cont}
-
-      most.generate onchange,data
-
-      .recoverWith (x) -> most.just x
-
-      .map print_final_message log,lconfig,info
-      .recoverWith -> most.empty!
-
-    .chain R.identity
-
-    .observe!
-
-
-restart = (info,log) !->*
+restart.main = (info,log) !->*
 
   msg = lit do
     ["#{info.configfile}"," changed, restarting watch.."]

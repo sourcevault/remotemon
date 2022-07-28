@@ -23,6 +23,12 @@ pkg:
 	yaml2json -p src/package.yaml > package.json
 
 
+create_configfile_error:
+	sleep 6
+	echo -e "\n3" >> /mnt/c/code/mono/gitfer/.remotemon.yaml
+	sleep 5
+	truncate -s-2 /mnt/c/code/mono/gitfer/.remotemon.yaml
+
 compile:
 	lsc --no-header -cbo dist src
 	lsc -cb test
@@ -63,10 +69,20 @@ compile:
 
 # 	./dist/cmdline.js -p rpi fail.build --resume
 
-# 	./dist/cmdline.js -p yt -f 140 https://www.youtube.com/watch\?v\=EZgcSJ6D8cQ
+# 	./dist/cmdline.js -w -p mono/gitfer fail.build 
+
+# 	./dist/cmdline.js -w -p mono/gitfer fail.build
+# 	./dist/cmdline.js -w -p mono/gitfer fail.build
+
+
+# 	make create_configfile_error & ./dist/cmdline.js -w -p mono/gitfer fail.build 
+
+
+
+	./dist/cmdline.js -p yt https://www.youtube.com/watch\?v\=EZgcSJ6D8cQ
 # 	./dist/cmdline.js -p yt empty 'https://twitter.com/fomocapdao/status/1547175698984468481'
 # 	./dist/cmdline.js -p mono/gitfer --ll
-	./dist/cmdline.js -p yt https://twitter.com/AZmilitary1/status/1551704236680937474 -o 'hello.mp4'
+# 	./dist/cmdline.js -w -p yt https://twitter.com/AZmilitary1/status/1551704236680937474 -o 'hello.mp4'
 
 # 	./dist/cmdline.js -p yt video
 
