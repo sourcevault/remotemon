@@ -38,16 +38,13 @@ compile:
 
 # 	remotemon longname -w foo bar
 # 	cd ../convert
-# 	remotemon -vv -p yt audio "https://www.youtube.com/watch\?v\=cckKH0yLO2I"
 
 # 	remotemon --project test
 
-# 	remotemon -p yt video https://www.youtube.com/watch\?v\=eXNEpQCXHaE
 
 # 	remotemon -p router hostapd.status
 
 # 	remotemon -vv longname
-# 	remotemon -p yt audio https://www.youtube.com/watch\?v\=EZgcSJ6D8cQ
 
 # 	remotemon ext=ex4 remotehost="192.148.92.1"
 
@@ -78,11 +75,9 @@ compile:
 # 	make create_configfile_error & ./dist/cmdline.js -w -p mono/gitfer fail.build 
 
 
+	./dist/cmdline.js -p yt test
 
-	./dist/cmdline.js -p yt https://www.youtube.com/watch\?v\=EZgcSJ6D8cQ
-# 	./dist/cmdline.js -p yt empty 'https://twitter.com/fomocapdao/status/1547175698984468481'
 # 	./dist/cmdline.js -p mono/gitfer --ll
-# 	./dist/cmdline.js -w -p yt https://twitter.com/AZmilitary1/status/1551704236680937474 -o 'hello.mp4'
 
 # 	./dist/cmdline.js -p yt video
 
@@ -124,7 +119,7 @@ ncc:
 	lsc --no-header -cbo dist src
 	lsc -cb test
 	yaml2json -p src/package.yaml > package.json
-	ncc --minify --v8-cache build ./dist/cmdline.js -o ./bundle
+	ncc --minify build ./dist/cmdline.js -o ./bundle
 	yq w -i src/package.yaml bin.remotemon 'dist/cmdline.js'
 
 r.ncc:

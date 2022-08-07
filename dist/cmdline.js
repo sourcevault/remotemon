@@ -581,16 +581,18 @@ merge_ref_defarg = function(defarg, ref){
     path = ['defarg', index];
     ref.pall.push(path);
   }
-  p = ref.cmdname + '.defarg';
-  for (i$ = 0, len$ = (ref$ = defarg[p]).length; i$ < len$; ++i$) {
-    index = i$;
-    str = ref$[i$];
-    ref.all[p + '.' + index] = str;
-    path = [ref.cmdname, 'defarg', index];
-    handle_path_dot.save_matrix(path, ref.pall.length, ref);
-    results$.push(ref.pall.push(path));
+  if (ref.cmdname) {
+    p = ref.cmdname + '.defarg';
+    for (i$ = 0, len$ = (ref$ = defarg[p]).length; i$ < len$; ++i$) {
+      index = i$;
+      str = ref$[i$];
+      ref.all[p + '.' + index] = str;
+      path = [ref.cmdname, 'defarg', index];
+      handle_path_dot.save_matrix(path, ref.pall.length, ref);
+      results$.push(ref.pall.push(path));
+    }
+    return results$;
   }
-  return results$;
 };
 clear.tampax = function(name, ref, path){
   var expansions, str, i$, len$, each, has_tampax, is_script, exists, save, istr;
@@ -932,7 +934,9 @@ modyaml = function*(info){
   defarg = {};
   defarg.project = info.options.project;
   defarg.defarg = null;
-  defarg[ref.cmdname + '.defarg'] = {};
+  if (ref.cmdname) {
+    defarg[ref.cmdname + '.defarg'] = {};
+  }
   defarg.localpwd = null;
   defarg.globalpwd = null;
   defarg.script_all = [];
@@ -941,7 +945,6 @@ modyaml = function*(info){
   defarg.tampax_all = [];
   sd = san_defarg(js, info);
   defarg.defarg = sd(['defarg']);
-  update_defarg(defarg, 'defarg');
   defarg.globalpwd = san_inpwd(js.inpwd, info.options.inpwd);
   if (cmdname) {
     if (global_data.selected_keys.set.has(cmdname)) {

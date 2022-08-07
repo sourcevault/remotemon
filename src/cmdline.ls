@@ -870,17 +870,19 @@ merge_ref_defarg = (defarg,ref) ->
 
     ref.pall.push path
 
-  p = ref.cmdname + \.defarg
+  if ref.cmdname
 
-  for str,index in defarg[p]
+    p = ref.cmdname + \.defarg
 
-    ref.all[p + '.' + index] = str
+    for str,index in defarg[p]
 
-    path = [ref.cmdname,\defarg,index]
+      ref.all[p + '.' + index] = str
 
-    handle_path_dot.save_matrix path,ref.pall.length,ref
+      path = [ref.cmdname,\defarg,index]
 
-    ref.pall.push path
+      handle_path_dot.save_matrix path,ref.pall.length,ref
+
+      ref.pall.push path
 
 
 clear.tampax = (name,ref,path) ->
@@ -1368,7 +1370,9 @@ modyaml = (info) ->*
 
   defarg.defarg = null
 
-  defarg[(ref.cmdname + '.defarg')] = {}
+  if ref.cmdname
+
+    defarg[(ref.cmdname + '.defarg')] = {}
 
   defarg.localpwd = null
 
@@ -1385,8 +1389,6 @@ modyaml = (info) ->*
   sd = san_defarg js,info
 
   defarg.defarg = sd [\defarg]
-
-  update_defarg defarg,\defarg
 
   defarg.globalpwd = san_inpwd do
     js.inpwd
@@ -1419,7 +1421,6 @@ modyaml = (info) ->*
     defarg[p] = sd a_path
 
     update_defarg defarg,p
-
 
   else
 
