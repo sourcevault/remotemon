@@ -75,7 +75,10 @@ compile:
 # 	make create_configfile_error & ./dist/cmdline.js -w -p mono/gitfer fail.build 
 
 
-	./dist/cmdline.js -p yt test
+# 	./dist/cmdline.js -p yt test
+
+	./dist/cmdline.js -p mono/gitfer -c
+
 
 # 	./dist/cmdline.js -p mono/gitfer --ll
 
