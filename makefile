@@ -123,11 +123,12 @@ ncc:
 	lsc -cb test
 	yaml2json -p src/package.yaml > package.json
 	ncc --minify build ./dist/cmdline.js -o ./bundle
+# 	ncc build ./dist/cmdline.js -o ./bundle
 	yq w -i src/package.yaml bin.remotemon 'dist/cmdline.js'
 
 r.ncc:
 	make ncc
-	./bundle/index.js -p rpi install.zsh -v -d machine=backup -ccc
+	./bundle/index.js -p mono/gitfer -c
 # 	./dist/cmdline.js -p rpi install.zsh -v -d machine=backup -ccc
 
 w.ncc:

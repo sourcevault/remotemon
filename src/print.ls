@@ -49,7 +49,7 @@ com.compare_version  = require \../dist/compare.version.js
 
 ``
 var boxen = import('boxen')
-var emphasize =  import('emphasize')
+var emphasize =  import('emphasize/lib/all.js')
 ``
 
 com.emphasize        = emphasize

@@ -1520,7 +1520,7 @@ function exec_list_option yjson,info
     l lit [" • ",name,des],[c.warn,c.warn,c.grey]
 
 function exec_cat_option yaml_object,concat_count,info
-
+  
   yaml_text = yaml_object.toString!
 
   hash_first = RegExp '^#'
