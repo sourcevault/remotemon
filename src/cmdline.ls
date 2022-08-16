@@ -2318,7 +2318,7 @@ V.def = be.obj
 
     clone.libs = void
 
-    print_json = (json) -> l (libs.emphasize.highlight \json,j json).value
+    print_json = (json) -> l (libs.emphasize.highlightAuto j json).value
 
     print_json clone
     l "-------------"

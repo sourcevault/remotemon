@@ -1563,7 +1563,7 @@ V.def = be.obj.on(['remotehost', 'remotefold'], be.str.or(unu)).on(['inpwd', 'si
     clone = R.clone(info);
     clone.libs = void 8;
     print_json = function(json){
-      return l(libs.emphasize.highlight('json', j(json)).value);
+      return l(libs.emphasize.highlightAuto(j(json)).value);
     };
     print_json(clone);
     l("-------------");
