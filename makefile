@@ -81,10 +81,11 @@ compile:
 
 # 	remotemon -ccc -w -v -p scripts split.video 'TeamBaan Podcast S2E1 _ Dr. Anshul Trivedi _ Ameya Deshpande-DWy6C1TWGzE.m4a'
 
+	./dist/cmdline.js -w -v -p scripts split.video \#TeamBaan Podcast S2E1 _ Dr. Anshul Trivedi _ Ameya Deshpande-DWy6C1TWGzE.m4a
+
 # 	./dist/cmdline.js -p mono/gitfer --ll
 
 # 	./dist/cmdline.js -p yt video
-
 
 # 	./dist/cmdline.js -p rpi fail.build --resume
 # 	./dist/cmdline.js -p yt empty
@@ -131,7 +132,7 @@ r.ncc:
 	make ncc
 # 	./bundle/index.js -p mono/gitfer -c
 # 	./dist/cmdline.js -p rpi install.zsh -v -d machine=backup -ccc
-	./bundle/index.js -ccc -w -v -p scripts split.video '#TeamBaan Podcast S2E1 _ Dr. Anshul Trivedi _ Ameya Deshpande-DWy6C1TWGzE.m4a'
+	./bundle/index.js -w -v -p scripts split.video #TeamBaan Podcast S2E1 _ Dr. Anshul Trivedi _ Ameya Deshpande-DWy6C1TWGzE.m4a
 
 w.ncc:
 	nodemon  --delay 1 --exec "make r.ncc || exit 1" ${SRC_FILES} 

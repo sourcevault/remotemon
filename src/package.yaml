@@ -10,7 +10,7 @@ main: dist/main.js
 scripts:
   "test": "make travis"
 bin:
-  remotemon: dist/cmdline.js
+  remotemon: bundle/index.js
 dependencies:
   "@most/create": "*"
   option-parser: 1.0.1
