@@ -5,12 +5,12 @@ homepage: https://github.com/sourcevault/remotemon#readme.md
 license: BSD-3-Clause
 description: remote monitoring, since there is no ansible for raspberry pi.
 repository: https://github.com/sourcevault/remotemon.git
-version: 2.0.43
+version: 2.0.44
 main: dist/main.js
 scripts:
   "test": "make travis"
 bin:
-  remotemon: bundle/index.js
+  remotemon: dist/cmdline.js
 dependencies:
   "@most/create": "*"
   option-parser: 1.0.1
