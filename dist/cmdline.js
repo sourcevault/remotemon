@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, path, dotpat, spawn, yaml, compare_version, boxen, moment, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, rest, E, str, silent, edit, concatenate, isvar, check_if_number, vars, args, init, V, defarg_main, san_inpwd, san_obj, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, symbol_script, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, replace_dot, pathops, modyaml, parseDoc, show, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, ifTrue, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, exec_finale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, handle_inf, resolve_signal, save_failed_build, print_final_message, restart, ms_create_watch, check_conf_file, if_current_hist_empty, getunique, exec_list_hist, start_from_resume_point, get_all, rm_resume, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, path, dotpat, spawn, yaml, compare_version, boxen, moment, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, rest, E, str, silent, edit, concatenate, isvar, check_if_number, vars, args, init, V, defarg_main, san_inpwd, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, symbol_script, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, replace_dot, pathops, modyaml, parseDoc, show, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, ifTrue, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, exec_finale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, handle_inf, resolve_signal, save_failed_build, print_final_message, restart, ms_create_watch, check_conf_file, if_current_hist_empty, getunique, exec_list_hist, start_from_resume_point, get_all, rm_resume, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create;
 fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
@@ -11,6 +11,7 @@ be = com.hoplon.types;
 guard = com.hoplon.guard;
 cp = child_process;
 os = require('os');
+path = require('path');
 homedir = os.homedir();
 release = os.release();
 re = /Microsoft/g;
@@ -88,7 +89,7 @@ R.filter(isvar)(
 rest));
 args = R.reject(isvar, rest);
 init = function*(){
-  var CONFIG_DIR, REMOTEMON_DIR, CONFIG_FILE, DEF_CONFIG_FILE, HIST_FILE, DEF_HIST_FILE, config_yaml_text, doc, service_dir, edit_config_file, q, str, ref$, str1, str2, lastchecktime, current_version_number, epoc, time_in_seconds, re, raw, ret, vn, corde, user_doc, prog_doc, fin_doc;
+  var CONFIG_DIR, REMOTEMON_DIR, CONFIG_FILE, DEF_CONFIG_FILE, HIST_FILE, DEF_HIST_FILE, cmd, config_yaml_text, doc, service_dir, edit_config_file, q, str, ref$, str1, str2, lastchecktime, current_version_number, epoc, time_in_seconds, re, raw, ret, vn, corde, user_doc, prog_doc, fin_doc;
   CONFIG_DIR = homedir + "/.config";
   REMOTEMON_DIR = CONFIG_DIR + "/remotemon/";
   CONFIG_FILE = REMOTEMON_DIR + "config.remotemon.yaml";
@@ -102,7 +103,8 @@ init = function*(){
     exec("mkdir " + REMOTEMON_DIR);
   }
   if (!fs.existsSync(CONFIG_FILE)) {
-    exec("cp " + DEF_CONFIG_FILE + " " + REMOTEMON_DIR);
+    cmd = "cp " + DEF_CONFIG_FILE + " " + REMOTEMON_DIR;
+    exec(cmd);
   }
   if (!fs.existsSync(HIST_FILE)) {
     exec("cp " + DEF_HIST_FILE + " " + REMOTEMON_DIR);
@@ -238,22 +240,39 @@ V.defarg = defarg_main.cont(function(data){
     return print.basicError(msg, path, info.configfile);
   }
 });
-san_inpwd = function(l, g){
-  switch (R.type(l)) {
-  case 'Boolean':
-    return l;
-  default:
-    switch (R.type(g)) {
-    case 'Boolean':
-      return g;
-    default:
-      return false;
-    }
+V.inpwd = be.bool.or(be.str.and(function(s, g, sd){
+  var p;
+  z(arguments);
+  if (s[0] === '/') {
+    p = s;
+  } else {
+    p = path.resolve(sd + s);
+  }
+  z([p]);
+  z(fs.existsSync(p));
+  if (!fs.existsSync(p)) {
+    return {
+      'continue': false,
+      error: true,
+      value: p,
+      message: 'file does not exist'
+    };
+  } else {
+    return {
+      'continue': true,
+      error: false,
+      value: p
+    };
+  }
+}));
+san_inpwd = function(local, global, sd){
+  var sortir;
+  sortir = V.inpwd.auth(local, global, sd);
+  l(sortir);
+  if (sortir.error) {
+    throw [SERR, ['san_inpwd', [sortir.message, local, global, sd]]];
   }
 };
-san_obj = be.obj.fix(function(){
-  return {};
-}).wrap();
 san_arr = be.arr.fix(function(){
   return [];
 });
@@ -945,7 +964,7 @@ modyaml = function*(info){
   defarg.tampax_all = [];
   sd = san_defarg(js, info);
   defarg.defarg = sd(['defarg']);
-  defarg.globalpwd = san_inpwd(js.inpwd, info.options.inpwd);
+  defarg.globalpwd = san_inpwd(js.inpwd, info.options.inpwd, info.options.service_directory);
   if (cmdname) {
     if (global_data.selected_keys.set.has(cmdname)) {
       print.in_selected_key(cmdname, info.cmdline);
@@ -955,7 +974,7 @@ modyaml = function*(info){
       print.could_not_find_custom_cmd(cmdname, info);
       throw SERR;
     }
-    inpwd = san_inpwd(js[cmdname].inpwd, js.inpwd);
+    inpwd = san_inpwd(js[cmdname].inpwd, defarg.globalpwd, info.options.service_directory);
     defarg.localpwd = inpwd;
     a_path = [cmdname, 'defarg'];
     p = cmdname + '.defarg';
@@ -2093,8 +2112,8 @@ restart.main = function*(info, log){
     gjson = (yield* modyaml(info))[0];
   } catch (e$) {
     E = e$;
-    if (E === SERR) {
-      return SERR;
+    if (E[0] === SERR) {
+      return E;
     } else {
       l(c.er1(E));
       return;
@@ -2216,8 +2235,8 @@ get_all = function*(info){
     ref$ = (yield* modyaml(info)), gjson = ref$[0], yaml_text = ref$[1];
   } catch (e$) {
     E = e$;
-    if (E === SERR) {
-      return SERR;
+    if (E[0] === SERR) {
+      return E;
     } else {
       l(c.er1(E));
       return;
@@ -2272,7 +2291,7 @@ rm_resume = function(cmdline){
 };
 main = function(cmd_data){
   return function(CONF){
-    var project_name, service_directory, config_file_name, wcf, cmdline, x$, info, y$, z$, archive, patt, find_fun, data, index, start_point;
+    var project_name, service_directory, config_file_name, wcf, cmdline, x$, info, y$, z$, archive, patt, find_fun, data, index, start_point, EF;
     project_name = cmd_data.project.value();
     if (project_name) {
       service_directory = CONF.service_directory;
@@ -2323,6 +2342,7 @@ main = function(cmd_data){
     z$.hist_file_address = CONF.HIST_FILE;
     z$.histsize = CONF.histsize;
     z$.resume = cmd_data.resume.count();
+    z$.service_directory = CONF.service_directory;
     z$.startpoint = [];
     if (info.options.resume) {
       archive = JSON.parse(
@@ -2399,12 +2419,20 @@ main = function(cmd_data){
     if (check_conf_file(CONF, info)) {
       return;
     }
-    return most.generate(get_all, info).recoverWith(function(E){
+    EF = function(E){
       var str;
       str = ' [ error at line 3086 ]';
-      l(c.er1(E.toString() + str));
-      return most.empty();
-    }).drain();
+      if (E[0] === SERR) {
+        E = E[1];
+      } else if (E === SERR) {
+        E = 'error.type unknown';
+      }
+      return l(c.er1(E.toString() + str));
+    };
+    return most.generate(get_all, info).subscribe({
+      error: EF,
+      complete: EF
+    });
   };
 };
 most.generate(init).tap(main(cmd_data)).recoverWith(function(E){

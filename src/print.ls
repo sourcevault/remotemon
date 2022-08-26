@@ -411,6 +411,10 @@ print.custom_build = (msg,path,filename)->
 
 # ----------------------------------------------------------------
 
+print.file_does_not_exists = ->
+  
+# ----------------------------------------------------------------
+
 print.basicError = (msg,path,filename) ->
 
   show_name filename

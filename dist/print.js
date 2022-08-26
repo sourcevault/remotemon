@@ -209,6 +209,7 @@ print.custom_build = function(msg, path, filename){
   show_name(filename);
   return l(show_body(path, [c.grey("unrecognized value provided.") + "\n", c.grey("only acceptable value types :\n"), c.pink("- array of string ( defaults to local )."), c.pink("- object with restricted keys :"), c.warn("\n  - " + data.selected_keys.arr.join("\n  - "))].join("\n ")));
 };
+print.file_does_not_exists = function(){};
 print.basicError = function(msg, path, filename){
   show_name(filename);
   return l(show_body(path, msg));

@@ -12,7 +12,7 @@
     "test": "make travis"
   },
   "bin": {
-    "remotemon": "bundle/index.js"
+    "remotemon": "dist/cmdline.js"
   },
   "dependencies": {
     "@most/create": "*",

@@ -23,6 +23,8 @@ cp = child_process
 
 os = require \os
 
+path = require \path
+
 homedir = os.homedir!
 
 release = os.release!
@@ -214,6 +216,14 @@ init = ->*
 
   DEF_HIST_FILE = path.resolve (__dirname + '/../hist.json')
 
+  # l do
+  #   ' CONFIG_DIR = '      +      [CONFIG_DIR] + '\n'
+  #   'REMOTEMON_DIR = '    +      [REMOTEMON_DIR] + '\n'
+  #   'CONFIG_FILE ='       +      [CONFIG_FILE] + '\n'
+  #   'DEF_CONFIG_FILE = '  +      [DEF_CONFIG_FILE] + '\n'
+  #   'HIST_FILE = '        +      [HIST_FILE] + '\n'
+  #   'DEF_HIST_FILE = '    +      [DEF_HIST_FILE] + '\n'
+
   if not fs.existsSync CONFIG_DIR
 
     exec "mkdir " + CONFIG_DIR
@@ -224,7 +234,9 @@ init = ->*
 
   if not fs.existsSync CONFIG_FILE
 
-    exec "cp " + DEF_CONFIG_FILE + " " + REMOTEMON_DIR
+    cmd = "cp " + DEF_CONFIG_FILE + " " + REMOTEMON_DIR
+
+    exec cmd
 
   if not fs.existsSync HIST_FILE
 
@@ -280,7 +292,6 @@ init = ->*
 
   lastchecktime = doc.getIn [\last_check_time]
 
-
   current_version_number = doc.getIn [\current_version_number]
 
   epoc  = (Date.now!)/1000
@@ -326,7 +337,6 @@ init = ->*
           console.log boite do
             msg
             {padding: 1,borderColor:"green",textAlignment:"left"}
-
 
   corde = yaml.stringify doc
 
@@ -434,17 +444,72 @@ V.defarg = defarg_main
 
 # ----------------------------------------
 
-san_inpwd =  (l,g) ->
+V.inpwd = be.bool
+.or do
+  be.str.and (s,g,sd) ->
 
-  switch R.type l
-  | \Boolean => return l
-  | otherwise =>
-    switch R.type g
-    | \Boolean => return g
-    | otherwise => return false
+    z arguments
 
-san_obj = be.obj.fix -> {}
-.wrap!
+    if s[0] is '/'
+      p = s
+    else
+
+      p = path.resolve (sd + s)
+
+    z [p]
+
+    z fs.existsSync p
+
+    if not fs.existsSync p
+
+      return {
+        continue:false
+        error:true
+        value:p
+        message:'file does not exist'
+      }
+
+    else
+
+      return {
+        continue:true
+        error:false
+        value:p
+      }
+
+
+san_inpwd = (local,global,sd) ->
+
+  sortir = V.inpwd.auth local,global,sd
+
+  l sortir
+
+  if sortir.error
+
+    throw [SERR,[\san_inpwd,[sortir.message,local,global,sd]]]
+
+  # switch R.type local
+  # | \Boolean => return local
+  # | \String  =>
+
+  #   p = path.resolve local
+
+  #   # if not fs.existsSync p
+
+  #   return p
+
+  # | otherwise =>
+
+  #   switch R.type global
+
+  #   | \Boolean => return global
+  #   | \String  =>
+
+  #     p = path.resolve global
+
+  #     return p
+
+  #   | otherwise => return false
 
 san_arr = be.arr.fix -> []
 
@@ -1261,7 +1326,7 @@ replace_dot.decode = (ref,js) ->
   js
 
 modyaml = (info) ->*
-  
+
   configfile = info.configfile
 
   data = configfile |> fs.readFileSync |> R.toString
@@ -1393,6 +1458,7 @@ modyaml = (info) ->*
   defarg.globalpwd = san_inpwd do
     js.inpwd
     info.options.inpwd
+    info.options.service_directory
 
   if cmdname
 
@@ -1410,7 +1476,8 @@ modyaml = (info) ->*
 
     inpwd = san_inpwd do
       js[cmdname].inpwd
-      js.inpwd
+      defarg.globalpwd
+      info.options.service_directory
 
     defarg.localpwd = inpwd
 
@@ -2280,8 +2347,6 @@ V.def = be.obj
 
 .err (message,path,val,...,{info}) !->
 
-
-
   sortir = be.flatro message
 
   [topmsg] = sortir
@@ -3038,9 +3103,8 @@ restart.main = (info,log) !->*
 
     [gjson] = yield from modyaml info
 
-  catch E 
-
-    if E is SERR then return SERR
+  catch E
+    if E[0] is SERR then return E
     else
       l c.er1 E
       return
@@ -3206,13 +3270,13 @@ get_all = (info) ->*
 
   info.libs.boxen = pod.default
 
-
   try
 
     [gjson,yaml_text] = yield from modyaml info
 
-  catch E 
-    if E is SERR then return SERR
+  catch E
+
+    if E[0] is SERR then return E
     else
       l c.er1 E
       return
@@ -3368,8 +3432,8 @@ main = (cmd_data) -> (CONF) ->
       ..hist_file_address   = CONF.HIST_FILE
       ..histsize            = CONF.histsize
       ..resume              = cmd_data.resume.count!
+      ..service_directory   = CONF.service_directory
       ..startpoint          = []
-
 
   if info.options.resume
 
@@ -3475,17 +3539,20 @@ main = (cmd_data) -> (CONF) ->
     return
 
 
-  most.generate get_all,info
-  .recoverWith (E) -> 
+  EF = (E) ->
 
     str = ' [ error at line 3086 ]'
+
+    if (E[0] is SERR)
+      E = E[1]
+    else if (E is SERR)
+      E = 'error.type unknown'
 
     l c.er1 do
       E.toString! + str
 
-    most.empty!
-  .drain!
-
+  most.generate get_all,info
+  .subscribe error:EF,complete:EF
 
 most.generate init
 .tap main cmd_data
