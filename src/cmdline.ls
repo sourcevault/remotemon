@@ -361,6 +361,8 @@ init = ->*
 
   fin_doc.HIST_FILE = HIST_FILE
 
+  fin_doc.CONFIG_FILE = CONFIG_FILE
+
   yield fin_doc
 
 
@@ -444,72 +446,65 @@ V.defarg = defarg_main
 
 # ----------------------------------------
 
-V.inpwd = be.bool
-.or do
-  be.str.and (s,g,sd) ->
+inpwd_str = be.str.and (s,...,{serv_dir}) ->
 
-    z arguments
+  if s[0] is '/'
+    p = s
 
-    if s[0] is '/'
-      p = s
-    else
+  else
 
-      p = path.resolve (sd + s)
+    p = path.resolve (serv_dir + s)
 
-    z [p]
 
-    z fs.existsSync p
+  if not fs.existsSync p
 
-    if not fs.existsSync p
-
-      return {
-        continue:false
+    return {
         error:true
-        value:p
-        message:'file does not exist'
-      }
+        message:[\:no_file,p]
+    }
 
-    else
+  else
 
-      return {
-        continue:true
-        error:false
-        value:p
-      }
+    return {
+      continue:true
+      value:p
+    }
 
 
-san_inpwd = (local,global,sd) ->
+V.inpwd_core = be.bool
 
-  sortir = V.inpwd.auth local,global,sd
+.cont (bool,...,{fsp}) ->
 
-  l sortir
+  switch bool
+  | true  => process.cwd!
+  | false => fsp
 
-  if sortir.error
+.or inpwd_str
 
-    throw [SERR,[\san_inpwd,[sortir.message,local,global,sd]]]
+.or do
+  be.undef.cont (s,g) -> g
 
-  # switch R.type local
-  # | \Boolean => return local
-  # | \String  =>
+.err (message,...,data) ->
 
-  #   p = path.resolve local
+  [[type,val]] = be.flatro message
 
-  #   # if not fs.existsSync p
+  switch type
+  | \:no_file =>
 
-  #   return p
+    print.file_does_not_exists val,data
 
-  # | otherwise =>
+  | otherwise =>
 
-  #   switch R.type global
+    print.basicError val,data,\dataError
 
-  #   | \Boolean => return global
-  #   | \String  =>
+  throw SERR
 
-  #     p = path.resolve global
 
-  #     return p
+V.inpwd = be.any.tap ->
 
-  #   | otherwise => return false
+.and V.inpwd_core
+
+.wrap!
 
 san_arr = be.arr.fix -> []
 
@@ -536,6 +531,8 @@ run_script = (str,inpwd,project,path) ->
   script = lines.join "\n"
 
   cmd = script.replace /"/g,'\\"'
+
+  # z inpwd
 
   cwd = if inpwd then undefined else project
 
@@ -1421,9 +1418,9 @@ modyaml = (info) ->*
 
   ref = gs_path.js.main js,cmdname
 
-  for index,path of ref.script
+  for index,doro of ref.script
 
-    if not ((path[0] in [\var,\defarg]) or (path[1] in [\var,\defarg]))
+    if not ((doro[0] in [\var,\defarg]) or (doro[1] in [\var,\defarg]))
 
       print.script_in_wrong_place index
 
@@ -1431,7 +1428,9 @@ modyaml = (info) ->*
 
   defarg = {}
 
-  defarg.project = info.options.project
+  project = info.options.project
+
+  defarg.project = project
 
   defarg.defarg = null
 
@@ -1455,10 +1454,31 @@ modyaml = (info) ->*
 
   defarg.defarg = sd [\defarg]
 
-  defarg.globalpwd = san_inpwd do
-    js.inpwd
+  serv_dir = info.options.service_directory
+
+  ipd = do
+    *filename:info.options.global_config_file
+     path:[\defarg]
+     fsp:project
+     serv_dir:serv_dir
+
+  global_inpwd = V.inpwd do
     info.options.inpwd
-    info.options.service_directory
+    project
+    ipd
+
+  l 'CONFIG_FILE...inpwd :',[global_inpwd]
+
+  ipd2 = R.merge do
+    ipd
+    {filename:configfile}
+
+  defarg.globalpwd = V.inpwd do
+    js.inpwd
+    global_inpwd
+    ipd2
+
+  l 'defarg.inpwd        :',[defarg.globalpwd]
 
   if cmdname
 
@@ -1474,12 +1494,22 @@ modyaml = (info) ->*
 
       throw SERR
 
-    inpwd = san_inpwd do
+    ipd3 = R.merge do
+      ipd2
+      {path:[cmdname,\defarg]}
+
+    inpwd = V.inpwd do
       js[cmdname].inpwd
       defarg.globalpwd
-      info.options.service_directory
+      ipd3
+
+    z ipd
+    z ipd2
+    z ipd3
 
     defarg.localpwd = inpwd
+
+    l "defarg.#{cmdname}.inpwd :",[defarg.localpwd]
 
     a_path = [cmdname,\defarg]
 
@@ -2231,7 +2261,7 @@ V.user = be.obj
   V.strlist.empty
   .cont (list) -> {'local':list}
 
-.on [\initialize,\inpwd,\silent] , be.bool.or unu
+.on [\initialize,\silent]        , be.bool.or unu
 
 .on \watch                       , V.watch.user
 
@@ -2265,7 +2295,7 @@ V.def = be.obj
 
 .on [\remotehost,\remotefold]    , be.str.or unu
 
-.on [\inpwd,\silent]             , be.bool.or be.undefnull.cont false
+.on [\silent]                    , be.bool.or be.undefnull.cont false
 
 .on \verbose                     , str_to_num.or be.undefnull.cont 0
 
@@ -2306,6 +2336,7 @@ V.def = be.obj
     if (key.match "/")
 
       return [false,[\:incorrect-custom-name]]
+
 
     put = V.user.auth value,key,state
 
@@ -2928,7 +2959,7 @@ print_final_message = (log,lconfig,info) -> (signal) !->
 restart = {}
 
 ms_create_watch = (lconfig,info,log) ->*
-
+  
   should_I_watch = (lconfig.watch.length > 0) and (info.options.no_watch is 0)
 
   lconfig.should_I_watch = should_I_watch
@@ -3009,7 +3040,6 @@ ms_create_watch = (lconfig,info,log) ->*
       dispose = !-> rl.close!;end!
 
     dispose
-
 
   cont = init_continuation do
     info.options.dryRun
@@ -3104,7 +3134,7 @@ restart.main = (info,log) !->*
     [gjson] = yield from modyaml info
 
   catch E
-    if E[0] is SERR then return E
+    if E is SERR then return E
     else
       l c.er1 E
       return
@@ -3127,8 +3157,6 @@ V.CONF = be.known.obj
 .on \ssh,V.ssh
 
 .on \watch,be.undef.or be.arr.or be.str.cont (str) -> [str]
-
-.on \inpwd,be.undef.or be.bool
 
 .on \histsize,be.num.fix 100
 
@@ -3275,8 +3303,7 @@ get_all = (info) ->*
     [gjson,yaml_text] = yield from modyaml info
 
   catch E
-
-    if E[0] is SERR then return E
+    if E is SERR then return E
     else
       l c.er1 E
       return
@@ -3363,7 +3390,8 @@ main = (cmd_data) -> (CONF) ->
 
     config_file_name = service_directory + project_name + "/" + CONFIG_FILE_NAME
 
-    project_name = service_directory + project_name
+    project_name = path.resolve do
+      service_directory + project_name
 
   else
 
@@ -3401,6 +3429,9 @@ main = (cmd_data) -> (CONF) ->
   cmdline = R.drop 2,process.argv
 
   cmdline = rm_resume cmdline
+  
+
+
 
   info = {}
 
@@ -3433,6 +3464,7 @@ main = (cmd_data) -> (CONF) ->
       ..histsize            = CONF.histsize
       ..resume              = cmd_data.resume.count!
       ..service_directory   = CONF.service_directory
+      ..global_config_file  = CONF.CONFIG_FILE
       ..startpoint          = []
 
   if info.options.resume
@@ -3538,21 +3570,17 @@ main = (cmd_data) -> (CONF) ->
   if (check_conf_file CONF,info)
     return
 
-
   EF = (E) ->
 
-    str = ' [ error at line 3086 ]'
+    if E is SERR then return
 
-    if (E[0] is SERR)
-      E = E[1]
-    else if (E is SERR)
-      E = 'error.type unknown'
+    str = ' [ error at line 3086 ]'
 
     l c.er1 do
       E.toString! + str
 
   most.generate get_all,info
-  .subscribe error:EF,complete:EF
+  .subscribe error:EF
 
 most.generate init
 .tap main cmd_data

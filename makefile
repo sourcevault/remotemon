@@ -83,7 +83,7 @@ compile:
 
 # 	./dist/cmdline.js -p yt video
 
-	./dist/cmdline.js -d -v -p scripts split.yt nc.m4a
+	./dist/cmdline.js -v -p scripts split.yt nc.m4a
 
 
 # 	./dist/cmdline.js -p rpi fail.build --resume

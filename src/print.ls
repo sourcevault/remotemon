@@ -152,7 +152,7 @@ show_name = (filename = '') ->
 
   l lit do
     ["[#{metadata.name}]"," • dataError • ",filename,"\n"]
-    [c.er3,c.er2,c.warn,null]
+    [c.er3,c.er2,c.pink,null]
 
 
 rdot = /\./
@@ -411,8 +411,16 @@ print.custom_build = (msg,path,filename)->
 
 # ----------------------------------------------------------------
 
-print.file_does_not_exists = ->
-  
+print.file_does_not_exists = (val,{filename,path})->
+
+  show_name filename
+
+  l show_body do
+    path
+    [
+      (c.warn val) + (c.grey ' folder/project does not exist.')
+    ]
+
 # ----------------------------------------------------------------
 
 print.basicError = (msg,path,filename) ->
