@@ -297,14 +297,13 @@ san_user_script = function(lin){
   return [todisp, toexit];
 };
 run_script = function(str, inpwd, project, path){
-  var lines, sp, interpreter, script, cmd, cwd, stdin, sortir, err_msg, user_lines, ref$, to_disp, to_exit;
+  var lines, sp, interpreter, script, cmd, stdin, sortir, err_msg, user_lines, ref$, to_disp, to_exit;
   lines = str.split('\n');
   sp = lines[0].split(" ");
   interpreter = sp[sp.length - 1];
   lines.shift();
   script = lines.join("\n");
   cmd = script.replace(/"/g, '\\"');
-  cwd = inpwd ? undefined : project;
   stdin = interpreter + " <<<\"" + cmd + "\"";
   sortir = cp.spawnSync(stdin, [], {
     shell: 'bash',
@@ -598,7 +597,8 @@ merge_ref_defarg = function(defarg, ref){
   ref.project = defarg.project;
   ref.localpwd = defarg.localpwd;
   ref.globalpwd = defarg.globalpwd;
-  nset = new Set(arrayFrom$(ref.script).concat(arrayFrom$(defarg.script)));
+  ref.script;
+  nset = new Set(ref.script);
   ref.script = nset;
   n_script_all = arrayFrom$(defarg.script_all).concat(arrayFrom$(ref.script_all));
   ref.script_all = n_script_all;
@@ -986,12 +986,10 @@ modyaml = function*(info){
     serv_dir: serv_dir
   };
   global_inpwd = V.inpwd(info.options.inpwd, project, ipd);
-  l('CONFIG_FILE...inpwd :', [global_inpwd]);
   ipd2 = R.merge(ipd, {
     filename: configfile
   });
   defarg.globalpwd = V.inpwd(js.inpwd, global_inpwd, ipd2);
-  l('defarg.inpwd        :', [defarg.globalpwd]);
   if (cmdname) {
     if (global_data.selected_keys.set.has(cmdname)) {
       print.in_selected_key(cmdname, info.cmdline);
@@ -1005,11 +1003,7 @@ modyaml = function*(info){
       path: [cmdname, 'defarg']
     });
     inpwd = V.inpwd(js[cmdname].inpwd, defarg.globalpwd, ipd3);
-    z(ipd);
-    z(ipd2);
-    z(ipd3);
     defarg.localpwd = inpwd;
-    l("defarg." + cmdname + ".inpwd :", [defarg.localpwd]);
     a_path = [cmdname, 'defarg'];
     p = cmdname + '.defarg';
     defarg[p] = sd(a_path);
@@ -1022,6 +1016,8 @@ modyaml = function*(info){
   delete ref.glovar;
   delete ref.cmdvar;
   check_if_circular_ref(defarg, ref);
+  z(defarg);
+  z(ref);
   merge_ref_defarg(defarg, ref);
   clear.script(ref);
   replace_dot.encode(ref);

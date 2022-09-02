@@ -532,10 +532,6 @@ run_script = (str,inpwd,project,path) ->
 
   cmd = script.replace /"/g,'\\"'
 
-  # z inpwd
-
-  cwd = if inpwd then undefined else project
-
   stdin = "#{interpreter} <<<\"#{cmd}\""
 
   sortir = cp.spawnSync do
@@ -908,11 +904,13 @@ merge_ref_defarg = (defarg,ref) ->
 
   ref.project = defarg.project
 
-  ref.localpwd = defarg.localpwd
+  ref.localpwd   = defarg.localpwd
 
   ref.globalpwd = defarg.globalpwd
 
-  nset = new Set [...ref.script,...defarg.script]
+  ref.script
+
+  nset = new Set ref.script
 
   ref.script = nset
 
@@ -1037,6 +1035,12 @@ clear.script = (ref) ->
 
   # script_all = [ref.script_all[0]]
 
+  # z '----------'
+
+  # z ref.script.values!
+
+  # z '----------'
+
   for each in script_all
 
     has_tampax = ref.tampax[each]
@@ -1056,10 +1060,14 @@ clear.script = (ref) ->
 
     [init] = each.split '.'
 
+    # z [init]
+
     if (init is ref.cmdname)
       pwd = ref.localpwd
     else
       pwd = ref.globalpwd
+
+    # z ['clear.script :',pwd]
 
     val = run_script script_text,pwd,ref.project,each
 
@@ -1467,8 +1475,6 @@ modyaml = (info) ->*
     project
     ipd
 
-  l 'CONFIG_FILE...inpwd :',[global_inpwd]
-
   ipd2 = R.merge do
     ipd
     {filename:configfile}
@@ -1477,8 +1483,6 @@ modyaml = (info) ->*
     js.inpwd
     global_inpwd
     ipd2
-
-  l 'defarg.inpwd        :',[defarg.globalpwd]
 
   if cmdname
 
@@ -1503,13 +1507,7 @@ modyaml = (info) ->*
       defarg.globalpwd
       ipd3
 
-    z ipd
-    z ipd2
-    z ipd3
-
     defarg.localpwd = inpwd
-
-    l "defarg.#{cmdname}.inpwd :",[defarg.localpwd]
 
     a_path = [cmdname,\defarg]
 
@@ -1532,6 +1530,11 @@ modyaml = (info) ->*
   delete ref.cmdvar
 
   check_if_circular_ref defarg,ref
+
+  z defarg
+
+  z ref
+
 
   merge_ref_defarg defarg,ref
 
@@ -3586,3 +3589,4 @@ most.generate init
 .tap main cmd_data
 .recoverWith (E) -> l E.toString!;most.empty!
 .drain!
+
