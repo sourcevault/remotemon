@@ -1016,8 +1016,6 @@ modyaml = function*(info){
   delete ref.glovar;
   delete ref.cmdvar;
   check_if_circular_ref(defarg, ref);
-  z(defarg);
-  z(ref);
   merge_ref_defarg(defarg, ref);
   clear.script(ref);
   replace_dot.encode(ref);

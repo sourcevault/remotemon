@@ -1531,11 +1531,6 @@ modyaml = (info) ->*
 
   check_if_circular_ref defarg,ref
 
-  z defarg
-
-  z ref
-
-
   merge_ref_defarg defarg,ref
 
   clear.script ref
