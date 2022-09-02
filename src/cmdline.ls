@@ -908,9 +908,7 @@ merge_ref_defarg = (defarg,ref) ->
 
   ref.globalpwd = defarg.globalpwd
 
-  ref.script
-
-  nset = new Set ref.script
+  nset = new Set [...ref.script,...defarg.script]
 
   ref.script = nset
 

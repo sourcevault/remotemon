@@ -597,8 +597,7 @@ merge_ref_defarg = function(defarg, ref){
   ref.project = defarg.project;
   ref.localpwd = defarg.localpwd;
   ref.globalpwd = defarg.globalpwd;
-  ref.script;
-  nset = new Set(ref.script);
+  nset = new Set(arrayFrom$(ref.script).concat(arrayFrom$(defarg.script)));
   ref.script = nset;
   n_script_all = arrayFrom$(defarg.script_all).concat(arrayFrom$(ref.script_all));
   ref.script_all = n_script_all;
