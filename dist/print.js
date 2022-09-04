@@ -41,17 +41,12 @@ dotpat.take = function(amount, signal){
 };
 com.dotpat = dotpat;
 com.spawn = function(cmd, dir, inpwd){
-  var cwd;
-  if (inpwd) {
-    cwd = undefined;
-  } else {
-    cwd = dir;
-  }
+  l(inpwd);
   return cp.spawnSync(cmd, [], {
     shell: 'bash',
     stdio: 'inherit',
     windowsVerbatimArguments: true,
-    cwd: cwd
+    cwd: inpwd
   });
 };
 com.exec = function(cmd, dryRun){

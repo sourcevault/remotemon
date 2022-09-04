@@ -74,13 +74,15 @@ com.dotpat = dotpat
 
 com.spawn = (cmd,dir,inpwd) ->
 
-  if inpwd
+  # if inpwd
 
-    cwd = undefined
+  #   cwd = undefined
 
-  else
+  # else
 
-    cwd = dir
+  #   cwd = dir
+
+  l inpwd
 
   cp.spawnSync do
     cmd
@@ -89,7 +91,7 @@ com.spawn = (cmd,dir,inpwd) ->
       shell:'bash'
       stdio:'inherit'
       windowsVerbatimArguments:true
-      cwd:cwd
+      cwd:inpwd
     }
     # {shell:'sh',stdio:'inherit',windowsVerbatimArguments:true,cwd:cwd}
 

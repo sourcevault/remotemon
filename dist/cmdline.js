@@ -308,7 +308,7 @@ run_script = function(str, inpwd, project, path){
   sortir = cp.spawnSync(stdin, [], {
     shell: 'bash',
     windowsVerbatimArguments: true,
-    cwd: cwd
+    cwd: inpwd
   });
   err_msg = sortir.stderr.toString();
   if (err_msg.length > 0) {
@@ -548,8 +548,9 @@ san_defarg = function(js, info){
   };
 };
 update_defarg = function(defarg, type){
-  var i$, ref$, len$, index, str, ref1$, is_script, is_tampax;
-  for (i$ = 0, len$ = (ref$ = defarg[type]).length; i$ < len$; ++i$) {
+  var p, i$, ref$, len$, index, str, ref1$, is_script, is_tampax, path;
+  p = type.join('.');
+  for (i$ = 0, len$ = (ref$ = defarg[p]).length; i$ < len$; ++i$) {
     index = i$;
     str = ref$[i$];
     if (R.type(str) !== 'String') {
@@ -557,11 +558,12 @@ update_defarg = function(defarg, type){
     }
     ref1$ = get_str_type(str), is_script = ref1$[0], is_tampax = ref1$[1];
     if (is_script) {
-      defarg.script_all.push(type + '.' + index);
-      defarg.script.add(type + "." + index);
+      path = p + '.' + index;
+      defarg.script_all.push(path);
+      defarg.script[path] = arrayFrom$(type).concat([index]);
     }
     if (is_tampax) {
-      defarg.tampax_all.push([type, index]);
+      defarg.tampax_all.push(arrayFrom$(type).concat([index]));
     }
   }
 };
@@ -597,7 +599,7 @@ merge_ref_defarg = function(defarg, ref){
   ref.project = defarg.project;
   ref.localpwd = defarg.localpwd;
   ref.globalpwd = defarg.globalpwd;
-  nset = new Set(arrayFrom$(ref.script).concat(arrayFrom$(defarg.script)));
+  nset = R.merge(ref.script, defarg.script);
   ref.script = nset;
   n_script_all = arrayFrom$(defarg.script_all).concat(arrayFrom$(ref.script_all));
   ref.script_all = n_script_all;
@@ -675,7 +677,7 @@ clear.tampax_fin = function(name, ref, path){
   }
   ref.all[name] = str;
 };
-clear.script = function(ref){
+clear.script = function(ref, defarg){
   var script_all, i$, len$, each, has_tampax, exists, script_text, init, pwd, val, tampax, results$ = [];
   script_all = ref.script_all;
   for (i$ = 0, len$ = script_all.length; i$ < len$; ++i$) {
@@ -687,7 +689,7 @@ clear.script = function(ref){
     } else {
       script_text = exists;
     }
-    init = each.split('.')[0];
+    init = ref.script[each][0];
     if (init === ref.cmdname) {
       pwd = ref.localpwd;
     } else {
@@ -972,7 +974,7 @@ modyaml = function*(info){
   defarg.localpwd = null;
   defarg.globalpwd = null;
   defarg.script_all = [];
-  defarg.script = new Set();
+  defarg.script = {};
   defarg.tampax = {};
   defarg.tampax_all = [];
   sd = san_defarg(js, info);
@@ -1006,9 +1008,9 @@ modyaml = function*(info){
     a_path = [cmdname, 'defarg'];
     p = cmdname + '.defarg';
     defarg[p] = sd(a_path);
-    update_defarg(defarg, p);
+    update_defarg(defarg, a_path);
   } else {
-    update_defarg(defarg, 'defarg');
+    update_defarg(defarg, ['defarg']);
   }
   tampax_abs.defarg(defarg, ref);
   tampax_abs.ref(defarg, ref);
@@ -1016,7 +1018,7 @@ modyaml = function*(info){
   delete ref.cmdvar;
   check_if_circular_ref(defarg, ref);
   merge_ref_defarg(defarg, ref);
-  clear.script(ref);
+  clear.script(ref, defarg);
   replace_dot.encode(ref);
   cd = com.hoplon.utils.flat.unflatten(ref.all);
   clean_data = replace_dot.decode(ref, cd);
@@ -1642,6 +1644,7 @@ create_logger = function(info, gconfig){
 };
 update = function*(gjson, info){
   var add, vout, ref$, lconfig, log, buildname;
+  z(gjson);
   add = {
     def: {},
     user: {},

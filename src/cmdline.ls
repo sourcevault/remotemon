@@ -540,7 +540,7 @@ run_script = (str,inpwd,project,path) ->
     {
       shell:'bash'
       windowsVerbatimArguments:true
-      cwd:cwd
+      cwd:inpwd
     }
 
   err_msg = sortir.stderr.toString!
@@ -841,7 +841,9 @@ san_defarg = (js,info) -> (path) ->
 
 update_defarg = (defarg,type) !->
 
-  for str,index in defarg[type]
+  p = type.join '.'
+
+  for str,index in defarg[p]
 
     if (R.type str) isnt \String
       continue
@@ -850,16 +852,17 @@ update_defarg = (defarg,type) !->
 
     if is_script
 
-      defarg.script_all.push do
-        type + '.' + index
+      path = p + '.' + index 
 
-      defarg.script.add type + "." + index
+      defarg.script_all.push path
+
+      defarg.script[path] = [...type,index]
 
     if is_tampax
 
       # defarg.tampax[type + "." + index] = void
 
-      defarg.tampax_all.push [type,index]
+      defarg.tampax_all.push [...type,index]
 
 yaml_parse = (doc,info) ->
 
@@ -908,7 +911,7 @@ merge_ref_defarg = (defarg,ref) ->
 
   ref.globalpwd = defarg.globalpwd
 
-  nset = new Set [...ref.script,...defarg.script]
+  nset = R.merge ref.script,defarg.script
 
   ref.script = nset
 
@@ -1025,19 +1028,9 @@ clear.tampax_fin = (name,ref,path) !->
 
   ref.all[name] = str
 
-
-
-clear.script = (ref) ->
+clear.script = (ref,defarg) ->
 
   script_all = ref.script_all
-
-  # script_all = [ref.script_all[0]]
-
-  # z '----------'
-
-  # z ref.script.values!
-
-  # z '----------'
 
   for each in script_all
 
@@ -1056,16 +1049,12 @@ clear.script = (ref) ->
 
       script_text = exists
 
-    [init] = each.split '.'
-
-    # z [init]
+    [init] = ref.script[each]
 
     if (init is ref.cmdname)
       pwd = ref.localpwd
     else
       pwd = ref.globalpwd
-
-    # z ['clear.script :',pwd]
 
     val = run_script script_text,pwd,ref.project,each
 
@@ -1450,7 +1439,7 @@ modyaml = (info) ->*
 
   defarg.script_all = []
 
-  defarg.script = new Set!
+  defarg.script = {}
 
   defarg.tampax = {}
 
@@ -1513,11 +1502,11 @@ modyaml = (info) ->*
 
     defarg[p] = sd a_path
 
-    update_defarg defarg,p
+    update_defarg defarg,a_path
 
   else
 
-    update_defarg defarg,\defarg
+    update_defarg defarg,[\defarg]
 
   tampax_abs.defarg defarg,ref
 
@@ -1531,7 +1520,7 @@ modyaml = (info) ->*
 
   merge_ref_defarg defarg,ref
 
-  clear.script ref
+  clear.script ref,defarg
 
   replace_dot.encode ref
 
