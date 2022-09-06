@@ -595,7 +595,7 @@ get_curly = function(str){
 tampax_abs = {};
 clear = {};
 merge_ref_defarg = function(defarg, ref){
-  var nset, n_script_all, index, ref$, value, i$, len$, str, path, p, results$ = [];
+  var nset, n_script_all, index, ref$, value, i$, len$, str, path, p;
   ref.project = defarg.project;
   ref.localpwd = defarg.localpwd;
   ref.globalpwd = defarg.globalpwd;
@@ -622,9 +622,11 @@ merge_ref_defarg = function(defarg, ref){
       ref.all[p + '.' + index] = str;
       path = [ref.cmdname, 'defarg', index];
       handle_path_dot.save_matrix(path, ref.pall.length, ref);
-      results$.push(ref.pall.push(path));
+      ref.pall.push(path);
     }
-    return results$;
+    return ref.pwd = ref.localpwd;
+  } else {
+    return ref.pwd = ref.globalpwd;
   }
 };
 clear.tampax = function(name, ref, path){
@@ -1022,6 +1024,8 @@ modyaml = function*(info){
   replace_dot.encode(ref);
   cd = com.hoplon.utils.flat.unflatten(ref.all);
   clean_data = replace_dot.decode(ref, cd);
+  z(defarg);
+  z(clean_data);
   return [clean_data, doc];
 };
 parseDoc = function(data, info){
@@ -1644,7 +1648,6 @@ create_logger = function(info, gconfig){
 };
 update = function*(gjson, info){
   var add, vout, ref$, lconfig, log, buildname;
-  z(gjson);
   add = {
     def: {},
     user: {},

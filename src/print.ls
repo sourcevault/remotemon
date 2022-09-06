@@ -188,6 +188,13 @@ show_body = (path,msg) ->
     txt
     [c.warn,c.er3,c.er2,c.er1]
 
+print.hist_file_corrupted = (hist_file) ->
+
+  l lit do
+    ["[#{metadata.name}]"," • fileError\n"]
+    [c.er2,c.er3]
+
+  l (c.er1 "   hist file is corrupted :") + (c.er2 hist_file)
 
 print.rsyncError = (msg,path,filename) ->
 

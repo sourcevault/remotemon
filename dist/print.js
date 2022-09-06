@@ -100,6 +100,10 @@ show_body = function(path, msg){
   }
   return lit(txt, [c.warn, c.er3, c.er2, c.er1]);
 };
+print.hist_file_corrupted = function(hist_file){
+  l(lit(["[" + metadata.name + "]", " • fileError\n"], [c.er2, c.er3]));
+  return l(c.er1("   hist file is corrupted :") + c.er2(hist_file));
+};
 print.rsyncError = function(msg, path, filename){
   var itype, imsg;
   show_name(filename);

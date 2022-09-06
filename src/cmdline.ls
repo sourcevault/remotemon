@@ -945,6 +945,12 @@ merge_ref_defarg = (defarg,ref) ->
 
       ref.pall.push path
 
+    ref.pwd = ref.localpwd
+
+  else
+
+    ref.pwd = ref.globalpwd
+
 
 clear.tampax = (name,ref,path) ->
 
@@ -1072,6 +1078,7 @@ clear.script = (ref,defarg) ->
       each
       ref
       new Set [each]
+
 
 tampax_abs.defarg = (defarg,ref) ->
 
@@ -1527,6 +1534,10 @@ modyaml = (info) ->*
   cd = com.hoplon.utils.flat.unflatten ref.all
 
   clean_data = replace_dot.decode ref,cd
+
+  z defarg
+
+  z clean_data
 
   [clean_data,doc]
 
@@ -2944,7 +2955,7 @@ print_final_message = (log,lconfig,info) -> (signal) !->
 restart = {}
 
 ms_create_watch = (lconfig,info,log) ->*
-  
+
   should_I_watch = (lconfig.watch.length > 0) and (info.options.no_watch is 0)
 
   lconfig.should_I_watch = should_I_watch
@@ -3271,7 +3282,6 @@ start_from_resume_point = (lconfig,info) ->
   lconfig[cont[0]] = tokeep
 
   lconfig
-
 
 get_all = (info) ->*
 
