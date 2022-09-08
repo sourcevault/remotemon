@@ -1522,9 +1522,8 @@ modyaml = (info) ->*
   z ref
   z "-------"
   z defarg
-
+  
   tampax_abs.ref defarg,ref
-
 
   delete ref.glovar
 
