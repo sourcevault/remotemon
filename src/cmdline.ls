@@ -575,7 +575,7 @@ gs_path = {}
   ..main = null
   ..yaml = null
   ..shebang = /!#|#!/
-  ..tampax = /\{{.*}}/
+  ..tampax = /\${.*}/
   ..linebreak = /\n/
 
 get_str_type = (str) ->
@@ -882,7 +882,7 @@ yaml_parse = (doc,info) ->
 
     throw SERR
 
-re_curly = /\{{([\w\.]*)}}/gm
+re_curly = /\${([\w\.]*)}/gm
 
 get_curly = (str) ->
 
@@ -993,7 +993,7 @@ clear.tampax = (name,ref,path) ->
 
       save = "[#{each}:void]"
 
-    str = str.replace "{{#{each}}}",save
+    str = str.replace "${#{each}}",save
 
   str
 
@@ -1030,7 +1030,7 @@ clear.tampax_fin = (name,ref,path) !->
 
       save = "[#{each}:void]"
 
-    str = str.replace "{{#{each}}}",save
+    str = str.replace "${#{each}}",save
 
   ref.all[name] = str
 
@@ -1079,7 +1079,6 @@ clear.script = (ref,defarg) ->
       ref
       new Set [each]
 
-
 tampax_abs.defarg = (defarg,ref) ->
 
   local_path = ref.cmdname + ".defarg"
@@ -1116,7 +1115,7 @@ tampax_abs.defarg = (defarg,ref) ->
 
         rep.push rstr
 
-        str = str.replace "{{#{I}}}","{{#{rstr}}}"
+        str = str.replace "${#{I}}","${#{rstr}}"
 
         defarg[loc][index] = str
 
@@ -1134,7 +1133,7 @@ tampax_abs.defarg = (defarg,ref) ->
 
             rstr = num_link + ifnum
 
-            str = str.replace "{{#{I}}}","{{#{rstr}}}"
+            str = str.replace "${#{I}}","${#{rstr}}"
 
             defarg[loc][index] = str
 
@@ -1146,7 +1145,7 @@ tampax_abs.defarg = (defarg,ref) ->
 
               rstr = "var." + I
 
-              str = str.replace "{{#{I}}}","{{#{rstr}}}"
+              str = str.replace "${#{I}}","${#{rstr}}"
 
               defarg[loc][index] = str
 
@@ -1196,7 +1195,7 @@ tampax_abs.ref = (defarg,ref) ->
 
         rep.push rstr
 
-        str = str.replace "{{#{I}}}","{{#{rstr}}}"
+        str = str.replace "${#{I}}","${#{rstr}}"
 
         ref.all[p] = str
 
@@ -1214,7 +1213,7 @@ tampax_abs.ref = (defarg,ref) ->
 
             rstr = num_link + ifnum
 
-            str = str.replace "{{#{I}}}","{{#{rstr}}}"
+            str = str.replace "${#{I}}","${#{rstr}}"
 
             ref.all[p] = str
 
@@ -1226,7 +1225,7 @@ tampax_abs.ref = (defarg,ref) ->
 
               rstr = "var." + I
 
-              str = str.replace "{{#{I}}}","{{#{rstr}}}"
+              str = str.replace "${#{I}}","${#{rstr}}"
 
               ref.all[p] = str
 
@@ -1535,9 +1534,11 @@ modyaml = (info) ->*
 
   clean_data = replace_dot.decode ref,cd
 
-  z defarg
+  clean_data.inpwd = defarg.globalpwd
 
-  z clean_data
+  if cmdname
+
+    clean_data[cmdname].inpwd = defarg.localpwd
 
   [clean_data,doc]
 
@@ -2120,6 +2121,7 @@ dangling_colon = be.arr
 
 .or be.str
 .wrap!
+
 #---------------------------------------------------
 
 V.ssh = be.obj
@@ -2488,7 +2490,7 @@ update = (gjson,info)->*
   [lconfig,log,buildname]
 
 
-init_continuation = (dryRun,dir,inpwd) -> (cmd,location = [],type = \async) ->*
+init_continuation = (dryRun,inpwd) -> (cmd,location = [],type = \async) ->*
 
   if dryRun
 
@@ -2496,7 +2498,7 @@ init_continuation = (dryRun,dir,inpwd) -> (cmd,location = [],type = \async) ->*
 
   else
 
-    sortir = spawn cmd,dir,inpwd
+    sortir = spawn cmd,inpwd
 
     {status} = sortir
 
@@ -3039,10 +3041,9 @@ ms_create_watch = (lconfig,info,log) ->*
 
   cont = init_continuation do
     info.options.dryRun
-    info.options.project
     lconfig.inpwd
 
-  pre                   = lconfig.pre
+  pre = lconfig.pre
 
   log.normal do
     pre.length
@@ -3424,9 +3425,6 @@ main = (cmd_data) -> (CONF) ->
   cmdline = R.drop 2,process.argv
 
   cmdline = rm_resume cmdline
-  
-
-
 
   info = {}
 

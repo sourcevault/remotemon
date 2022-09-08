@@ -31,7 +31,7 @@ shutdown:
 
 ssh45:
   local:
-    - scp sshd_config {{remotehost}}:/tmp/sshd_config
+    - scp sshd_config ${remotehost}:/tmp/sshd_config
   remote:
     - sudo mv /tmp/sshd_config /etc/ssh/sshd_config
     - sudo systemctl restart ssh.service
@@ -42,7 +42,7 @@ A local configuration files (`.remotemon.yaml`) is used to organize different su
 
 `⛔️ In remotemon lingo a project is top level folder name in your service directory. ⛔️`
 
-First argument to `remotemon` is the name of the build routine to use, subsequent arguments can be used internally as variables using handlebar syntax (eg. `{{0}}`), or `.global` variables using `=` ( eg. `file=main.js` ).
+First argument to `remotemon` is the name of the build routine to use, subsequent arguments can be used internally as variables using handlebar syntax (eg. `${0}`), or `.global` variables using `=` ( eg. `file=main.js` ).
 
 ```zsh
 ~/app:(dev*) remotemon shutdown
@@ -199,7 +199,7 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
     file: /dist/main.js # <-- old value replaced with value taken from commandline
   remotehost: pi@192.152.65.12
   remotefold: ~/test
-  local: make local {{global.file}}
+  local: make local ${global.file}
   remote: make remote
   ```
 
@@ -211,7 +211,7 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
 
   Instead of `remotemon file=/dist/main.js` we would like to do `remotemon /dist/main.js`.
 
-  We can in situation like that use numbered templating `{{0}}`,`{{1}}` in our config file.
+  We can in situation like that use numbered templating `${0}`,`${1}` in our config file.
 
   `defarg` field can also be used to provide default values if the user does not specify them.
 

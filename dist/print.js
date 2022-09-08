@@ -40,8 +40,7 @@ dotpat.take = function(amount, signal){
   return R.take(amount, sig).join(".");
 };
 com.dotpat = dotpat;
-com.spawn = function(cmd, dir, inpwd){
-  l(inpwd);
+com.spawn = function(cmd, inpwd){
   return cp.spawnSync(cmd, [], {
     shell: 'bash',
     stdio: 'inherit',

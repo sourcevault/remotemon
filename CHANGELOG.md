@@ -1,5 +1,9 @@
 # changelog
 
+`2.1.0`
+
+- `{{<expansion>}}` has changed to `${<expansion>}`
+
 `1.3.0`
 
 - `inpwd` added as a new key to enable control of where to run script.

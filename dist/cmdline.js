@@ -333,7 +333,7 @@ x$.loop = null;
 x$.main = null;
 x$.yaml = null;
 x$.shebang = /!#|#!/;
-x$.tampax = /\{{.*}}/;
+x$.tampax = /\${.*}/;
 x$.linebreak = /\n/;
 get_str_type = function(str){
   var has_shebang, has_expansion, has_linebreak, is_script, is_tampax;
@@ -579,7 +579,7 @@ yaml_parse = function(doc, info){
     throw SERR;
   }
 };
-re_curly = /\{{([\w\.]*)}}/gm;
+re_curly = /\${([\w\.]*)}/gm;
 get_curly = function(str){
   var found, sortir;
   found = true;
@@ -652,7 +652,7 @@ clear.tampax = function(name, ref, path){
     } else {
       save = "[" + each + ":void]";
     }
-    str = str.replace("{{" + each + "}}", save);
+    str = str.replace("${" + each + "}", save);
   }
   return str;
 };
@@ -675,7 +675,7 @@ clear.tampax_fin = function(name, ref, path){
     } else {
       save = "[" + each + ":void]";
     }
-    str = str.replace("{{" + each + "}}", save);
+    str = str.replace("${" + each + "}", save);
   }
   ref.all[name] = str;
 };
@@ -735,7 +735,7 @@ tampax_abs.defarg = function(defarg, ref){
       if (found) {
         rstr = link + I;
         rep.push(rstr);
-        str = str.replace("{{" + I + "}}", "{{" + rstr + "}}");
+        str = str.replace("${" + I + "}", "${" + rstr + "}");
         defarg[loc][index] = str;
       } else {
         found = allspace[I];
@@ -744,13 +744,13 @@ tampax_abs.defarg = function(defarg, ref){
         if (!found) {
           if (ifnum === 0 || ifnum) {
             rstr = num_link + ifnum;
-            str = str.replace("{{" + I + "}}", "{{" + rstr + "}}");
+            str = str.replace("${" + I + "}", "${" + rstr + "}");
             defarg[loc][index] = str;
           } else if (loc === local_path) {
             found = ref.glovar[I];
             if (found) {
               rstr = "var." + I;
-              str = str.replace("{{" + I + "}}", "{{" + rstr + "}}");
+              str = str.replace("${" + I + "}", "${" + rstr + "}");
               defarg[loc][index] = str;
             }
           }
@@ -790,7 +790,7 @@ tampax_abs.ref = function(defarg, ref){
       if (found) {
         rstr = link + I;
         rep.push(rstr);
-        str = str.replace("{{" + I + "}}", "{{" + rstr + "}}");
+        str = str.replace("${" + I + "}", "${" + rstr + "}");
         ref.all[p] = str;
       } else {
         found = allspace[I];
@@ -799,13 +799,13 @@ tampax_abs.ref = function(defarg, ref){
         if (!found) {
           if (ifnum === 0 || ifnum) {
             rstr = num_link + ifnum;
-            str = str.replace("{{" + I + "}}", "{{" + rstr + "}}");
+            str = str.replace("${" + I + "}", "${" + rstr + "}");
             ref.all[p] = str;
           } else if (loc === cmdname) {
             found = ref.glovar[I];
             if (found) {
               rstr = "var." + I;
-              str = str.replace("{{" + I + "}}", "{{" + rstr + "}}");
+              str = str.replace("${" + I + "}", "${" + rstr + "}");
               ref.all[p] = str;
             }
           }
@@ -1024,8 +1024,10 @@ modyaml = function*(info){
   replace_dot.encode(ref);
   cd = com.hoplon.utils.flat.unflatten(ref.all);
   clean_data = replace_dot.decode(ref, cd);
-  z(defarg);
-  z(clean_data);
+  clean_data.inpwd = defarg.globalpwd;
+  if (cmdname) {
+    clean_data[cmdname].inpwd = defarg.localpwd;
+  }
   return [clean_data, doc];
 };
 parseDoc = function(data, info){
@@ -1665,7 +1667,7 @@ update = function*(gjson, info){
   }
   return [lconfig, log, buildname];
 };
-init_continuation = function(dryRun, dir, inpwd){
+init_continuation = function(dryRun, inpwd){
   return function*(cmd, location, type){
     var status, sortir;
     location == null && (location = []);
@@ -1673,7 +1675,7 @@ init_continuation = function(dryRun, dir, inpwd){
     if (dryRun) {
       status = 0;
     } else {
-      sortir = spawn(cmd, dir, inpwd);
+      sortir = spawn(cmd, inpwd);
       status = sortir.status;
     }
     if (status !== 0) {
@@ -2084,7 +2086,7 @@ ms_create_watch = function*(lconfig, info, log){
     }
     return dispose;
   });
-  cont = init_continuation(info.options.dryRun, info.options.project, lconfig.inpwd);
+  cont = init_continuation(info.options.dryRun, lconfig.inpwd);
   pre = lconfig.pre;
   log.normal(pre.length, 'ok', "pre", c.warn(pre.length + ""));
   for (i$ = 0, len$ = pre.length; i$ < len$; ++i$) {

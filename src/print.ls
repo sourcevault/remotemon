@@ -72,17 +72,7 @@ com.dotpat = dotpat
 
 # ----------------------------------------------------------------------------
 
-com.spawn = (cmd,dir,inpwd) ->
-
-  # if inpwd
-
-  #   cwd = undefined
-
-  # else
-
-  #   cwd = dir
-
-  l inpwd
+com.spawn = (cmd,inpwd) ->
 
   cp.spawnSync do
     cmd
