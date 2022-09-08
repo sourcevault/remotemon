@@ -2837,7 +2837,6 @@ handle_inf = (log,lconfig) -> (db,ob) ->
 
   fin
 
-
 resolve_signal = be.arr
 
 .on 0,
