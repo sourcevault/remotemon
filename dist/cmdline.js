@@ -719,13 +719,14 @@ tampax_abs.defarg = function(defarg, ref){
       varspace = ref.glovar;
       link = "var.";
       num_link = "defarg.";
+      local_path = "defarg";
       break;
     case local_path:
       varspace = ref.cmdvar;
       link = ref.cmdname + ".var.";
       num_link = ref.cmdname + ".defarg.";
     }
-    str = defarg[loc][index];
+    str = defarg[local_path][index];
     matches = get_curly(str);
     allspace = ref.all;
     rep = [];
@@ -1015,6 +1016,9 @@ modyaml = function*(info){
     update_defarg(defarg, ['defarg']);
   }
   tampax_abs.defarg(defarg, ref);
+  z(ref);
+  z("-------");
+  z(defarg);
   tampax_abs.ref(defarg, ref);
   delete ref.glovar;
   delete ref.cmdvar;

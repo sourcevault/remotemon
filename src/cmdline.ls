@@ -1092,12 +1092,14 @@ tampax_abs.defarg = (defarg,ref) ->
       varspace = ref.glovar
       link     = "var."
       num_link = "defarg."
+      local_path = "defarg"
+
     | local_path  =>
       varspace = ref.cmdvar
       link     = ref.cmdname + ".var."
       num_link = ref.cmdname + ".defarg."
 
-    str = defarg[loc][index]
+    str = defarg[local_path][index]
 
     matches = get_curly str
 
@@ -1514,9 +1516,15 @@ modyaml = (info) ->*
 
     update_defarg defarg,[\defarg]
 
+
   tampax_abs.defarg defarg,ref
 
+  z ref
+  z "-------"
+  z defarg
+
   tampax_abs.ref defarg,ref
+
 
   delete ref.glovar
 
