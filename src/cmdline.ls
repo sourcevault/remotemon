@@ -1083,6 +1083,8 @@ tampax_abs.defarg = (defarg,ref) ->
 
   local_path = ref.cmdname + ".defarg"
 
+  z defarg.tampax_all
+
   for each in defarg.tampax_all
 
     [loc,index] = each
@@ -1516,13 +1518,8 @@ modyaml = (info) ->*
 
     update_defarg defarg,[\defarg]
 
-
   tampax_abs.defarg defarg,ref
 
-  z ref
-  z "-------"
-  z defarg
-  
   tampax_abs.ref defarg,ref
 
   delete ref.glovar

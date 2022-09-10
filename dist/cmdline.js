@@ -711,6 +711,7 @@ clear.script = function(ref, defarg){
 tampax_abs.defarg = function(defarg, ref){
   var local_path, i$, ref$, len$, each, loc, index, varspace, link, num_link, str, matches, allspace, rep, j$, len1$, I, found, rstr, ifnum;
   local_path = ref.cmdname + ".defarg";
+  z(defarg.tampax_all);
   for (i$ = 0, len$ = (ref$ = defarg.tampax_all).length; i$ < len$; ++i$) {
     each = ref$[i$];
     loc = each[0], index = each[1];
@@ -1016,9 +1017,6 @@ modyaml = function*(info){
     update_defarg(defarg, ['defarg']);
   }
   tampax_abs.defarg(defarg, ref);
-  z(ref);
-  z("-------");
-  z(defarg);
   tampax_abs.ref(defarg, ref);
   delete ref.glovar;
   delete ref.cmdvar;
