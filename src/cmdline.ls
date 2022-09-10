@@ -1081,25 +1081,29 @@ clear.script = (ref,defarg) ->
 
 tampax_abs.defarg = (defarg,ref) ->
 
-  local_path = ref.cmdname + ".defarg"
-
-  z defarg.tampax_all
-
   for each in defarg.tampax_all
 
-    [loc,index] = each
+    switch each[0]
 
-    switch loc
     | \defarg =>
-      varspace = ref.glovar
-      link     = "var."
-      num_link = "defarg."
-      local_path = "defarg"
 
-    | local_path  =>
-      varspace = ref.cmdvar
-      link     = ref.cmdname + ".var."
-      num_link = ref.cmdname + ".defarg."
+      varspace   = ref.glovar
+      link       = "var."
+      num_link   = "defarg."
+      local_path = "defarg"
+      index      = each[1]
+
+    | otherwise  =>
+
+      varspace   = ref.cmdvar
+      link       = ref.cmdname + ".var."
+      num_link   = ref.cmdname + ".defarg."
+      local_path = ref.cmdname + ".defarg"
+      index      = each[2]
+
+    z local_path,index
+
+    # z defarg
 
     str = defarg[local_path][index]
 

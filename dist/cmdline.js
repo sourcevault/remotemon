@@ -709,24 +709,25 @@ clear.script = function(ref, defarg){
   return results$;
 };
 tampax_abs.defarg = function(defarg, ref){
-  var local_path, i$, ref$, len$, each, loc, index, varspace, link, num_link, str, matches, allspace, rep, j$, len1$, I, found, rstr, ifnum;
-  local_path = ref.cmdname + ".defarg";
-  z(defarg.tampax_all);
+  var i$, ref$, len$, each, varspace, link, num_link, local_path, index, str, matches, allspace, rep, j$, len1$, I, found, rstr, ifnum;
   for (i$ = 0, len$ = (ref$ = defarg.tampax_all).length; i$ < len$; ++i$) {
     each = ref$[i$];
-    loc = each[0], index = each[1];
-    switch (loc) {
+    switch (each[0]) {
     case 'defarg':
       varspace = ref.glovar;
       link = "var.";
       num_link = "defarg.";
       local_path = "defarg";
+      index = each[1];
       break;
-    case local_path:
+    default:
       varspace = ref.cmdvar;
       link = ref.cmdname + ".var.";
       num_link = ref.cmdname + ".defarg.";
+      local_path = ref.cmdname + ".defarg";
+      index = each[2];
     }
+    z(local_path, index);
     str = defarg[local_path][index];
     matches = get_curly(str);
     allspace = ref.all;
