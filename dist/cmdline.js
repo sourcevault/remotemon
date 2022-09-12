@@ -281,7 +281,7 @@ V.inpwd_core = be.bool.cont(function(bool){
     print.file_does_not_exists(val, data);
     break;
   default:
-    print.basicError(val, data, 'dataError');
+    print.basicError(val, data.path, data.filename);
   }
   throw SERR;
 });
@@ -709,7 +709,8 @@ clear.script = function(ref, defarg){
   return results$;
 };
 tampax_abs.defarg = function(defarg, ref){
-  var i$, ref$, len$, each, varspace, link, num_link, local_path, index, str, matches, allspace, rep, j$, len1$, I, found, rstr, ifnum;
+  var local_path, i$, ref$, len$, each, varspace, link, num_link, loc, index, str, matches, allspace, rep, j$, len1$, I, found, rstr, ifnum;
+  local_path = ref.cmdname + ".defarg";
   for (i$ = 0, len$ = (ref$ = defarg.tampax_all).length; i$ < len$; ++i$) {
     each = ref$[i$];
     switch (each[0]) {
@@ -717,17 +718,16 @@ tampax_abs.defarg = function(defarg, ref){
       varspace = ref.glovar;
       link = "var.";
       num_link = "defarg.";
-      local_path = "defarg";
+      loc = "defarg";
       index = each[1];
       break;
     default:
       varspace = ref.cmdvar;
       link = ref.cmdname + ".var.";
       num_link = ref.cmdname + ".defarg.";
-      local_path = ref.cmdname + ".defarg";
+      loc = ref.cmdname + ".defarg";
       index = each[2];
     }
-    z(local_path, index);
     str = defarg[local_path][index];
     matches = get_curly(str);
     allspace = ref.all;
@@ -987,7 +987,7 @@ modyaml = function*(info){
   serv_dir = info.options.service_directory;
   ipd = {
     filename: info.options.global_config_file,
-    path: ['defarg'],
+    path: ['inpwd'],
     fsp: project,
     serv_dir: serv_dir
   };
@@ -1006,7 +1006,7 @@ modyaml = function*(info){
       throw SERR;
     }
     ipd3 = R.merge(ipd2, {
-      path: [cmdname, 'defarg']
+      path: [cmdname, 'inpwd']
     });
     inpwd = V.inpwd(js[cmdname].inpwd, defarg.globalpwd, ipd3);
     defarg.localpwd = inpwd;

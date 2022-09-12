@@ -91,11 +91,21 @@ clean_path = R.pipe(R.map(function(txt){
   return txt;
 }), R.splitAt(-1));
 show_body = function(path, msg){
-  var ref$, init, last, txt;
+  var ref$, init, last, txt, I;
   ref$ = clean_path(path), init = ref$[0], last = ref$[1];
   txt = ["  " + init.join("."), "." + last.join("."), " <-- error here"];
   if (msg) {
-    txt.push("\n\n  " + msg, "  ");
+    if (R.type(msg) === 'Array') {
+      msg = (function(){
+        var i$, ref$, len$, results$ = [];
+        for (i$ = 0, len$ = (ref$ = msg).length; i$ < len$; ++i$) {
+          I = ref$[i$];
+          results$.push(c.er1(I));
+        }
+        return results$;
+      }()).join(c.er1(", "));
+    }
+    txt.push("\n\n  " + msg, " ");
   }
   return lit(txt, [c.warn, c.er3, c.er2, c.er1]);
 };

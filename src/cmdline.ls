@@ -495,7 +495,7 @@ V.inpwd_core = be.bool
 
   | otherwise =>
 
-    print.basicError val,data,\dataError
+    print.basicError val,data.path,data.filename
 
   throw SERR
 
@@ -1081,6 +1081,8 @@ clear.script = (ref,defarg) ->
 
 tampax_abs.defarg = (defarg,ref) ->
 
+  local_path = ref.cmdname + ".defarg"
+
   for each in defarg.tampax_all
 
     switch each[0]
@@ -1090,7 +1092,7 @@ tampax_abs.defarg = (defarg,ref) ->
       varspace   = ref.glovar
       link       = "var."
       num_link   = "defarg."
-      local_path = "defarg"
+      loc        = "defarg"
       index      = each[1]
 
     | otherwise  =>
@@ -1098,12 +1100,8 @@ tampax_abs.defarg = (defarg,ref) ->
       varspace   = ref.cmdvar
       link       = ref.cmdname + ".var."
       num_link   = ref.cmdname + ".defarg."
-      local_path = ref.cmdname + ".defarg"
+      loc        = ref.cmdname + ".defarg"
       index      = each[2]
-
-    z local_path,index
-
-    # z defarg
 
     str = defarg[local_path][index]
 
@@ -1467,7 +1465,7 @@ modyaml = (info) ->*
 
   ipd = do
     *filename:info.options.global_config_file
-     path:[\defarg]
+     path:[\inpwd]
      fsp:project
      serv_dir:serv_dir
 
@@ -1501,7 +1499,7 @@ modyaml = (info) ->*
 
     ipd3 = R.merge do
       ipd2
-      {path:[cmdname,\defarg]}
+      {path:[cmdname,\inpwd]}
 
     inpwd = V.inpwd do
       js[cmdname].inpwd

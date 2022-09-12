@@ -159,7 +159,6 @@ clean_path = R.pipe do
     txt
   R.splitAt -1
 
-
 show_body = (path,msg) ->
 
   [init,last] = clean_path path
@@ -172,7 +171,10 @@ show_body = (path,msg) ->
     ]
 
   if msg
-    txt.push "\n\n  #{msg}","  "
+    if (R.type msg) is \Array
+      msg = [(c.er1 I) for I in msg].join (c.er1 ", ")
+
+    txt.push "\n\n  #{msg}"," "
 
   lit do
     txt
