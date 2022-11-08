@@ -49,9 +49,6 @@ longname:
       #!/usr/bin/env lsc
       ls -la
 
-  var:
-    ext: .ls
-
   # bar
   # paper
 

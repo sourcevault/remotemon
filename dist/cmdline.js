@@ -242,22 +242,28 @@ V.defarg = defarg_main.cont(function(data){
   }
 });
 inpwd_str = be.str.and(function(s){
-  var serv_dir, p;
-  serv_dir = arguments[arguments.length - 1].serv_dir;
-  if (s[0] === '/') {
-    p = s;
-  } else {
-    p = path.resolve(serv_dir + s);
+  var info, serv_dir, fpath;
+  info = arguments[arguments.length - 1];
+  serv_dir = info.serv_dir;
+  switch (s[0]) {
+  case '/':
+    fpath = s;
+    break;
+  case '.':
+    fpath = path.resolve(info.fsp, s);
+    break;
+  default:
+    fpath = path.resolve(info.serv_dir + s);
   }
-  if (!fs.existsSync(p)) {
+  if (!fs.existsSync(fpath)) {
     return {
       error: true,
-      message: [':no_file', p]
+      message: [':no_file', fpath]
     };
   } else {
     return {
       'continue': true,
-      value: p
+      value: fpath
     };
   }
 });
@@ -987,15 +993,15 @@ modyaml = function*(info){
   serv_dir = info.options.service_directory;
   ipd = {
     filename: info.options.global_config_file,
-    path: ['inpwd'],
+    path: ['pwd'],
     fsp: project,
     serv_dir: serv_dir
   };
-  global_inpwd = V.inpwd(info.options.inpwd, project, ipd);
+  global_inpwd = V.inpwd(info.options.pwd, project, ipd);
   ipd2 = R.merge(ipd, {
     filename: configfile
   });
-  defarg.globalpwd = V.inpwd(js.inpwd, global_inpwd, ipd2);
+  defarg.globalpwd = V.inpwd(js.pwd, global_inpwd, ipd2);
   if (cmdname) {
     if (global_data.selected_keys.set.has(cmdname)) {
       print.in_selected_key(cmdname, info.cmdline);
@@ -1006,9 +1012,9 @@ modyaml = function*(info){
       throw SERR;
     }
     ipd3 = R.merge(ipd2, {
-      path: [cmdname, 'inpwd']
+      path: [cmdname, 'pwd']
     });
-    inpwd = V.inpwd(js[cmdname].inpwd, defarg.globalpwd, ipd3);
+    inpwd = V.inpwd(js[cmdname].pwd, defarg.globalpwd, ipd3);
     defarg.localpwd = inpwd;
     a_path = [cmdname, 'defarg'];
     p = cmdname + '.defarg';
@@ -1029,7 +1035,7 @@ modyaml = function*(info){
   clean_data = replace_dot.decode(ref, cd);
   clean_data.inpwd = defarg.globalpwd;
   if (cmdname) {
-    clean_data[cmdname].inpwd = defarg.localpwd;
+    clean_data[cmdname].pwd = defarg.localpwd;
   }
   return [clean_data, doc];
 };
@@ -2089,7 +2095,7 @@ ms_create_watch = function*(lconfig, info, log){
     }
     return dispose;
   });
-  cont = init_continuation(info.options.dryRun, lconfig.inpwd);
+  cont = init_continuation(info.options.dryRun, lconfig.pwd);
   pre = lconfig.pre;
   log.normal(pre.length, 'ok', "pre", c.warn(pre.length + ""));
   for (i$ = 0, len$ = pre.length; i$ < len$; ++i$) {
@@ -2148,6 +2154,7 @@ restart.main = function*(info, log){
   log.normal('err', msg);
   try {
     gjson = (yield* modyaml(info))[0];
+    z(gjson);
   } catch (e$) {
     E = e$;
     if (E === SERR) {
@@ -2375,7 +2382,7 @@ main = function(cmd_data){
     z$.project = project_name;
     z$.ssh = CONF.ssh;
     z$.rsync = CONF.rsync;
-    z$.inpwd = CONF.inpwd;
+    z$.pwd = CONF.inpwd;
     z$.watch = CONF.watch;
     z$.hist_file_address = CONF.HIST_FILE;
     z$.histsize = CONF.histsize;

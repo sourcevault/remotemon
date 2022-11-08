@@ -8,3 +8,4 @@ ssh:
   startwith: []
 service_directory: null
 last_check_time: 0
+current_version_number: 2.1.1

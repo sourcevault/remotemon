@@ -66,25 +66,23 @@ compile:
 
 # 	./dist/cmdline.js -p rpi fail.build --resume
 
-# 	./dist/cmdline.js -w -p mono/gitfer fail.build 
+# 	./dist/cmdline.js -w -p mono/gitfer fail.build
 
 # 	./dist/cmdline.js -w -p mono/gitfer fail.build
 # 	./dist/cmdline.js -w -p mono/gitfer fail.build
 
 
-# 	make create_configfile_error & ./dist/cmdline.js -w -p mono/gitfer fail.build 
-
+# 	make create_configfile_error & ./dist/cmdline.js -w -p mono/gitfer fail.build
 
 # 	./dist/cmdline.js -p yt test
 
 # 	./dist/cmdline.js -p mono/gitfer -c
 
+# 	./dist/cmdline.js -p blog.new/edit init
+
 # 	./dist/cmdline.js -p mono/gitfer --ll
 
 # 	./dist/cmdline.js -p yt video
-
-	./dist/cmdline.js -v -p scripts split.yt nc.m4a
-
 
 # 	./dist/cmdline.js -p rpi fail.build --resume
 # 	./dist/cmdline.js -p yt empty

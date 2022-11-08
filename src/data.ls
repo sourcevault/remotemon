@@ -39,7 +39,7 @@ data.selected_keys = {}
      \ssh
      \var 
      \pre
-     \inpwd #
+     \pwd #
      \watch #
      \rsync #
      \local
@@ -58,7 +58,7 @@ data.selected_keys = {}
   ..undef =
      \ssh
      \watch
-     \inpwd
+     \pwd
      # \pre
      # \rsync
      # \local

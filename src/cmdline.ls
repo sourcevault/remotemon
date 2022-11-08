@@ -446,28 +446,34 @@ V.defarg = defarg_main
 
 # ----------------------------------------
 
-inpwd_str = be.str.and (s,...,{serv_dir}) ->
+inpwd_str = be.str.and (s,...,info) ->
 
-  if s[0] is '/'
-    p = s
+  {serv_dir} = info
 
-  else
+  switch s[0]
+  | '/'       =>
+    fpath = s
+  | '.'       =>
 
-    p = path.resolve (serv_dir + s)
+    fpath = path.resolve info.fsp, s
+
+  | otherwise =>
+
+    fpath = path.resolve (info.serv_dir + s)
 
 
-  if not fs.existsSync p
+  if not fs.existsSync fpath
 
     return {
         error:true
-        message:[\:no_file,p]
+        message:[\:no_file,fpath]
     }
 
   else
 
     return {
       continue:true
-      value:p
+      value:fpath
     }
 
 
@@ -795,7 +801,6 @@ gs_path.yl.find_cmd_name = (contents) ->
 
   for each in contents.items
     all_top_values.push each.key.value
-
 
   only_cmds = R.difference all_top_values,global_data.selected_keys.arr
 
@@ -1465,12 +1470,12 @@ modyaml = (info) ->*
 
   ipd = do
     *filename:info.options.global_config_file
-     path:[\inpwd]
+     path:[\pwd]
      fsp:project
      serv_dir:serv_dir
 
   global_inpwd = V.inpwd do
-    info.options.inpwd
+    info.options.pwd
     project
     ipd
 
@@ -1479,7 +1484,7 @@ modyaml = (info) ->*
     {filename:configfile}
 
   defarg.globalpwd = V.inpwd do
-    js.inpwd
+    js.pwd
     global_inpwd
     ipd2
 
@@ -1499,10 +1504,10 @@ modyaml = (info) ->*
 
     ipd3 = R.merge do
       ipd2
-      {path:[cmdname,\inpwd]}
+      {path:[cmdname,\pwd]}
 
     inpwd = V.inpwd do
-      js[cmdname].inpwd
+      js[cmdname].pwd
       defarg.globalpwd
       ipd3
 
@@ -1544,7 +1549,7 @@ modyaml = (info) ->*
 
   if cmdname
 
-    clean_data[cmdname].inpwd = defarg.localpwd
+    clean_data[cmdname].pwd = defarg.localpwd
 
   [clean_data,doc]
 
@@ -3046,7 +3051,7 @@ ms_create_watch = (lconfig,info,log) ->*
 
   cont = init_continuation do
     info.options.dryRun
-    lconfig.inpwd
+    lconfig.pwd
 
   pre = lconfig.pre
 
@@ -3134,6 +3139,8 @@ restart.main = (info,log) !->*
   try
 
     [gjson] = yield from modyaml info
+
+    z gjson
 
   catch E
     if E is SERR then return E
@@ -3456,7 +3463,7 @@ main = (cmd_data) -> (CONF) ->
       ..project             = project_name
       ..ssh                 = CONF.ssh
       ..rsync               = CONF.rsync
-      ..inpwd               = CONF.inpwd
+      ..pwd                 = CONF.inpwd
       ..watch               = CONF.watch
       ..hist_file_address   = CONF.HIST_FILE
       ..histsize            = CONF.histsize
