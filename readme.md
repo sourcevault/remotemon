@@ -160,7 +160,7 @@ Since rsync's default `src` and `des` are not provided by user in our config fil
     - `option`    - ssh options (default is `-tt -o LogLevel=QUIET`).
 - `verbose`     - hardcode verbose level of printing for command.
 - `silent`      - hardcode commandline `--silent` option ( use sparsely ).
-- `inpwd`       - specify if the command is run in the directory of the project, or in the working directory, by default(`false`) it runs in project directory.
+- `pwd`         - specify if the command is run in the directory of the project, or in the working directory, by default(`false`) it runs in project directory.
 
 - `description` - provide a brief description of what the command does.
 
