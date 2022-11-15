@@ -179,7 +179,7 @@ init = function*(){
   prog_doc = yaml.parse(
   R.toString(
   fs.readFileSync(
-  CONFIG_FILE)));
+  DEF_CONFIG_FILE)));
   fin_doc = R.mergeLeft(user_doc, prog_doc);
   fin_doc.HIST_FILE = HIST_FILE;
   fin_doc.CONFIG_FILE = CONFIG_FILE;
@@ -1033,7 +1033,7 @@ modyaml = function*(info){
   replace_dot.encode(ref);
   cd = com.hoplon.utils.flat.unflatten(ref.all);
   clean_data = replace_dot.decode(ref, cd);
-  clean_data.inpwd = defarg.globalpwd;
+  clean_data.pwd = defarg.globalpwd;
   if (cmdname) {
     clean_data[cmdname].pwd = defarg.localpwd;
   }
@@ -1197,15 +1197,15 @@ is_true = function(x){
 };
 V.isFalse = be(is_false);
 V.isTrue = be(is_true);
-ifTrue = function(type){
+ifTrue = function(field){
   return function(){
     var state, val;
     state = arguments[arguments.length - 1];
-    val = state.origin[type];
+    val = state.origin[field];
     if (Boolean(val)) {
       return val;
     } else {
-      return state.info.options[type];
+      return state.info.options[field];
     }
   };
 };
@@ -1218,7 +1218,11 @@ V.watch.def = V.watch.main.or(V.isTrue.cont(function(){
   state = arguments[arguments.length - 1];
   return state.info.options.watch;
 }));
-V.watch.user = V.watch.main.or(V.isTrue.cont(ifTrue('watch')));
+V.watch.user = V.watch.main.or(V.isTrue.tap(function(x){
+  var state;
+  state = arguments[arguments.length - 1];
+  return z(x);
+}).cont(ifTrue('watch')));
 V.ignore = {};
 V.ignore.def = V.watch.main.or(V.isTrue.cont(function(){
   var state;
@@ -2154,7 +2158,6 @@ restart.main = function*(info, log){
   log.normal('err', msg);
   try {
     gjson = (yield* modyaml(info))[0];
-    z(gjson);
   } catch (e$) {
     E = e$;
     if (E === SERR) {
@@ -2172,9 +2175,11 @@ restart.main = function*(info, log){
   aout = most.generate(ms_create_watch, lconfig, info, log).drain();
   return OK;
 };
-V.CONF = be.known.obj.on('rsync', V.rsync.init).on('ssh', V.ssh).on('watch', be.undef.or(be.arr.or(be.str.cont(function(str){
+V.CONF = be.known.obj.on('rsync', V.rsync.init).on('ssh', V.ssh).on(['watch', 'ignore'], be.arr.or(be.str.cont(function(str){
   return [str];
-})))).on('histsize', be.num.fix(100)).cont(organize_rsync).and(V.rsync.throw_if_error).err(function(message, path){
+})).or(be.undef.cont(function(){
+  return [];
+}))).on('histsize', be.num.fix(100)).cont(organize_rsync).and(V.rsync.throw_if_error).err(function(message, path){
   var info, topmsg, loc, Error, F;
   info = arguments[arguments.length - 1];
   topmsg = be.flatro(message)[0];
@@ -2382,8 +2387,9 @@ main = function(cmd_data){
     z$.project = project_name;
     z$.ssh = CONF.ssh;
     z$.rsync = CONF.rsync;
-    z$.pwd = CONF.inpwd;
+    z$.pwd = CONF.pwd;
     z$.watch = CONF.watch;
+    z$.ignore = CONF.ignore;
     z$.hist_file_address = CONF.HIST_FILE;
     z$.histsize = CONF.histsize;
     z$.resume = cmd_data.resume.count();
@@ -2478,10 +2484,13 @@ main = function(cmd_data){
     });
   };
 };
-most.generate(init).tap(main(cmd_data)).recoverWith(function(E){
-  l(E.toString());
-  return most.empty();
-}).drain();
+most.generate(init).subscribe({
+  complete: main(cmd_data),
+  error: function(E){
+    l(E.toString());
+    return most.empty();
+  }
+});
 function deepEq$(x, y, type){
   var toString = {}.toString, hasOwnProperty = {}.hasOwnProperty,
       has = function (obj, key) { return hasOwnProperty.call(obj, key); };

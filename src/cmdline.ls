@@ -352,7 +352,7 @@ init = ->*
 
   user_doc = doc.toJSON!
 
-  prog_doc = CONFIG_FILE
+  prog_doc = DEF_CONFIG_FILE
   |> fs.readFileSync
   |> R.toString
   |> yaml.parse
@@ -1545,7 +1545,7 @@ modyaml = (info) ->*
 
   clean_data = replace_dot.decode ref,cd
 
-  clean_data.inpwd = defarg.globalpwd
+  clean_data.pwd = defarg.globalpwd
 
   if cmdname
 
@@ -1779,9 +1779,9 @@ V.isTrue = be is_true
 
 #--------------------------------------------------------------
 
-ifTrue = (type) -> (...,state) ->
+ifTrue = (field) -> (...,state) ->
 
-  val = state.origin[type]
+  val = state.origin[field]
 
   if Boolean val
 
@@ -1789,7 +1789,7 @@ ifTrue = (type) -> (...,state) ->
 
   else
 
-    return state.info.options[type]
+    return state.info.options[field]
 
 #--------------------------------------------------------------
 
@@ -1803,13 +1803,26 @@ V.watch.main = V.rsl.or do
 #--------------------------------------------------------------
 
 V.watch.def = V.watch.main
-.or V.isTrue.cont (...,state) -> state.info.options.watch
+
+.or V.isTrue.cont (...,state) -> 
+
+  state.info.options.watch
 
 #--------------------------------------------------------------
 
 V.watch.user = V.watch.main
+.or do
+  V.isTrue
+  .tap (x,...,state) ->
 
-.or V.isTrue.cont ifTrue \watch
+    z x
+
+  .cont ifTrue \watch
+
+
+
+
+
 
 #--------------------------------------------------------------
 
@@ -2345,7 +2358,6 @@ V.def = be.obj
     if (key.match "/")
 
       return [false,[\:incorrect-custom-name]]
-
 
     put = V.user.auth value,key,state
 
@@ -3140,8 +3152,6 @@ restart.main = (info,log) !->*
 
     [gjson] = yield from modyaml info
 
-    z gjson
-
   catch E
     if E is SERR then return E
     else
@@ -3165,7 +3175,10 @@ V.CONF = be.known.obj
 
 .on \ssh,V.ssh
 
-.on \watch,be.undef.or be.arr.or be.str.cont (str) -> [str]
+.on [\watch,\ignore],do
+  be.arr.or be.str.cont (str) -> [str]
+  .or be.undef.cont -> []
+
 
 .on \histsize,be.num.fix 100
 
@@ -3463,8 +3476,9 @@ main = (cmd_data) -> (CONF) ->
       ..project             = project_name
       ..ssh                 = CONF.ssh
       ..rsync               = CONF.rsync
-      ..pwd                 = CONF.inpwd
+      ..pwd                 = CONF.pwd
       ..watch               = CONF.watch
+      ..ignore              = CONF.ignore
       ..hist_file_address   = CONF.HIST_FILE
       ..histsize            = CONF.histsize
       ..resume              = cmd_data.resume.count!
@@ -3588,7 +3602,7 @@ main = (cmd_data) -> (CONF) ->
   .subscribe error:EF
 
 most.generate init
-.tap main cmd_data
-.recoverWith (E) -> l E.toString!;most.empty!
-.drain!
+.subscribe do
+  complete: main cmd_data
+  error:(E) -> l E.toString!;most.empty!
 

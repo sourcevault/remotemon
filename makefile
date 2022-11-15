@@ -103,7 +103,11 @@ compile:
 
 # 	remotemon -p mono/hoplon -l
 
+# 	rm ~/.config/remotemon/config.remotemon.yaml 2> /dev/null
 
+# 	./dist/cmdline.js -p yt hello
+
+	./dist/cmdline.js -p blog.new/edit resume.w
 
 
 # 	remotemon -c ./test/opt.yaml version.update
