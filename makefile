@@ -107,8 +107,7 @@ compile:
 
 # 	./dist/cmdline.js -p yt hello
 
-	./dist/cmdline.js -p blog.new/edit resume.w
-
+	./dist/cmdline.js -p blog.new/edit resume.w -w
 
 # 	remotemon -c ./test/opt.yaml version.update
 

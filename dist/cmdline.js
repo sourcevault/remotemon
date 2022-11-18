@@ -1680,9 +1680,6 @@ update = function*(gjson, info){
   }
   gjson = vout.value;
   ref$ = create_logger(info, gjson), lconfig = ref$[0], log = ref$[1], buildname = ref$[2];
-  if (info.options.watch_config_file) {
-    lconfig.watch.unshift(info.configfile);
-  }
   return [lconfig, log, buildname];
 };
 init_continuation = function(dryRun, inpwd){
@@ -2304,6 +2301,9 @@ get_all = function*(info){
     return;
   }
   lconfig = sortir[0], log = sortir[1];
+  if (info.options.watch_config_file) {
+    lconfig.watch.unshift(info.configfile);
+  }
   if (info.options.resume) {
     lconfig = start_from_resume_point(lconfig, info);
   }
