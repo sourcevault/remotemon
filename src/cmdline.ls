@@ -1781,15 +1781,20 @@ V.isTrue = be is_true
 
 ifTrue = (field) -> (...,state) ->
 
-  val = state.origin[field]
+  defecto_user = state.origin[field]
 
-  if Boolean val
+  defecto_conf = state.info.options[field]
 
-    return val
+  if ((R.type defecto_user) is \Array) and (defecto_user.length > 0)
+    return  defecto_user
 
-  else
+  if ((R.type defecto_conf) is \Array) and (defecto_conf.length > 0)
+    return defecto_conf
 
-    return state.info.options[field]
+  switch field
+  | \watch  => return ["."]
+  | \ignore => return []
+
 
 #--------------------------------------------------------------
 
@@ -1799,30 +1804,16 @@ V.watch.main = V.rsl.or do
   be.undefnull.alt V.isFalse
   .cont -> []
 
-
 #--------------------------------------------------------------
 
 V.watch.def = V.watch.main
-
-.or V.isTrue.cont (...,state) -> 
-
-  state.info.options.watch
+.or V.isTrue.cont (...,state) -> state.info.options.watch
 
 #--------------------------------------------------------------
 
 V.watch.user = V.watch.main
-.or do
-  V.isTrue
-  .tap (x,...,state) ->
 
-    z x
-
-  .cont ifTrue \watch
-
-
-
-
-
+.or V.isTrue.cont ifTrue \watch
 
 #--------------------------------------------------------------
 
@@ -1853,11 +1844,10 @@ V.execlist = V.strlist.empty.cont (strlist) ->
 
 # ----------------------------------------
 
-V.str2arr = be.arr.map be.str
-
+V.arr_str = be.arr.map be.str
 .or be.str.cont (str) -> [str]
 
-.or be.undefnull.cont -> []
+V.arr_str_empty = V.arr_str.or be.undefnull.cont -> []
 
 V.rsync = {}
 
@@ -1897,7 +1887,7 @@ V.rsync.throw_if_error = (data) ->
 # ----------------------------------------
 
 san_remotefold = (data,cmdname) ->
-  
+
   if ((R.type data.remotefold) isnt \String)
 
     st = {}
@@ -1995,7 +1985,7 @@ rsync_arr2obj = (data,cmdname,remotefold) ->
 
       else if (k is \src) or (global_data.rsync.filter.has k)
 
-        ret = V.str2arr.auth val
+        ret = V.arr_str_empty.auth val
 
         if ret.error
 
@@ -2094,8 +2084,7 @@ organize_rsync = (data,cmdname,...,state) ->
       if data.ssh
         ssh = [[\rsh,"ssh #{data.ssh}"]]
       else if state.origin.ssh
-        ssh = [[\rsh,"ssh #{st\
-        ate.origin.ssh.option}"]]
+        ssh = [[\rsh,"ssh #{state.origin.ssh.option}"]]
       else
         ssh = []
 
@@ -2544,7 +2533,7 @@ arrToStr = (arr) ->
 
   (arr.join " ") + gap
 
-create_rsync_cmd = (rsync,remotehost) ->
+create_rsync_cmd = (rsync,des) ->
 
   txt = ""
 
@@ -2562,13 +2551,11 @@ create_rsync_cmd = (rsync,remotehost) ->
 
     txt += "--#{key}={" + (["\'#{I}\'" for I in val].join ',') + "} "
 
-  tsel = remotehost + ":" + des
-
   # if isWSL
 
   #   tsel = "\'#{tsel}\'"
 
-  cmd = "rsync " + txt + (arrToStr src) + tsel
+  cmd = "rsync " + txt + (arrToStr src) + des
 
   cmd
 
@@ -2596,11 +2583,16 @@ exec_rsync = (data,each,index) ->*
 
   {remotehost,remotefold} = lconfig
 
+  if remotehost
+    des = remotehost + ":" + des
+  else
+    des = each.des
+
   cmd = create_rsync_cmd each,remotehost
 
   disp =  lit do
-    [(remotehost + ":" + each.des),(c.warn " <- "),(each.src.join " , ")]
-    [c.grey,c.warn,c.grey]
+    [des,(c.warn " <- "),(each.src.join " , ")]
+    [c.pink,c.warn,c.grey]
 
   log.normal do
     true
@@ -2797,7 +2789,7 @@ onchange = (data) ->*
 
     yield from cont cmd,[\local,index]
 
-  if lconfig.rsync or (remotetask.length and (not info.options.dryRun))
+  if (remotetask.length and (not info.options.dryRun))
 
     yield from check_if_remotehost_present data
 
@@ -3111,7 +3103,6 @@ ms_create_watch = (lconfig,info,log) ->*
 
   .drain!
 
-
 restart.stream = (info,log,lconfig) ->
 
   most.generate restart.main,info,log
@@ -3175,18 +3166,17 @@ V.CONF = be.known.obj
 
 .on \ssh,V.ssh
 
-.on [\watch,\ignore],do
-  be.arr.or be.str.cont (str) -> [str]
-  .or be.undef.cont -> []
+.on \watch,V.arr_str.or be.undefnull.cont -> ['.']
 
+.on \ignore,V.arr_str_empty
 
 .on \histsize,be.num.fix 100
 
-.cont organize_rsync
+# .cont organize_rsync
 
-.and V.rsync.throw_if_error
+# .and V.rsync.throw_if_error
 
-.err (message,path,...,info) ->
+.err (message,path) ->
 
   [topmsg] = be.flatro message
 
@@ -3202,33 +3192,12 @@ V.CONF = be.known.obj
 
   F Error,path,"~/.config/config.remotemon.yaml"
 
-check_conf_file = (conf,info) ->
-
-  D = {}
-
-  D.rsync = conf.rsync
-
-  D.ssh = conf.ssh
-
-  D.remotefold = '<CONF dummy / ignore>'
-
-  D.histsize = conf.histsize
-
-  origin = {}
-
-    ..ssh = conf.ssh
-
-  sortir = V.CONF.auth D,info.cmdname,{origin,info}
-
-  sortir.error
 
 if_current_hist_empty = be.undef
 .alt be.arr.and (a) -> a.length is 0
 .cont true
 .fix false
 .wrap!
-
-
 
 getunique = R.uniqWith do
   ([_,cmd1],[_,cmd2]) -> R.equals cmd1,cmd2
@@ -3397,7 +3366,7 @@ rm_resume = (cmdline) ->
 
   if pluck isnt -1
 
-    fin = R.remove pluck,1,cmdline
+    fin = R.remove pluck,1,cmdine
 
   fin
 
@@ -3450,6 +3419,10 @@ main = (cmd_data) -> (CONF) ->
   cmdline = R.drop 2,process.argv
 
   cmdline = rm_resume cmdline
+
+  sortir = V.CONF.auth CONF
+
+  if sortir.error then return
 
   info = {}
 
@@ -3586,14 +3559,11 @@ main = (cmd_data) -> (CONF) ->
   if info.options.list is 2
     return
 
-  if (check_conf_file CONF,info)
-    return
-
   EF = (E) ->
 
     if E is SERR then return
 
-    str = ' [ error at line 3086 ]'
+    str = ' [ error at line 3564 ]'
 
     l c.er1 do
       E.toString! + str

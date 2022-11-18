@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, path, dotpat, spawn, yaml, compare_version, boxen, moment, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, rest, E, str, silent, edit, concatenate, isvar, check_if_number, vars, args, init, V, defarg_main, inpwd_str, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, symbol_script, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, replace_dot, pathops, modyaml, parseDoc, show, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, ifTrue, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, exec_finale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, handle_inf, resolve_signal, save_failed_build, print_final_message, restart, ms_create_watch, check_conf_file, if_current_hist_empty, getunique, exec_list_hist, start_from_resume_point, get_all, rm_resume, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, path, dotpat, spawn, yaml, compare_version, boxen, moment, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, rest, E, str, silent, edit, concatenate, isvar, check_if_number, vars, args, init, V, defarg_main, inpwd_str, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, symbol_script, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, replace_dot, pathops, modyaml, parseDoc, show, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, ifTrue, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, exec_finale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, handle_inf, resolve_signal, save_failed_build, print_final_message, restart, ms_create_watch, if_current_hist_empty, getunique, exec_list_hist, start_from_resume_point, get_all, rm_resume, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create;
 fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
@@ -1199,13 +1199,21 @@ V.isFalse = be(is_false);
 V.isTrue = be(is_true);
 ifTrue = function(field){
   return function(){
-    var state, val;
+    var state, defecto_user, defecto_conf;
     state = arguments[arguments.length - 1];
-    val = state.origin[field];
-    if (Boolean(val)) {
-      return val;
-    } else {
-      return state.info.options[field];
+    defecto_user = state.origin[field];
+    defecto_conf = state.info.options[field];
+    if (R.type(defecto_user) === 'Array' && defecto_user.length > 0) {
+      return defecto_user;
+    }
+    if (R.type(defecto_conf) === 'Array' && defecto_conf.length > 0) {
+      return defecto_conf;
+    }
+    switch (field) {
+    case 'watch':
+      return ["."];
+    case 'ignore':
+      return [];
     }
   };
 };
@@ -1218,11 +1226,7 @@ V.watch.def = V.watch.main.or(V.isTrue.cont(function(){
   state = arguments[arguments.length - 1];
   return state.info.options.watch;
 }));
-V.watch.user = V.watch.main.or(V.isTrue.tap(function(x){
-  var state;
-  state = arguments[arguments.length - 1];
-  return z(x);
-}).cont(ifTrue('watch')));
+V.watch.user = V.watch.main.or(V.isTrue.cont(ifTrue('watch')));
 V.ignore = {};
 V.ignore.def = V.watch.main.or(V.isTrue.cont(function(){
   var state;
@@ -1240,9 +1244,10 @@ V.execlist = V.strlist.empty.cont(function(strlist){
   }
   return sortir;
 });
-V.str2arr = be.arr.map(be.str).or(be.str.cont(function(str){
+V.arr_str = be.arr.map(be.str).or(be.str.cont(function(str){
   return [str];
-})).or(be.undefnull.cont(function(){
+}));
+V.arr_str_empty = V.arr_str.or(be.undefnull.cont(function(){
   return [];
 }));
 V.rsync = {};
@@ -1336,7 +1341,7 @@ rsync_arr2obj = function(data, cmdname, remotefold){
         }
         fin.des = val;
       } else if (k === 'src' || global_data.rsync.filter.has(k)) {
-        ret = V.str2arr.auth(val);
+        ret = V.arr_str_empty.auth(val);
         if (ret.error) {
           error.push(['duo', [k, "can only be a list of string or just string."]], [index].concat(arrayFrom$(ret.path)));
           fin.error = error;
@@ -1421,7 +1426,7 @@ organize_rsync = function(data, cmdname){
       if (data.ssh) {
         ssh = [['rsh', "ssh " + data.ssh]];
       } else if (state.origin.ssh) {
-        ssh = [['rsh', "ssh " + st.ate.origin.ssh.option]];
+        ssh = [['rsh', "ssh " + state.origin.ssh.option]];
       } else {
         ssh = [];
       }
@@ -1719,8 +1724,8 @@ arrToStr = function(arr){
   }());
   return arr.join(" ") + gap;
 };
-create_rsync_cmd = function(rsync, remotehost){
-  var txt, str, obnormal, obarr, des, src, i$, len$, I, ref$, key, val, tsel, cmd;
+create_rsync_cmd = function(rsync, des){
+  var txt, str, obnormal, obarr, src, i$, len$, I, ref$, key, val, cmd;
   txt = "";
   str = rsync.str, obnormal = rsync.obnormal, obarr = rsync.obarr, des = rsync.des, src = rsync.src;
   for (i$ = 0, len$ = str.length; i$ < len$; ++i$) {
@@ -1735,8 +1740,7 @@ create_rsync_cmd = function(rsync, remotehost){
     val = obarr[key];
     txt += ("--" + key + "={") + (fn$()).join(',') + "} ";
   }
-  tsel = remotehost + ":" + des;
-  cmd = "rsync " + txt + arrToStr(src) + tsel;
+  cmd = "rsync " + txt + arrToStr(src) + des;
   return cmd;
   function fn$(){
     var i$, ref$, len$, results$ = [];
@@ -1761,11 +1765,16 @@ exec_finale = function*(data){
   return results$;
 };
 exec_rsync = function*(data, each, index){
-  var info, lconfig, log, cont, remotehost, remotefold, cmd, disp, status;
+  var info, lconfig, log, cont, remotehost, remotefold, des, cmd, disp, status;
   info = data.info, lconfig = data.lconfig, log = data.log, cont = data.cont;
   remotehost = lconfig.remotehost, remotefold = lconfig.remotefold;
+  if (remotehost) {
+    des = remotehost + ":" + des;
+  } else {
+    des = each.des;
+  }
   cmd = create_rsync_cmd(each, remotehost);
-  disp = lit([remotehost + ":" + each.des, c.warn(" <- "), each.src.join(" , ")], [c.grey, c.warn, c.grey]);
+  disp = lit([des, c.warn(" <- "), each.src.join(" , ")], [c.pink, c.warn, c.grey]);
   log.normal(true, 'ok', lit(["sync", " start"], [0, c.warn]), c.grey(disp));
   log.verbose("rsync ... ", cmd);
   status = (yield* cont(cmd, ['rsync', index], 'sync'));
@@ -1890,7 +1899,7 @@ onchange = function*(data){
     log.verbose(cmd);
     (yield* cont(cmd, ['local', index]));
   }
-  if (lconfig.rsync || (remotetask.length && !info.options.dryRun)) {
+  if (remotetask.length && !info.options.dryRun) {
     (yield* check_if_remotehost_present(data));
   }
   if (lconfig.rsync) {
@@ -2175,13 +2184,10 @@ restart.main = function*(info, log){
   aout = most.generate(ms_create_watch, lconfig, info, log).drain();
   return OK;
 };
-V.CONF = be.known.obj.on('rsync', V.rsync.init).on('ssh', V.ssh).on(['watch', 'ignore'], be.arr.or(be.str.cont(function(str){
-  return [str];
-})).or(be.undef.cont(function(){
-  return [];
-}))).on('histsize', be.num.fix(100)).cont(organize_rsync).and(V.rsync.throw_if_error).err(function(message, path){
-  var info, topmsg, loc, Error, F;
-  info = arguments[arguments.length - 1];
+V.CONF = be.known.obj.on('rsync', V.rsync.init).on('ssh', V.ssh).on('watch', V.arr_str.or(be.undefnull.cont(function(){
+  return ['.'];
+}))).on('ignore', V.arr_str_empty).on('histsize', be.num.fix(100)).err(function(message, path){
+  var topmsg, loc, Error, F;
   topmsg = be.flatro(message)[0];
   loc = topmsg[0], Error = topmsg[1];
   F = (function(){
@@ -2195,21 +2201,6 @@ V.CONF = be.known.obj.on('rsync', V.rsync.init).on('ssh', V.ssh).on(['watch', 'i
   }());
   return F(Error, path, "~/.config/config.remotemon.yaml");
 });
-check_conf_file = function(conf, info){
-  var D, x$, origin, sortir;
-  D = {};
-  D.rsync = conf.rsync;
-  D.ssh = conf.ssh;
-  D.remotefold = '<CONF dummy / ignore>';
-  D.histsize = conf.histsize;
-  x$ = origin = {};
-  x$.ssh = conf.ssh;
-  sortir = V.CONF.auth(D, info.cmdname, {
-    origin: origin,
-    info: info
-  });
-  return sortir.error;
-};
 if_current_hist_empty = be.undef.alt(be.arr.and(function(a){
   return a.length === 0;
 })).cont(true).fix(false).wrap();
@@ -2335,13 +2326,13 @@ rm_resume = function(cmdline){
     }
   }
   if (pluck !== -1) {
-    fin = R.remove(pluck, 1, cmdline);
+    fin = R.remove(pluck, 1, cmdine);
   }
   return fin;
 };
 main = function(cmd_data){
   return function(CONF){
-    var project_name, service_directory, config_file_name, wcf, cmdline, x$, info, y$, z$, archive, patt, find_fun, data, index, start_point, EF;
+    var project_name, service_directory, config_file_name, wcf, cmdline, sortir, x$, info, y$, z$, archive, patt, find_fun, data, index, start_point, EF;
     project_name = cmd_data.project.value();
     if (project_name) {
       service_directory = CONF.service_directory;
@@ -2363,6 +2354,10 @@ main = function(cmd_data){
     }
     cmdline = R.drop(2, process.argv);
     cmdline = rm_resume(cmdline);
+    sortir = V.CONF.auth(CONF);
+    if (sortir.error) {
+      return;
+    }
     x$ = info = {};
     x$.cmdname = null;
     x$.cmdargs = null;
@@ -2468,15 +2463,12 @@ main = function(cmd_data){
     if (info.options.list === 2) {
       return;
     }
-    if (check_conf_file(CONF, info)) {
-      return;
-    }
     EF = function(E){
       var str;
       if (E === SERR) {
         return;
       }
-      str = ' [ error at line 3086 ]';
+      str = ' [ error at line 3564 ]';
       return l(c.er1(E.toString() + str));
     };
     return most.generate(get_all, info).subscribe({
