@@ -2495,6 +2495,10 @@ update = (gjson,info)->*
 
   [lconfig,log,buildname] = create_logger info,gjson
 
+  if info.options.watch_config_file
+
+    lconfig.watch.unshift info.configfile
+
   [lconfig,log,buildname]
 
 
@@ -2972,8 +2976,6 @@ ms_create_watch = (lconfig,info,log) ->*
 
   lconfig.should_I_watch = should_I_watch
 
-  
-
   if should_I_watch
 
     disp = lconfig.watch
@@ -3322,10 +3324,6 @@ get_all = (info) ->*
   if sortir is SERR then return
 
   [lconfig,log] = sortir
-
-  if info.options.watch_config_file
-
-    lconfig.watch.unshift info.configfile
 
   if info.options.resume
 
