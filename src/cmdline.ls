@@ -2992,13 +2992,15 @@ ms_create_watch = (lconfig,info,log) ->*
 
   if siw.all
 
-    disp = lconfig.watch
+    disp = [...lconfig.watch]
+
+    pwd = simp_path lconfig.pwd
 
     if info.options.watch_config_file and (disp.length > 0)
 
-      pwd = simp_path lconfig.pwd
+      disp.unshift "*CF"
 
-      disp = [pwd,"*CF",...disp]
+    disp.unshift pwd
 
     log.normal do
       siw.all

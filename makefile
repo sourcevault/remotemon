@@ -109,7 +109,7 @@ compile:
 
 # 	./dist/cmdline.js -p blog.new/edit -l
 
-	./dist/cmdline.js -p blog.new/edit blog.w -w
+	./dist/cmdline.js -p blog.new/edit blog.w
 
 
 # 	remotemon -c ./test/opt.yaml version.update

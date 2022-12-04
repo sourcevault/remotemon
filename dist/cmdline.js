@@ -2054,11 +2054,12 @@ ms_create_watch = function*(lconfig, info, log){
   siw.all = siw.config || siw.user;
   lconfig.siw = siw;
   if (siw.all) {
-    disp = lconfig.watch;
+    disp = arrayFrom$(lconfig.watch);
+    pwd = simp_path(lconfig.pwd);
     if (info.options.watch_config_file && disp.length > 0) {
-      pwd = simp_path(lconfig.pwd);
-      disp = [pwd, "*CF"].concat(arrayFrom$(disp));
+      disp.unshift("*CF");
     }
+    disp.unshift(pwd);
     log.normal(siw.all, 'err_light', "watch", (yield* (function*(){
       var i$, ref$, len$, results$ = [];
       for (i$ = 0, len$ = (ref$ = disp).length; i$ < len$; ++i$) {
