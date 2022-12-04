@@ -107,7 +107,10 @@ compile:
 
 # 	./dist/cmdline.js -p yt hello
 
-	./dist/cmdline.js -p blog.new/edit resume.w -w
+# 	./dist/cmdline.js -p blog.new/edit -l
+
+	./dist/cmdline.js -p blog.new/edit blog.w -w
+
 
 # 	remotemon -c ./test/opt.yaml version.update
 
@@ -165,7 +168,7 @@ w.sudo:
 
 
 update-version:
-	@update-version src/config.remotemon.yaml remotemon current_version_number
+# 	@update-version src/config.remotemon.yaml remotemon current_version_number
 	@update-version src/package.yaml remotemon version
 
 

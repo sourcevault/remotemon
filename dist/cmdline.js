@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, path, dotpat, spawn, yaml, compare_version, boxen, moment, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, rest, E, str, silent, edit, concatenate, isvar, check_if_number, vars, args, init, V, defarg_main, inpwd_str, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, symbol_script, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, replace_dot, pathops, modyaml, parseDoc, show, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, ifTrue, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, san_path, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, exec_finale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, handle_inf, resolve_signal, save_failed_build, print_final_message, restart, ms_create_watch, if_current_hist_empty, getunique, exec_list_hist, start_from_resume_point, get_all, rm_resume, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
+var ref$, global_data, com, print, readJson, most, exec, chokidar, most_create, fs, metadata, optionParser, tampax, readline, emphasize, child_process, rm_empty_lines, path, dotpat, spawn, yaml, compare_version, boxen, moment, l, z, zj, j, R, lit, c, wait, noop, jspc, be, guard, cp, os, homedir, release, re, isWSL, CONFIG_FILE_NAME, cmd_data, question_init, rest, E, str, silent, edit, concatenate, isvar, check_if_number, vars, args, init, V, defarg_main, inpwd_str, san_arr, san_user_script, run_script, x$, gs_path, y$, z$, get_str_type, handle_path_dot, symbol_script, rm_merge_key, san_defarg, update_defarg, yaml_parse, re_curly, get_curly, tampax_abs, clear, merge_ref_defarg, check_if_circular_ref, replace_dot, pathops, modyaml, parseDoc, show, nPromise, rmdef, only_str, SERR, OK, tampax_parse, mergeArray, unu, is_false, is_true, ifTrue, san_remotefold, rsync_arr2obj, ifrsh, organize_rsync, dangling_colon, handle_ssh, str_to_num, disp, zero, check_if_empty, create_logger, update, init_continuation, arrToStr, create_rsync_cmd, exec_finale, exec_rsync, bko, check_if_remote_not_defined, check_if_remotehost_present, check_if_remotedir_present, remote_main_proc, onchange, diff, handle_inf, resolve_signal, save_failed_build, print_final_message, restart, CF_Signal, simp_path, ms_create_watch, if_current_hist_empty, getunique, exec_list_hist, start_from_resume_point, get_all, rm_resume, main, slice$ = [].slice, arrayFrom$ = Array.from || function(x){return slice$.call(x);};
 ref$ = require("./data"), global_data = ref$.global_data, com = ref$.com, print = ref$.print;
 readJson = com.readJson, most = com.most, exec = com.exec, chokidar = com.chokidar, most_create = com.most_create;
 fs = com.fs, metadata = com.metadata, optionParser = com.optionParser, tampax = com.tampax, readline = com.readline;
@@ -1074,18 +1074,20 @@ only_str = be.str.cont(function(str){
   return fin;
 })).fix("").wrap();
 function exec_list_option(yjson, info){
-  var keys, user_ones, i$, to$, I, name, des, results$ = [];
+  var keys, user_ones, color, i$, to$, I, name, des, cc, results$ = [];
   l(lit(['> FILE ', info.configfile], [c.er2, c.blue]));
   keys = Object.keys(yjson);
   user_ones = rmdef(keys);
   if (user_ones.length === 0) {
     l(lit(["  --- ", "< EMPTY USER CMD >", " ---"], [c.pink, c.er2, c.pink]));
   }
+  color = [c.warn, c.er1];
   for (i$ = 0, to$ = user_ones.length; i$ < to$; ++i$) {
     I = i$;
     name = user_ones[I];
     des = only_str(yjson[name].description);
-    results$.push(l(lit([" • ", name, des], [c.warn, c.warn, c.grey])));
+    cc = color[I % 2];
+    results$.push(l(lit([" • ", name, des], [cc, cc, c.grey])));
   }
   return results$;
 }
@@ -1472,16 +1474,12 @@ V.ssh = be.obj.on('option', be.str.or(unu)).on('startwith', be.arr.map(be.str).o
     startwith: []
   };
 }));
-san_path = function(path){
-  return path;
-};
 V.def_ssh = V.ssh.cont(function(ob){
-  var state, origin, path, tsel;
+  var state, origin, tsel;
   state = arguments[arguments.length - 1];
   origin = state.origin;
   if (ob.startwith.length === 0) {
-    path = san_path(origin.remotefold);
-    tsel = "cd " + path + ";";
+    tsel = "cd " + origin.remotefold + ";";
     ob.startwith.push(tsel);
   }
   if (ob.option === void 8) {
@@ -1680,9 +1678,6 @@ update = function*(gjson, info){
   }
   gjson = vout.value;
   ref$ = create_logger(info, gjson), lconfig = ref$[0], log = ref$[1], buildname = ref$[2];
-  if (info.options.watch_config_file) {
-    lconfig.watch.unshift(info.configfile);
-  }
   return [lconfig, log, buildname];
 };
 init_continuation = function(dryRun, inpwd){
@@ -2014,9 +2009,9 @@ print_final_message = function(log, lconfig, info){
     var ref$, ref1$, sig, type, loc, msg, message_type;
     ref$ = resolve_signal(signal, log, info), ref1$ = ref$[0], sig = ref1$[0], type = ref1$[1], loc = ref$[1];
     if (info.options.watch_config_file) {
-      msg = c.warn("returning to watch ") + c.pink("*CF");
+      msg = c.pink("returning to watch ") + c.pink("*CF");
     } else {
-      msg = c.warn("returning to watch");
+      msg = c.pink("returning to watch");
     }
     switch (sig) {
     case 'error':
@@ -2031,7 +2026,7 @@ print_final_message = function(log, lconfig, info){
     if (signal === 'error#empty_exec' && !info.options.watch_config_file) {
       return SERR;
     }
-    if (!lconfig.should_I_watch) {
+    if (!lconfig.siw.all) {
       return SERR;
     }
     log.normal(message_type, msg);
@@ -2039,17 +2034,32 @@ print_final_message = function(log, lconfig, info){
   };
 };
 restart = {};
+CF_Signal = Symbol('*CF');
+simp_path = function(pwd){
+  var lit, fin;
+  lit = pwd.split("/");
+  fin = R.last(lit);
+  fin = ("..(" + (lit.length - 1) + ")../") + fin;
+  return c.grey(fin + "");
+};
 ms_create_watch = function*(lconfig, info, log){
-  var should_I_watch, disp, I, ms_file_watch, cont, pre, i$, len$, index, cmd;
-  should_I_watch = lconfig.watch.length > 0 && info.options.no_watch === 0;
-  lconfig.should_I_watch = should_I_watch;
-  if (should_I_watch) {
+  var siw, disp, pwd, I, ms_file_watch, cont, pre, i$, len$, index, cmd;
+  siw = {};
+  siw.user = lconfig.watch.length > 0;
+  siw.config = info.options.watch_config_file;
+  if (info.options.no_watch === 1) {
+    siw.config = false;
+    siw.user = false;
+  }
+  siw.all = siw.config || siw.user;
+  lconfig.siw = siw;
+  if (siw.all) {
     disp = lconfig.watch;
     if (info.options.watch_config_file && disp.length > 0) {
-      disp = R.drop(1, disp);
-      disp.unshift(c.pink("CF"));
+      pwd = simp_path(lconfig.pwd);
+      disp = [pwd, "*CF"].concat(arrayFrom$(disp));
     }
-    log.normal(should_I_watch, 'err_light', "watch", (yield* (function*(){
+    log.normal(siw.all, 'err_light', "watch", (yield* (function*(){
       var i$, ref$, len$, results$ = [];
       for (i$ = 0, len$ = (ref$ = disp).length; i$ < len$; ++i$) {
         I = ref$[i$];
@@ -2057,7 +2067,7 @@ ms_create_watch = function*(lconfig, info, log){
       }
       return results$;
     }())).join(" "));
-    log.normal(should_I_watch && lconfig.ignore.length, 'err_light', "ignore", (yield* (function*(){
+    log.normal(siw.all && lconfig.ignore.length, 'err_light', "ignore", (yield* (function*(){
       var i$, ref$, len$, results$ = [];
       for (i$ = 0, len$ = (ref$ = lconfig.ignore).length; i$ < len$; ++i$) {
         I = ref$[i$];
@@ -2067,10 +2077,11 @@ ms_create_watch = function*(lconfig, info, log){
     }())).join(" "));
   }
   ms_file_watch = most_create(function(add, end, error){
-    var rl, cwd, watcher, dispose;
+    var to_dispose, rl, ignore_files, CF_watcher, watcher;
     if (lconfig.initialize) {
       add(null);
     }
+    to_dispose = [];
     rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
@@ -2079,34 +2090,37 @@ ms_create_watch = function*(lconfig, info, log){
     rl.on('line', function(input){
       process.stdout.write(input);
     });
-    if (lconfig.inpwd) {
-      cwd = undefined;
-      lconfig.CFname = info.configfile;
-    } else {
-      cwd = info.options.project;
-      lconfig.CFname = '.remotemon.yaml';
+    to_dispose.push(rl);
+    ignore_files = lconfig.ignore;
+    if (siw.config) {
+      CF_watcher = chokidar.watch(info.configfile, {
+        awaitWriteFinish: true,
+        ignorePermissionErrors: true
+      });
+      CF_watcher.on('change', function(){
+        return add(CF_Signal);
+      });
+      to_dispose.push(CF_watcher);
+      ignore_files = lconfig.ignore.concat(info.configfile);
     }
-    if (should_I_watch) {
+    if (siw.user) {
       watcher = chokidar.watch(lconfig.watch, {
-        ignored: lconfig.ignore,
+        ignored: ignore_files,
         awaitWriteFinish: true,
         ignorePermissionErrors: true,
-        cwd: cwd
+        cwd: lconfig.pwd
       });
       watcher.on('change', add);
-      lconfig.watcher = watcher;
-      dispose = function(){
-        watcher.close();
-        rl.close();
-        end();
-      };
-    } else {
-      dispose = function(){
-        rl.close();
-        end();
-      };
+      to_dispose.push(watcher);
     }
-    return dispose;
+    return function(){
+      var i$, ref$, len$, I;
+      for (i$ = 0, len$ = (ref$ = to_dispose).length; i$ < len$; ++i$) {
+        I = ref$[i$];
+        I.close();
+      }
+      return end();
+    };
   });
   cont = init_continuation(info.options.dryRun, lconfig.pwd);
   pre = lconfig.pre;
@@ -2117,9 +2131,9 @@ ms_create_watch = function*(lconfig, info, log){
     log.verbose(cmd);
     (yield* cont(cmd, ['pre', index]));
   }
-  return ms_file_watch.timestamp().loop(handle_inf(log, lconfig), info.timedata).takeWhile(function(filename){
-    if (filename === lconfig.CFname) {
-      if (info.options.watch_config_file) {
+  return ms_file_watch.timestamp().loop(handle_inf(log, lconfig), info.timedata).debounce(200).takeWhile(function(filename){
+    if (filename === CF_Signal) {
+      if (siw.config) {
         restart.stream(info, log, lconfig);
         return false;
       }

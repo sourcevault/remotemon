@@ -1315,7 +1315,6 @@ pathops = guard
 
     obj
 
-
 replace_dot.decode = (ref,js) ->
 
   for each in ref.dotpath
@@ -1525,6 +1524,8 @@ modyaml = (info) ->*
 
     update_defarg defarg,[\defarg]
 
+
+
   tampax_abs.defarg defarg,ref
 
   tampax_abs.ref defarg,ref
@@ -1616,13 +1617,17 @@ function exec_list_option yjson,info
 
     l lit ["  --- ","< EMPTY USER CMD >"," ---"],[c.pink,c.er2,c.pink]
 
+  color = [c.warn,c.er1]
+
   for I from 0 til user_ones.length
 
     name = user_ones[I]
 
     des = only_str yjson[name].description
 
-    l lit [" • ",name,des],[c.warn,c.warn,c.grey]
+    cc = color[I%2]
+
+    l lit [" • ",name,des],[cc,cc,c.grey]
 
 function exec_cat_option yaml_object,concat_count,info
   
@@ -2151,14 +2156,6 @@ V.ssh = be.obj
 
 #----------------------------------------------------
 
-san_path = (path) ->
-
-  # if isWSL
-
-  #   path = "\"#{path}\""
-
-  path
-
 V.def_ssh = V.ssh
 
 .cont (ob,...,state) ->
@@ -2167,9 +2164,7 @@ V.def_ssh = V.ssh
 
   if ob.startwith.length is 0
 
-    path = san_path origin.remotefold
-
-    tsel = "cd #{path};"
+    tsel = "cd #{origin.remotefold};"
 
     ob.startwith.push tsel
 
@@ -2494,10 +2489,6 @@ update = (gjson,info)->*
   gjson = vout.value
 
   [lconfig,log,buildname] = create_logger info,gjson
-
-  if info.options.watch_config_file
-
-    lconfig.watch.unshift info.configfile
 
   [lconfig,log,buildname]
 
@@ -2937,11 +2928,11 @@ print_final_message = (log,lconfig,info) -> (signal) !->
 
   if info.options.watch_config_file
 
-    msg = (c.warn "returning to watch ") + (c.pink "*CF")
+    msg = (c.pink "returning to watch ") + (c.pink "*CF")
 
   else
 
-    msg = c.warn "returning to watch"
+    msg = c.pink "returning to watch"
 
   switch sig
   | \error =>
@@ -2960,7 +2951,7 @@ print_final_message = (log,lconfig,info) -> (signal) !->
 
     return SERR
 
-  if (not lconfig.should_I_watch)
+  if (not lconfig.siw.all)
 
     return SERR
 
@@ -2970,30 +2961,53 @@ print_final_message = (log,lconfig,info) -> (signal) !->
 
 restart = {}
 
+CF_Signal = Symbol \*CF
+
+simp_path = (pwd) ->
+
+  lit = pwd.split "/"
+
+  fin = R.last lit
+
+  fin = "..(#{lit.length - 1})../" + fin
+
+  c.grey "#{fin}"
+
 ms_create_watch = (lconfig,info,log) ->*
 
-  should_I_watch = (lconfig.watch.length > 0) and (info.options.no_watch is 0)
+  siw = {} # should i watch
 
-  lconfig.should_I_watch = should_I_watch
+  siw.user = lconfig.watch.length > 0
 
-  if should_I_watch
+  siw.config =  info.options.watch_config_file
+
+  if info.options.no_watch is 1
+
+    siw.config = false
+    siw.user = false
+
+  siw.all = siw.config or siw.user
+
+  lconfig.siw = siw
+
+  if siw.all
 
     disp = lconfig.watch
 
     if info.options.watch_config_file and (disp.length > 0)
 
-      disp = R.drop 1,disp
+      pwd = simp_path lconfig.pwd
 
-      disp.unshift c.pink "CF"
+      disp = [pwd,"*CF",...disp]
 
     log.normal do
-      should_I_watch
+      siw.all
       \err_light
       "watch"
       [(c.warn I) for I in disp].join " "
 
     log.normal do
-      (should_I_watch and lconfig.ignore.length)
+      (siw.all and lconfig.ignore.length)
       \err_light
       "ignore"
       [(c.warn I) for I in lconfig.ignore].join " "
@@ -3010,6 +3024,8 @@ ms_create_watch = (lconfig,info,log) ->*
 
     # rl = readline.createInterface {terminal:false}
 
+    to_dispose = []
+
     rl = readline.createInterface do
       {input:process.stdin,
       output:process.stdout,
@@ -3019,39 +3035,42 @@ ms_create_watch = (lconfig,info,log) ->*
 
       process.stdout.write input
 
-    #--------------------------------------------------------------------------------------
+    to_dispose.push rl
 
-    if lconfig.inpwd
+    #---------------------------------------- ----------------------------------------------
 
-      cwd = undefined
-      lconfig.CFname = info.configfile
+    ignore_files = lconfig.ignore
 
-    else
+    if siw.config
 
-      cwd = info.options.project
-      lconfig.CFname = '.remotemon.yaml'
+      CF_watcher = chokidar.watch do
+        info.configfile
+        *awaitWriteFinish:true
+         ignorePermissionErrors:true
 
-    if should_I_watch
+      CF_watcher.on \change, -> add CF_Signal
+
+      to_dispose.push CF_watcher
+
+      ignore_files = lconfig.ignore.concat info.configfile
+
+    if siw.user
 
       watcher = chokidar.watch do
         lconfig.watch
-        *ignored:lconfig.ignore
+        *ignored:ignore_files
          awaitWriteFinish:true
          ignorePermissionErrors:true
-         cwd:cwd
+         cwd:lconfig.pwd
 
       watcher.on \change,add
 
-      lconfig.watcher = watcher
+      to_dispose.push watcher
 
-      dispose = !-> watcher.close!;rl.close!;end!
-
-
-    else
-
-      dispose = !-> rl.close!;end!
-
-    dispose
+    ->
+      for I in to_dispose
+        I.close!
+      end!
 
   cont = init_continuation do
     info.options.dryRun
@@ -3077,10 +3096,12 @@ ms_create_watch = (lconfig,info,log) ->*
 
   .loop (handle_inf log,lconfig),info.timedata
 
+  .debounce 200
+
   .takeWhile (filename) ->
 
-    if filename is lconfig.CFname
-      if info.options.watch_config_file
+    if filename is CF_Signal
+      if siw.config
         restart.stream info,log,lconfig # <-- restart
         return false
     true
