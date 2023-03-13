@@ -1075,7 +1075,7 @@ only_str = be.str.cont(function(str){
 })).fix("").wrap();
 function exec_list_option(yjson, info){
   var keys, user_ones, color, i$, to$, I, name, des, cc, results$ = [];
-  l(lit(['> FILE ', info.configfile], [c.er2, c.blue]));
+  l(lit(['> FILE ', info.configfile], [c.er2, c.grey]));
   keys = Object.keys(yjson);
   user_ones = rmdef(keys);
   if (user_ones.length === 0) {
@@ -1930,7 +1930,7 @@ handle_inf = function(log, lconfig){
     };
     if (first === second) {
       fin.value = ['err', ob.value];
-      log.normal('err', " ⚡️⚡️ error", c.er1("infinite loop detected ") + c.warn(ob.value) + c.er1(" is offending file, ignoring event."));
+      log.normal('err', " ⚡️⚡️ error", c.er1("\n  infinite loop detected ") + c.warn(ob.value) + c.er1(" is offending file, ignoring event."));
       if (lconfig.watch.length > 0) {
         log.normal('err', " returing to watch ");
       }
@@ -2039,7 +2039,7 @@ simp_path = function(pwd){
   var lit, fin;
   lit = pwd.split("/");
   fin = R.last(lit);
-  fin = ("..(" + (lit.length - 1) + ")../") + fin;
+  fin = (".(" + (lit.length - 1) + ")./") + fin;
   return c.grey(fin + "");
 };
 ms_create_watch = function*(lconfig, info, log){

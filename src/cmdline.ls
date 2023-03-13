@@ -1607,7 +1607,7 @@ only_str = be.str.cont (str) -> " - " + str
 
 function exec_list_option yjson,info
 
-  l lit ['> FILE ',info.configfile],[c.er2,c.blue]
+  l lit ['> FILE ',info.configfile],[c.er2,c.grey]
 
   keys = Object.keys yjson
 
@@ -2827,7 +2827,7 @@ handle_inf = (log,lconfig) -> (db,ob) ->
     log.normal do
       \err
       " ⚡️⚡️ error"
-      c.er1("infinite loop detected ") + (c.warn ob.value) + c.er1(" is offending file, ignoring event.")
+      c.er1("\n  infinite loop detected ") + (c.warn ob.value) + c.er1(" is offending file, ignoring event.")
 
     if (lconfig.watch.length > 0)
 
@@ -2969,7 +2969,7 @@ simp_path = (pwd) ->
 
   fin = R.last lit
 
-  fin = "..(#{lit.length - 1})../" + fin
+  fin = ".(#{lit.length - 1})./" + fin
 
   c.grey "#{fin}"
 

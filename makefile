@@ -34,6 +34,9 @@ compile:
 	lsc -cb test
 	yaml2json -p src/package.yaml > package.json
 
+
+	remotemon --version
+
 # 	remotemon --config test/opt.yaml -w foo
 
 # 	remotemon longname -w foo bar
@@ -109,7 +112,7 @@ compile:
 
 # 	./dist/cmdline.js -p blog.new/edit -l
 
-	./dist/cmdline.js -p blog.new/edit blog.w
+# 	./dist/cmdline.js -p blog.new/edit blog.w
 
 
 # 	remotemon -c ./test/opt.yaml version.update
