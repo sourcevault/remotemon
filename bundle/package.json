@@ -24,7 +24,7 @@
     "yaml": "2.0.0-7",
     "boxen": "6.2.1",
     "emphasize": "5.0.0",
-    "moment": "2.29.4"
+    "moment": "2.31.0"
   },
   "keywords": [
     "remote",
